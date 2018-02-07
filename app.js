@@ -9,3 +9,10 @@ var express        = require("express"),
     Campground     = require("./models/campground"),
     Comment        = require("./models/comment"),
     User           = require("./models/user");
+    
+//requiring routes
+var commentRoutes = require("./routes/comments"),
+    campgroundRoutes = require("./routes/campgrounds"),
+    indexRoutes       = require("./routes/index");
+
+mongoose.connect(process.env.DATABASEURL);
