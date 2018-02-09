@@ -1,6 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var passport = require("passport");
+var async = require("async");
 var User = require("../models/user");
 var TournamentStanding = require("../models/tournamentStanding");
 var Trophy = require("../models/trophy");
@@ -103,10 +104,10 @@ router.get("/users/:id", function(req, res) {
            req.flash("error", "User not found");
            return res.redirect("/");
        } else {
-            console.log(foundUser.trophies.length);
-            foundUser.trophies = newarr(foundUser.trophies);
+            // console.log(foundUser.trophies.length);
+            // foundUser.trophies = newarr(foundUser.trophies);
             foundUser.trophies.sort(compare);
-            console.log(foundUser.trophies.length);
+            // console.log(foundUser.trophies.length);
             res.render("users/show", {user: foundUser});
        }
    })
@@ -117,10 +118,6 @@ function compare(a,b) {
         return -1;
     else if (a.year < b.year)
         return 1;
-    // else {
-    //     if (a.year > b.year)
-        
-    // }
     return 0;
 }
 
@@ -142,13 +139,12 @@ var newarr = function(arr){
  var addPastTrophies = function(user){
     //find tournaments the user has participated in
     TournamentStanding.find({"standings.firstName" : user.firstName, "standings.lastName" : user.lastName}).exec(function(err, tournamentYears) {
-        console.log(user.firstName + " has participated for " + tournamentYears.length + " years");
+        // console.log(user.firstName + " has participated for " + tournamentYears.length + " years");
         if (err) {
             console.log(err);
         } else {
-            //for each tournament year the user has participated in, find the user's results
-            tournamentYears.forEach(function(tournamentYear){
-                
+            
+            async.forEachSeries(tournamentYears, function(tournamentYear, callback) {
                 var year = tournamentYear.year; 
                 var totalPlayers = tournamentYear.standings.length;
                 var rank = 1;
@@ -177,24 +173,22 @@ var newarr = function(arr){
                     if(err){
                         console.log(err);
                     } else {
-                        console.log("created new trophy " + trophy.year);
+                        // console.log("created new trophy " + trophy.year);
                         
                         user.trophies.addToSet(trophy._id);
-                        // , function(err, saved){
-                        //     if(err){
-                        //         console.log("not added");
-                        //     } else {
-                        //         console.log("trophy added");
-                        //     }
-                        // });
-                        user.save();
+                        user.save(callback);
                     }
                 });
-            });
+            }, function(err){
+                if(err) {
+                    console.log(err);
+                } else {
+                    // console.log("trophies were added");
+                }
+            } )
             
         };
      });
  }
-
 
 module.exports = router;

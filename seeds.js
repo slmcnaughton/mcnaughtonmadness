@@ -5,20 +5,20 @@ var User = require("./models/user");
 var Trophy = require("./models/trophy");
 
 function seedDB() {
-    Trophy.remove({}, function(err){
-      if (err) {
-          console.log("oops");
-      } else {
-          console.log("removed all trophies");
-      }
-    });
-    User.remove({}, function(err){
-      if (err) {
-          console.log("oops");
-      } else {
-          console.log("removed all users");
-      }
-    });
+    // Trophy.remove({}, function(err){
+    //   if (err) {
+    //       console.log("oops");
+    //   } else {
+    //       console.log("removed all trophies");
+    //   }
+    // });
+    // User.remove({}, function(err){
+    //   if (err) {
+    //       console.log("oops");
+    //   } else {
+    //       console.log("removed all users");
+    //   }
+    // });
     // Campground.remove({}, function(err){
     //   if (err) {
     //       console.log("oops");
