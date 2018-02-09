@@ -1,0 +1,58 @@
+
+.thumbnail img{
+    width: 100%;
+}
+.thumbnail {
+    padding: 0;
+}
+.delete-form{
+    display: inline;
+}
+.login-form{
+    width: 30%; 
+    min-width: 275px;
+    margin: 25px auto;
+}
+.itemDisplay{
+    /*display: flex; */
+    /*flex-wrap: wrap;*/
+    list-style-type: none;
+}
+.thumbnail {
+    border: 0 none;
+    box-shadow: none;
+  
+}
+
+
+table {  
+    color: #333; /* Lighten up font color */
+    font-family: Helvetica, Arial, sans-serif; /* Nicer font */
+    width: 400px; 
+    border-collapse: 
+    collapse; border-spacing: 0; 
+}
+
+td, th { border: 1px solid #CCC; height: 30px; } /* Make cells a bit taller */
+
+th {  
+    background: #F3F3F3; /* Light grey background */
+    font-weight: bold; /* Make sure they're bold */
+    text-align: center; /* Center our text */
+}
+
+td {  
+    background: #FAFAFA; /* Lighter grey background */
+    text-align: center; /* Center our text */
+}
+
+ /*Landscape phones and portrait tablets */
+@media (max-width: 767px) {
+    
+
+}
+
+ /*Portrait phones and smaller */
+@media (max-width: 480px) {
+    
+}

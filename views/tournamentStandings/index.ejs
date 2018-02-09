@@ -1,0 +1,48 @@
+<% include ../partials/header %>
+
+<h1>All Tournaments</h1>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h3>Tournament History</h3>
+    </div>
+    <% tournaments.forEach(function(tournament) { %>
+        <div>
+            <h4><%= tournament.year %></h4>
+        </div>
+        
+        <div>
+            <table class="tournamentStandings">
+                <tr>
+                    <th>Rank</th>
+                    <th>Score</th> 
+                    <th>Name</th>
+                </tr>
+                <% var tieCount = 0 %>
+                <% var rank = 0 %>
+                <% for(var i = 0; i < tournament.standings.length; i++) { %>
+                    <% var participant = tournament.standings[i]; %>
+                    <% if (i > 0 && tournament.standings[i].score === tournament.standings[i-1].score) { %>
+                        <% tieCount++ %>
+                    <% } else { %>
+                        <% rank += (1 + tieCount) %>
+                        <% tieCount = 0 %>
+                    <% } %>
+                    <tr>
+                        <td><%= rank %></td>
+                        <td><%= participant.score %></td> 
+                        <td><%= participant.firstName %> <%= participant.lastName %></td>
+                    </tr>
+                <% }; %>
+            </table>
+        </div>
+        
+        
+        
+   
+    
+    <% }); %>
+</div>
+
+
+<% include ../partials/footer %>

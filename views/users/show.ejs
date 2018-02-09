@@ -1,0 +1,43 @@
+<% include ../partials/header %>
+
+<div class="row">
+    <div class="col-md-4">
+        <h1><%= user.firstName + " " + user.lastName%></h1>
+        <div class="thumbnail">
+            <img src="<%= user.image %>" alt="user profile image"></img>
+            <div class="caption"><%= user.email %></div>
+        </div>
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. Enim et sint tempora fugiat, saepe assumenda omnis? Dignissimos, qui? Iusto illum excepturi, pariatur. Expedita, cum blanditiis odio impedit assumenda, corrupti pariatur.
+    </div>
+    <div class="col-md-8">
+        <h3><%= user.firstName %>'s Trophies</h3>
+        <div class="row itemDisplay">
+            <% user.trophies.forEach(function(trophy) { %>
+                <div class="col-md-3 col-sm-6 thumbnail">
+                    <% if (trophy.userRank === 1) {%>
+                        <img class="trophyPic" src="http://i68.tinypic.com/2v0hf7d.png" alt="First Place Trophy">
+                    <% } else if (trophy.userRank === 2) { %>
+                        <img class="trophyPic" src="http://i68.tinypic.com/dzw1z9.jpg" alt="Second Place Trophy">
+                    <% } else if (trophy.userRank === 3) { %>
+                        <img class="trophyPic" src="http://i63.tinypic.com/w9ya9j.jpg" alt="Third Place Trophy">
+                    <% } else if (trophy.userRank === trophy.totalPlayers) { %>
+                        <img width="50px" class="trophyPic" src="http://i64.tinypic.com/34g7tdh.jpg" alt="Last Place Trophy">
+                    <% } else { %>
+                        <img class="trophyPic" src="http://i64.tinypic.com/2yk0zlt.jpg" alt="Participation Ribbon">
+                    <% } %>
+                
+                    <div class="caption text-center">
+                        <p><a href="#"><%= trophy.year %></a></p>
+                        <p>Score: <%= trophy.score %></p>
+                        Rank: <%= trophy.userRank %> / <%= trophy.totalPlayers %>
+                    </div>
+                    
+                </div>  
+            <% }) %>
+        </div>
+        
+
+    </div>
+</div>
+
+<% include ../partials/footer %>
