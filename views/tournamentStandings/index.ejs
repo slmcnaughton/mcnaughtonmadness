@@ -9,6 +9,7 @@
     <% tournaments.forEach(function(tournament) { %>
         <div>
             <h4><%= tournament.year %></h4>
+            <a href="/tournamentStandings/<%= tournament._id %>" class="btn btn-primary">More Info</a>
         </div>
         
         <div>
@@ -36,11 +37,6 @@
                 <% }; %>
             </table>
         </div>
-        
-        
-        
-   
-    
     <% }); %>
 </div>
 

@@ -12,18 +12,6 @@ router.get("/", function(req, res) {
 });
 
 
-//INDEX - show all campgrounds
-router.get("/tournamentStandings", function(req, res) {
-    //get all campgrounds from db
-    TournamentStanding.find({}, function(err, allTournaments) {
-        if(err) {
-            console.log(err)
-        } else {
-            res.render("tournamentStandings/index", {tournaments: allTournaments});
-        }
-    });
-});
-
 //=============
 // Auth Routes
 //=============
@@ -113,6 +101,7 @@ router.get("/users/:id", function(req, res) {
    })
 });
 
+//order trophies from newest year
 function compare(a,b) {
     if (a.year > b.year)
         return -1;
@@ -121,29 +110,14 @@ function compare(a,b) {
     return 0;
 }
 
-var newarr = function(arr){
-    var map = {};
-    var newarr = [];
-    for (var i = 0; i < arr.length; i++) {
-        var value = arr[i];
-        console.log(value.year);
-        if (!map[value]) {
-            newarr.push(value);
-            map[value] = true;
-        }
-    }
-    return newarr;
-}
-
-
- var addPastTrophies = function(user){
+var addPastTrophies = function(user){
     //find tournaments the user has participated in
     TournamentStanding.find({"standings.firstName" : user.firstName, "standings.lastName" : user.lastName}).exec(function(err, tournamentYears) {
         // console.log(user.firstName + " has participated for " + tournamentYears.length + " years");
         if (err) {
             console.log(err);
         } else {
-            
+            //for each tournament year, add the correct trophy
             async.forEachSeries(tournamentYears, function(tournamentYear, callback) {
                 var year = tournamentYear.year; 
                 var totalPlayers = tournamentYear.standings.length;
@@ -173,8 +147,6 @@ var newarr = function(arr){
                     if(err){
                         console.log(err);
                     } else {
-                        // console.log("created new trophy " + trophy.year);
-                        
                         user.trophies.addToSet(trophy._id);
                         user.save(callback);
                     }
@@ -182,13 +154,10 @@ var newarr = function(arr){
             }, function(err){
                 if(err) {
                     console.log(err);
-                } else {
-                    // console.log("trophies were added");
-                }
-            } )
-            
+                } 
+            }) //end of async.forEachSeries
         };
-     });
+     }); //end of TournamentStanding.find()
  }
 
 module.exports = router;

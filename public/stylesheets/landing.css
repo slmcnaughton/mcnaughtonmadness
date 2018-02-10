@@ -11,6 +11,7 @@ body {
 
 #landing-header h1{
     color: #fff;
+    text-shadow: 2px 2px #000000;
 }
 
 .slideshow{
@@ -40,22 +41,22 @@ body {
 }
 
 .slideshow li:nth-child(1) { 
-  background-image: url(http://i.imgur.com/K3mPv14.jpg) 
+  background-image: url(https://images.unsplash.com/photo-1489956152110-c70feae4150b?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=7f16caba8e90beee64cd7f461f81bf24&auto=format&fit=crop&w=1500&q=80) 
 }
 .slideshow li:nth-child(2) { 
-  background-image: url(http://i.imgur.com/SBEmFpv.jpg);
+  background-image: url(https://cdn.pixabay.com/photo/2017/04/25/05/45/basketball-2258651_960_720.jpg);
   animation-delay: 10s; 
 }
 .slideshow li:nth-child(3) { 
-  background-image: url(http://i.imgur.com/emvhOnb.jpg);
+  background-image: url(http://static6.businessinsider.com/image/5703c3f69105844e018babd4/the-villanova-player-who-hit-the-incredible-buzzer-beater-to-win-the-ncaa-championship-wasnt-even-supposed-to-take-the-final-shot.jpg);
   animation-delay: 20s; 
 }
 .slideshow li:nth-child(4) { 
-  background-image: url(http://i.imgur.com/2LSMCmJ.jpg);
+  background-image: url(https://cdn.pixabay.com/photo/2013/03/21/15/52/basketball-95607_960_720.jpg);
   animation-delay: 30s; 
 }
 .slideshow li:nth-child(5) { 
-  background-image: url(http://i.imgur.com/TVGe0Ef.jpg);
+  background-image: url(https://fortunedotcom.files.wordpress.com/2016/04/rtsdlnm.jpg);
   animation-delay: 40s; 
 }
 

@@ -1,5 +1,33 @@
 <% include ../partials/header %>
 
-<h1>This is one particular tournament page</h1>
+<div>
+    <h4><%= tournament.year %></h4>
+</div>
+
+<div>
+    <table class="tournamentStandings">
+        <tr>
+            <th>Rank</th>
+            <th>Score</th> 
+            <th>Name</th>
+        </tr>
+        <% var tieCount = 0 %>
+        <% var rank = 0 %>
+        <% for(var i = 0; i < tournament.standings.length; i++) { %>
+            <% var participant = tournament.standings[i]; %>
+            <% if (i > 0 && tournament.standings[i].score === tournament.standings[i-1].score) { %>
+                <% tieCount++ %>
+            <% } else { %>
+                <% rank += (1 + tieCount) %>
+                <% tieCount = 0 %>
+            <% } %>
+            <tr>
+                <td><%= rank %></td>
+                <td><%= participant.score %></td> 
+                <td><%= participant.firstName %> <%= participant.lastName %></td>
+            </tr>
+        <% }; %>
+    </table>
+</div>
 
 <% include ../partials/footer %>
