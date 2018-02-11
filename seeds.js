@@ -3,8 +3,13 @@ var TournamentStanding = require("./models/tournamentStanding");
 var Campground = require("./models/campground");
 var User = require("./models/user");
 var Trophy = require("./models/trophy");
+var Tournament = require("./models/tournament");
+var Round = require("./models/round");
+var Match = require("./models/match");
+var Team = require("./models/team");
 
 function seedDB() {
+    
     // Trophy.remove({}, function(err){
     //   if (err) {
     //       console.log("oops");
@@ -26,7 +31,13 @@ function seedDB() {
     //       console.log("removed all campgrounds");
     //   }
     // });
-    //remove all tournaments
+    
+    addTournamentStandings();
+}
+
+
+
+var addTournamentStandings = function (){
     TournamentStanding.remove({}, function(err){
         if(err){
             console.log(err);
@@ -46,6 +57,7 @@ function seedDB() {
     });
 }
 
+//Historical Tournament Standings Data
 var data = [
     {
         year: 2017,

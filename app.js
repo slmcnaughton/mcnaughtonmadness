@@ -11,13 +11,15 @@ var express        = require("express"),
     seedDB         = require("./seeds"),
     Trophy          = require("./models/trophy"),
     TournamentStanding          = require("./models/tournamentStanding"),
+    Tournament      = require("./models/tournament"),
     User           = require("./models/user");
     
 //requiring routes
 var commentRoutes = require("./routes/comments"),
     campgroundRoutes = require("./routes/campgrounds"),
     indexRoutes       = require("./routes/index"),
-    tournamentStandingsRoutes = require("./routes/tournamentStandings");
+    tournamentStandingsRoutes = require("./routes/tournamentStandings"),
+    tournamentRoutes = require("./routes/tournaments")
 
 mongoose.connect("mongodb://localhost/mcnaughtonmadness");
 // mongoose.connect(process.env.DATABASEURL);
@@ -54,6 +56,7 @@ app.use("/", indexRoutes);
 app.use("/campgrounds", campgroundRoutes);  //all campgroundRoutes should start with "/campgrounds"
 app.use("/campgrounds/:id/comments", commentRoutes);
 app.use("/tournamentStandings", tournamentStandingsRoutes);
+app.use("/tournaments", tournamentRoutes);
 
 app.listen(process.env.PORT, process.env.IP, function(){
    console.log("McNaughton Madness Server has started"); 
