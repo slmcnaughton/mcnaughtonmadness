@@ -1,6 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var passport = require("passport");
+var middleware = require("../middleware");
 var async = require("async");
 var User = require("../models/user");
 var TournamentStanding = require("../models/tournamentStanding");
@@ -44,7 +45,7 @@ router.post("/register", function(req, res){
         //once the user is registered, log them in
         passport.authenticate("local")(req, res, function(){
             req.flash("success", "Welcome to McNaughton March Madness " + user.username);
-            res.redirect("/users");
+            res.redirect("/users/" + user.firstName + "." + user.lastName);
         });
     });
 });
@@ -54,16 +55,24 @@ router.get("/login", function(req, res){
    res.render("login", {page: "login"}); 
 });
 
+
 //handle login logic
 //use passport.authenticate middleware to login 
    //from the line in app.js: passport.use(new LocalStrategy(User.authenticate())); 
-router.post("/login", passport.authenticate("local", 
-    {
-        successRedirect: "/users",
-        failureRedirect: "/login"
-    }), function(req, res){
-
+router.post("/login", 
+    passport.authenticate("local", {
+        successRedirect: "/profile",
+        failureRedirect: "/login",
+        failureFlash: true,
+        successFlash: "Welcome back to McNaughton March Madness!",
+    }), function(req, res) {
 });
+
+//Used with login post route to send user directly to their profile page upon login
+router.get('/profile', middleware.isLoggedIn, function(req, res) {
+    res.redirect ("/users/" + req.user.firstName + "." + req.user.lastName);   // get the user out of session and pass to template
+});
+
 
 //logout route
 router.get("/logout", function(req, res){
@@ -84,22 +93,56 @@ router.get("/users", function(req, res) {
     });
 });
 
-//USER PROFILE
-router.get("/users/:id", function(req, res) {
+
+router.get("/users/:firstName.:lastName", function(req, res) {
     
-   User.findById(req.params.id).populate("trophies").exec(function(err, foundUser) {
-       if(err){
-           req.flash("error", "User not found");
-           return res.redirect("/");
-       } else {
-            // console.log(foundUser.trophies.length);
-            // foundUser.trophies = newarr(foundUser.trophies);
+    var firstName = req.params.firstName;
+    var lastName = req.params.lastName;
+    
+    User.findOne( {firstName: firstName, lastName: lastName}).populate("trophies").exec(function(err, foundUser){
+        if (err || !foundUser){
+            req.flash("error", "User not found");
+            return res.redirect("/users");
+        } else {
             foundUser.trophies.sort(compare);
-            // console.log(foundUser.trophies.length);
             res.render("users/show", {user: foundUser});
-       }
-   })
+        }
+        
+    })
+    
+//If I need to go back to using ids, not first and last names
+//   User.findById(req.params.id).populate("trophies").exec(function(err, foundUser) {
+//       if(err){
+//           req.flash("error", "User not found");
+//           return res.redirect("/");
+//       } else {
+//             // console.log(foundUser.trophies.length);
+//             // foundUser.trophies = newarr(foundUser.trophies);
+//             foundUser.trophies.sort(compare);
+//             // console.log(foundUser.trophies.length);
+//             res.render("users/show", {user: foundUser});
+            
+//       }
+//   })
 });
+
+
+//USER PROFILE by ID
+// router.get("/users/:id", function(req, res) {
+    
+//   User.findById(req.params.id).populate("trophies").exec(function(err, foundUser) {
+//       if(err){
+//           req.flash("error", "User not found");
+//           return res.redirect("/");
+//       } else {
+//             // console.log(foundUser.trophies.length);
+//             // foundUser.trophies = newarr(foundUser.trophies);
+//             foundUser.trophies.sort(compare);
+//             // console.log(foundUser.trophies.length);
+//             res.render("users/show", {user: foundUser});
+//       }
+//   })
+// });
 
 //order trophies from newest year
 function compare(a,b) {

@@ -2,7 +2,14 @@ var mongoose = require("mongoose");
 
 var userMatchPredictionSchema = new mongoose.Schema({
     
-    matchNumber: Number,
+    score: Number,
+    match: {
+        id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Match"
+        },
+        matchNumber: Number
+    },
     winner: 
         {
             type: mongoose.Schema.Types.ObjectId,

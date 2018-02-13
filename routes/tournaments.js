@@ -16,21 +16,21 @@ router.get("/", function(req, res) {
         if(err) {
             console.log(err)
         } else {
-            res.render("tournaments/index", {tournaments: allTournaments, page: "campgrounds"});
+            res.render("tournaments/index", {tournaments: allTournaments, page: "tournaments"});        //rename the page when I do the navbar
         }
     });
 });
 
-//NEW - show form to create new campground 
+//NEW - show form to create new tournament 
 router.get("/new", middleware.isLoggedIn, function(req, res) {
-    res.render("campgrounds/new");
+    res.render("tournaments/new");
 });
 
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     var regions = ["East", "West", "Midwest", "South"];
     var year = 2018;
-    // teamNames data below
+    // teamNames sample data below
     var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
     var numRounds = Math.log(teamNames.length)/Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
     
