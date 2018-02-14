@@ -24,6 +24,28 @@
   
 }
 
+.column {
+    float: left;
+    width: 17%;
+    margin-left: 4%;
+    margin-right: 4%;
+}
+
+.form-header {
+    width: 30%; 
+    margin: 25px auto;
+}
+.field-spacing {
+   margin-bottom: 15px; 
+}
+
+.region-field{
+  background-color : #f2f5ff; 
+}
+
+/*.team-field {*/
+/*    background-color : #fffdf2; */
+/*}*/
 
 table {  
     color: #333; /* Lighten up font color */

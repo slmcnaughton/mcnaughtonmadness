@@ -3,25 +3,44 @@
 
 <h1 style="text-align: center;">Create a New Tournament</h1>
 <div class="row">
-    <div style="width: 30%; margin: 25px auto;">
-         <form action="/campgrounds" method="POST">
-            <div class="form-group">
-                <input class="form-control" type="text" name="name" placeholder="name">
+    
+    <div >
+         <form action="/tournaments" method="POST">
+            <% var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15]; %>
+            <div class="form-group form-header">
+                    <input class="form-control" type="number" name="year" placeholder="year">
             </div>
-            <div class="form-group">
-                <input class="form-control" type="number" name="price" placeholder="price" min="0.01" step="0.01">
+            
+            <% for(var i = 0; i < 4; i++) { %>
+                <div class="form-group column">
+                    <input class="form-control field-spacing region-field" type="text" name="regions[]" placeholder="region">
+              
+                    <% for(var j = 0; j < 16; j++) { %>
+                            
+                        <%if (j % 2 === 0) { %>
+                            <input class="form-control team-field" type="text" name="teams[]" placeholder="<%=order[j]%>">
+                        <% } else { %>
+                            <input class="form-control field-spacing team-field" type="text" name="teams[]" placeholder="<%=order[j]%>">
+                        <% } %>
+
+                    <% } %>
+                </div>
+            <% } %>
             </div>
-            <div class="form-group">
-                 <input class="form-control" type="text" name="image" placeholder="image url">
-            </div>
-             <div class="form-group">
-                 <input class="form-control" type="text" name="description" placeholder="description">
-            </div>
-            <div class="form-group">
+            
+
+
+            <!--<div class="form-group">-->
+            <!--     <input class="form-control" type="text" name="image" placeholder="image url">-->
+            <!--</div>-->
+            <!-- <div class="form-group">-->
+            <!--     <input class="form-control" type="text" name="description" placeholder="description">-->
+            <!--</div>-->
+            <div class="form-group form-header">
                 <button class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
             </div>
         </form>
-        <a href="/campgrounds">Go back</a>
+        <a href="/tournaments">Go back</a>
     </div>
 </div>
 

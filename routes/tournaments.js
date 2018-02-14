@@ -21,18 +21,23 @@ router.get("/", function(req, res) {
     });
 });
 
+// middleware.isLoggedIn, 
 //NEW - show form to create new tournament 
-router.get("/new", middleware.isLoggedIn, function(req, res) {
+router.get("/new", function(req, res) {
     res.render("tournaments/new");
 });
 
+// middleware.isLoggedIn, 
 //CREATE -
-router.post("/", middleware.isLoggedIn, function(req, res) {
-    var regions = ["East", "West", "Midwest", "South"];
-    var year = 2018;
+router.post("/", function(req, res) {
+    // var regions = ["East", "West", "Midwest", "South"];
+    var regions = req.body.regions;
+    var year = req.body.year;
+    var teamNames = req.body.teams;
+    console.log(req.body.teams);
     // teamNames sample data below
     var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
-    var numRounds = Math.log(teamNames.length)/Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
+    // var numRounds = Math.log(teamNames.length)/Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
     
     Tournament.create(
         {
@@ -132,18 +137,61 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                             if(err) console.log(err);
                             res.redirect("/tournaments");
                         });
-                        
-                        
                     }
                 })
             }
         }
     )
-    
-  
-    
 });    
     
+    
+
+//Note: this must be below the /tournaments/new route
+//SHOW - shows more information about a particular tournament
+router.get("/:id", function(req, res){
+   //find the campground with provided ID, populate the comments array
+    Campground.findById(req.params.id).populate("comments").exec(function(err, foundCampground) {
+        if(err || !foundCampground) {
+            req.flash("error", "Campground not found");
+            res.redirect("back");
+        } else {
+            //render the show template with that campground
+            res.render("campgrounds/show", {campground: foundCampground});
+        }
+    });
+});
+
+//EDIT Tournament Route
+router.get("/:id/edit", middleware.checkCampgroundOwnership, function(req, res){
+    Campground.findById(req.params.id, function(err, foundCampground){
+        res.render("campgrounds/edit", {campground: foundCampground});
+    });
+});
+
+// UPDATE Tournament Route
+router.put("/:id", middleware.checkCampgroundOwnership, function(req, res) {
+   //find and update the correct campground
+   // Campground.findByIdAndUpdate(id, newData, callback)
+   Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, updatedCampground){
+       if(err){
+           res.redirect("/campgrounds");
+       } else {
+            res.redirect("/campgrounds/" + req.params.id);     
+       }
+   });
+});
+
+//DESTROY Tournament Route
+router.delete("/:id", middleware.checkCampgroundOwnership, function(req, res){
+   Campground.findByIdAndRemove(req.params.id, function(err){
+      if(err){
+          res.redirect("/campgrounds");
+      } else {
+          req.flash("success", "Campground deleted");
+          res.redirect("/campgrounds");
+      }
+   });
+});
 
 
 var teamNames = [
