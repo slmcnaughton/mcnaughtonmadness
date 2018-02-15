@@ -9,7 +9,22 @@ var Match = require("./models/match");
 var Team = require("./models/team");
 
 function seedDB() {
-    
+    Team.remove({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all teams");
+    })
+    Match.remove({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all matches");
+    })
+    Round.remove({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all rounds");
+    })
+    Tournament.remove({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all matches");
+    })
     // Trophy.remove({}, function(err){
     //   if (err) {
     //       console.log("oops");
@@ -32,7 +47,7 @@ function seedDB() {
     //   }
     // });
     
-    addTournamentStandings();
+    // addTournamentStandings();
 }
 
 

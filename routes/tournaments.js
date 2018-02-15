@@ -30,12 +30,15 @@ router.get("/new", function(req, res) {
 // middleware.isLoggedIn, 
 //CREATE -
 router.post("/", function(req, res) {
-    // var regions = ["East", "West", "Midwest", "South"];
-    var regions = req.body.regions;
-    var year = req.body.year;
-    var teamNames = req.body.teams;
-    console.log(req.body.teams);
-    // teamNames sample data below
+    var year = Math.floor((Math.random()*100+2000));
+    var regions = ["East", "West", "Midwest", "South"];
+    //   teamNames sample data below
+     
+    // var regions = req.body.regions;
+    // var year = req.body.year;
+    // var teamNames = req.body.teams;
+    // console.log(req.body.teams);
+   
     var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
     // var numRounds = Math.log(teamNames.length)/Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
     
@@ -91,15 +94,18 @@ router.post("/", function(req, res) {
                                 var i = 1;
                                 async.forEachSeries(teams, function(team, next){
                                     if (i % 2 === 1) {
+                                        var matchNumber =  Math.floor((i-1)/2) + 1;
                                         Match.create({
-                                            matchNumber: i,
+                                            matchNumber: matchNumber,
                                             teams: [],
-                                            nextMatch: Math.floor(0.5*(i + teams.length + 1))
+                                            nextMatch: Math.floor(0.5*(matchNumber + teams.length + 1))
                                         }, function(err, newMatch){
                                             if (err) console.log(err);
                                             else {
                                                 newMatch.teams.push(team);
+                                                
                                                 createdRound.matches.push(newMatch);
+                                                createdRound.save();
                                                 i++;
                                                 next();
                                             }
@@ -107,10 +113,9 @@ router.post("/", function(req, res) {
                                     }
                                     else {
                                         var location = Math.floor((i-1)/2);
-                                        
                                         createdRound.matches[location].teams.push(team);
-                                        
-                                        //createdRound.matches[location].save();
+                                        // console.log(createdRound.matches[location]);
+                                        createdRound.matches[location].save();
                                         i++;
                                         next();
                                     }
@@ -119,20 +124,21 @@ router.post("/", function(req, res) {
                                     if (err) console.log(err);
                                     else {
                                         createdTournament.rounds.push(createdRound);
+                                        createdTournament.save();
                                         callback();
                                     }
                                 })
                             },
-                            // function(callback) {
+                            function(callback) {
                                 
-                            //         createdTournament.rounds[0].matches.forEach(function(match) {
-                            //             console.log(match.teams[0].seed + ") " + match.teams[0].name);
-                            //             console.log(match.teams[1].seed + ") " + match.teams[1].name);
+                                    createdTournament.rounds[0].matches.forEach(function(match) {
+                                        console.log(match.teams[0].seed + ") " + match.teams[0].name);
+                                        console.log(match.teams[1].seed + ") " + match.teams[1].name);
                                         
-                            //         })
-                            //         callback();
+                                    })
+                                    callback();
                                 
-                            // }
+                            }
                         ], function(err) { 
                             if(err) console.log(err);
                             res.redirect("/tournaments");
@@ -145,18 +151,27 @@ router.post("/", function(req, res) {
 });    
     
     
-
 //Note: this must be below the /tournaments/new route
 //SHOW - shows more information about a particular tournament
-router.get("/:id", function(req, res){
-   //find the campground with provided ID, populate the comments array
-    Campground.findById(req.params.id).populate("comments").exec(function(err, foundCampground) {
-        if(err || !foundCampground) {
-            req.flash("error", "Campground not found");
-            res.redirect("back");
+router.get("/:year", function(req, res){
+    var year = req.params.year;
+    Tournament.findOne({year: year}).populate({
+        path: "rounds",
+        populate: {
+            path: "matches",
+            populate: {
+                path: "teams",
+                }
+            }
+    }).exec(function(err, foundTournament){
+         if (err || !foundTournament){
+            req.flash("error", "Tournament not found");
+            return res.redirect("/tournaments");
         } else {
-            //render the show template with that campground
-            res.render("campgrounds/show", {campground: foundCampground});
+            for(var i = 0; i < foundTournament.rounds[0].matches.length; i++) {
+                console.log(foundTournament.rounds[0].matches[i]);
+            }
+            res.render("tournaments/show", {tournament: foundTournament});
         }
     });
 });

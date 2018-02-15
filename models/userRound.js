@@ -5,6 +5,7 @@ var userRoundSchema = new mongoose.Schema({
     roundScore: Number,
     possiblePointsRemaining: Number,
     
+    //reference the actual round
     round: {
         id: {
             type: mongoose.Schema.Types.ObjectId,
@@ -12,6 +13,7 @@ var userRoundSchema = new mongoose.Schema({
         },
         numRound: Number
     },
+    //reference an array of user predictions
     userMatchPredictions: [
         {
             type: mongoose.Schema.Types.ObjectId,
