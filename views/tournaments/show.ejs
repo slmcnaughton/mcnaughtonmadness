@@ -6,11 +6,19 @@
 
 <h4><%=tournament.year%></h4>
 <h4><%=tournament.numTeams%></h4>
+<h4><%=tournament.rounds.length%></h4>
 
 <% for(var i = 0; i < tournament.rounds.length; i++) { %>
+    <h2>Round <%=tournament.rounds[i].numRound%></h2>
     <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
-        <% for(var k = 0; k < tournament.rounds[i].matches[j].teams.length; k++) { %>
-            <h5><%=tournament.rounds[i].matches[j].teams[k].seed%>) <%=tournament.rounds[i].matches[j].teams[k].name%></h5>
+        <% if(tournament.rounds[i].matches[j].teams.length === 0) { %>
+            <h5><%=tournament.rounds[i].matches[j].matchNumber%></h5>
+            <h5>Team 1</h5>
+            <h5>Team 2</h5>
+        <% } else { %>
+            <% for(var k = 0; k < tournament.rounds[i].matches[j].teams.length; k++) { %>
+                <h5><%=tournament.rounds[i].matches[j].teams[k].seed%>) <%=tournament.rounds[i].matches[j].teams[k].name%></h5>
+            <% } %>
         <% } %>
     <% } %>
 <% } %>

@@ -60,7 +60,7 @@ router.get("/:comment_id/edit", middleware.checkCommentOwnership, function(req, 
                     req.flash("error", "Comment not found");
                     res.redirect("back");
                 } else {
-                    res.render("comments/edit", {campground_id: req.params.id, comment: foundComment} )
+                    res.render("comments/edit", {campground_id: req.params.id, comment: foundComment} );
                 }
             });
         }

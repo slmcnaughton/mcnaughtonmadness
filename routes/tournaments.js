@@ -30,8 +30,11 @@ router.get("/new", function(req, res) {
 // middleware.isLoggedIn, 
 //CREATE -
 router.post("/", function(req, res) {
-    var year = Math.floor((Math.random()*100+2000));
+    
+    // var year = 2017;
     var regions = ["East", "West", "Midwest", "South"];
+    var year = Math.floor((Math.random()*100+2000));
+    // var year = 2000;
     //   teamNames sample data below
      
     // var regions = req.body.regions;
@@ -40,9 +43,10 @@ router.post("/", function(req, res) {
     // console.log(req.body.teams);
    
     var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
-    // var numRounds = Math.log(teamNames.length)/Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
+    var numRounds = Math.log(teamNames.length)/Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
+    // var numRounds = 20;
     
-    Tournament.create(
+   Tournament.create(
         {
             year: year,
             numTeams: teamNames.length,
@@ -50,107 +54,185 @@ router.post("/", function(req, res) {
         }, function (err, createdTournament) {
             if(err) console.log(err);
             else {
-                Round.create(
-                {
-                    numRound: 1,
-                    matches: []
-                }, function(err, createdRound){
-                    if(err) console.log(err);
-                    else {
-                        var teams = [];
-                        async.series([
-                            
-                            //==========================================================
-                            // 1) Use teamNames and order to create array of teams
-                            //==========================================================
-                            function(callback) {
-                                var i = 0;
-                                
-                                async.forEachSeries(teamNames, function(teamName, next){
-                                    var team = {
-                                        region: regions[Math.floor(i / order.length)],
-                                        name: teamName,
-                                        seed: order[i % order.length],
-                                    }
-                                    Team.create(team, function(err, newTeam){
-                                        if(err) console.log(err);
-                                        else {
-                                            teams.push(newTeam);
-                                            i++;
-                                            next();
-                                        }
-                                    })
-                                }, function(err) {
-                                    if (err) console.log(err);
-                                    else{
-                                        callback();
-                                    }
-                                });
-                            },
-                            //==========================================================
-                            // 2) Create and fill match teams from teams array
-                            //==========================================================
-                            function(callback) {
-                                var i = 1;
-                                async.forEachSeries(teams, function(team, next){
-                                    if (i % 2 === 1) {
-                                        var matchNumber =  Math.floor((i-1)/2) + 1;
-                                        Match.create({
-                                            matchNumber: matchNumber,
-                                            teams: [],
-                                            nextMatch: Math.floor(0.5*(matchNumber + teams.length + 1))
-                                        }, function(err, newMatch){
+                // ====================================================
+                // Parallel:
+                //      1) Steps 1 & 2: Create Round 1, Matches, and Teams
+                //      2) Steps 3 % 4: Create remaining (5) rounds and matches
+                // Afterwards: Save Tournament to database
+                async.parallel([
+                    //PART 1)
+                    function(callback){
+                        Round.create(
+                        {
+                            numRound: 1,
+                            matches: []
+                        }, function(err, createdRound){
+                            if(err) console.log(err);
+                            else {
+                                var teams = [];
+                                async.series([
+                                    
+                                    //==========================================================
+                                    // 1) Use array of teamNames and order of seeds to create array of teams
+                                    //==========================================================
+                                    function(callback) {
+                                        var i = 0;
+                                        
+                                        async.forEachSeries(teamNames, function(teamName, next){
+                                            var team = {
+                                                region: regions[Math.floor(i / order.length)],
+                                                name: teamName,
+                                                seed: order[i % order.length],
+                                            };
+                                            Team.create(team, function(err, newTeam){
+                                                if(err) console.log(err);
+                                                else {
+                                                    teams.push(newTeam);
+                                                    i++;
+                                                    next();
+                                                }
+                                            });
+                                        }, function(err) {
                                             if (err) console.log(err);
+                                            else callback();
+                                        });
+                                    },
+                                    //==========================================================
+                                    // 2) Create and fill matches with teams array
+                                    //==========================================================
+                                    function(callback) {
+                                        var i = 1;
+                                        async.forEachSeries(teams, function(team, next){
+                                            if (i % 2 === 1) {
+                                                var matchNumber =  Math.floor((i-1)/2) + 1;
+                                                Match.create({
+                                                    matchNumber: matchNumber,
+                                                    teams: [],
+                                                    nextMatch: Math.floor(0.5*(matchNumber + teams.length + 1))
+                                                }, function(err, newMatch){
+                                                    if (err) console.log(err);
+                                                    else {
+                                                        newMatch.teams.push(team);
+                                                        createdRound.matches.addToSet(newMatch);
+                                                        createdRound.save();
+                                                        i++;
+                                                        next();
+                                                    }
+                                                });
+                                            }
                                             else {
-                                                newMatch.teams.push(team);
-                                                
-                                                createdRound.matches.push(newMatch);
-                                                createdRound.save();
+                                                var location = Math.floor((i-1)/2);
+                                                createdRound.matches[location].teams.push(team);
+                                                createdRound.matches[location].save();
                                                 i++;
                                                 next();
                                             }
-                                        })
+                                        }, 
+                                        function(err) {
+                                            if (err) console.log(err);
+                                            else {
+                                                createdTournament.rounds.push(createdRound);
+                                                callback();
+                                            }
+                                        });
+                                    },
+                                ],  function(err) { 
+                                    if(err) console.log(err);
+                                    else callback();
+                                    });
+                                }
+                            });
+                    },
+                    //PART 2)
+                    function(callback) {
+                         async.series([
+                            //==========================================================
+                            // 3) Create remaining rounds
+                            //==========================================================
+                             function(callback) {
+                                async.timesSeries(numRounds-1, 
+                                    function(i, next){
+                                        Round.create(
+                                        {
+                                            numRound: i+2,  //i = 0 should be round 2
+                                            matches: []
+                                        }, function(err, newRound){
+                                            if(err) console.log(err);
+                                            else {
+                                                createdTournament.rounds.addToSet(newRound);
+                                                next();
+                                            }
+                                        });
+                                    },
+                                    function(err){
+                                        if(err) console.log(err);
+                                        else callback();    //finished adding extra rounds
                                     }
-                                    else {
-                                        var location = Math.floor((i-1)/2);
-                                        createdRound.matches[location].teams.push(team);
-                                        // console.log(createdRound.matches[location]);
-                                        createdRound.matches[location].save();
-                                        i++;
-                                        next();
-                                    }
-                                }, 
-                                function(err) {
-                                    if (err) console.log(err);
-                                    else {
-                                        createdTournament.rounds.push(createdRound);
-                                        createdTournament.save();
-                                        callback();
-                                    }
-                                })
+                                );
                             },
+                            //==========================================================
+                            // 4) Create remaining matches with correct matchNumbers and nextMatch references...no teams yet
+                            //==========================================================
                             function(callback) {
-                                
-                                    createdTournament.rounds[0].matches.forEach(function(match) {
-                                        console.log(match.teams[0].seed + ") " + match.teams[0].name);
-                                        console.log(match.teams[1].seed + ") " + match.teams[1].name);
-                                        
-                                    })
-                                    callback();
-                                
-                            }
-                        ], function(err) { 
-                            if(err) console.log(err);
-                            res.redirect("/tournaments");
+                                async.forEachSeries(createdTournament.rounds, 
+                                    function(round, next){
+                                        if (round.numRound !== 1) {
+                                            var matchNumStart = Math.pow(2, numRounds)-Math.pow(2, numRounds + 1 - round.numRound) + 1; //1, 33, 49, 57, 61, 63
+                                            var matchesThisRound = Math.pow(2, numRounds - round.numRound);
+                                            async.timesSeries(matchesThisRound, 
+                                                function(j, next){
+                                                    Match.create(
+                                                    {
+                                                        matchNumber: matchNumStart + j,
+                                                        teams: [],
+                                                        nextMatch: Math.floor(0.5*((matchNumStart + j) + teamNames.length + 1))
+                                                    }, function(err, newMatch){
+                                                        if (err) console.log(err);
+                                                        else {
+                                                            round.matches.addToSet(newMatch);
+                                                            next();
+                                                        }
+                                                    });
+                                                }, 
+                                                function(err) {
+                                                    if(err) console.log(err);
+                                                    else {
+                                                        round.save();
+                                                        next(); //go create the next round
+                                                    }
+                                                }
+                                            );
+                                        } else {    //we're looking at the is the first round...no need to add blank matches
+                                            next();
+                                        }
+                                    }, 
+                                    function(err) {
+                                        if (err) console.log(err);
+                                        else callback();    //finished adding blank matches
+                                    }   
+                                );
+                            }  
+                        ], function (err) {
+                            if (err) console.log(err);
+                            else callback();    //finished adding the remaining rounds/matches
                         });
                     }
-                })
-            }
+                ], function (err) {
+                    if(err) console.log(err);
+                    else {  
+                        createdTournament.rounds.sort(compare);
+                        createdTournament.save();
+                        res.redirect("/tournaments");
+                    }
+                }
+            )}
         }
-    )
-});    
+    );
+});
     
-    
+  
+
+
 //Note: this must be below the /tournaments/new route
 //SHOW - shows more information about a particular tournament
 router.get("/:year", function(req, res){
@@ -168,9 +250,10 @@ router.get("/:year", function(req, res){
             req.flash("error", "Tournament not found");
             return res.redirect("/tournaments");
         } else {
-            for(var i = 0; i < foundTournament.rounds[0].matches.length; i++) {
-                console.log(foundTournament.rounds[0].matches[i]);
-            }
+            // for(var i = 0; i < foundTournament.rounds[0].matches.length; i++) {
+            //     console.log(foundTournament.rounds[0].matches[i]);
+            // }
+            
             res.render("tournaments/show", {tournament: foundTournament});
         }
     });
@@ -208,6 +291,15 @@ router.delete("/:id", middleware.checkCampgroundOwnership, function(req, res){
    });
 });
 
+
+//order tournament rounds lowest to highest
+function compare(a,b) {
+    if (a.numRound < b.numRound)
+        return -1;
+    else if (a.numRound > b.numRound)
+        return 1;
+    return 0;
+}
 
 var teamNames = [
         "Villanova",
