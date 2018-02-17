@@ -245,7 +245,7 @@ router.get("/:year", function(req, res){
                 path: "teams",
                 }
             }
-    }).exec(function(err, foundTournament){
+    }).populate("champion").exec(function(err, foundTournament){
          if (err || !foundTournament){
             req.flash("error", "Tournament not found");
             return res.redirect("/tournaments");

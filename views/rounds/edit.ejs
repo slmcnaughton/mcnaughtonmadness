@@ -1,0 +1,70 @@
+<% include ../partials/header %>
+
+<h1 class="test">Hello There from the h1</h1>
+
+<% var numRound = round.numRound %>
+<h1 style="text-align: center;">Add Winners to Round <%=numRound%></h1>
+
+
+<form action="/tournaments/<%= tournament.year %>/rounds/<%= round.numRound %>?_method=PUT" method="POST">
+    <% for(var j = 0; j < tournament.rounds[numRound - 1].matches.length; j++) { %>
+        <div class="form-group match">
+            <% var matchNum = tournament.rounds[numRound-1].matches[j].matchNumber %>
+            <% var idMaker = tournament.year + "m" + tournament.rounds[numRound-1].matches[j].matchNumber %>
+            
+            
+                <% if(tournament.rounds[numRound - 1].matches[j].teams.length === 0) { %>
+            
+                    <h5><%=tournament.rounds[numRound-1].matches[j].matchNumber%></h5>
+                    <h5>Team 1</h5>
+                    <h5>Team 2</h5>
+                <% } else { %>
+                    <% for(var k = 0; k < tournament.rounds[numRound-1].matches[j].teams.length; k++) { %>
+                        <% var team = tournament.rounds[numRound-1].matches[j].teams[k] %>
+                        <label for="idMaker">
+                            <div class="team">
+                                <h5 ><%=tournament.rounds[numRound-1].matches[j].teams[k].seed%>) <%= team.name %></h5>
+                            </div>
+                        </label>
+                        
+                        <input class="form-control" type="radio" id=idMaker name="<%=matchNum%>" value="<%= team._id %>">
+                    <% } %>
+            
+                
+            <% } %>
+        </div>
+    <% } %>
+    <div class="form-group">
+        <button class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
+    </div>
+</form>
+
+
+    
+<!--</div>-->
+
+<!--<script>-->
+<!--    var teamList = document.querySelectorAll(".team");-->
+<!--    var matchList = document.querySelectorAll(".match");-->
+    
+<!--    for (var i = 0; i < teamList.length; i++)-->
+<!--    {-->
+<!--        teamList[i].addEventListener("click", function() {-->
+<!--            this.classList.toggle("bg-success");-->
+<!--        });-->
+<!--    }-->
+    
+<!--    for (var i = 0; i < matchList.length; i++)-->
+<!--    {-->
+<!--        matchList[i].addEventListener("click", function() {-->
+<!--            this.classList.toggle("bg-info");-->
+<!--        });-->
+<!--    }-->
+
+
+<!--</script>-->
+
+<!--<div>-->
+
+
+<% include ../partials/footer %>
