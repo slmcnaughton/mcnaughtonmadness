@@ -4,7 +4,8 @@ var teamSchema = new mongoose.Schema({
     
     name: String,
     seed: Number,
-    region: String
+    region: String,
+    firstMatchNum: Number
     
 });
 

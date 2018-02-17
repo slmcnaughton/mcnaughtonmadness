@@ -3,6 +3,16 @@ var mongoose = require("mongoose");
 var matchSchema = new mongoose.Schema({
     
     matchNumber: Number,
+    topTeam: 
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Team"
+        },
+    bottomTeam:
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Team"
+        },
     teams: [
         {
             type: mongoose.Schema.Types.ObjectId,

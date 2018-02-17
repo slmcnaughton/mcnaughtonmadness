@@ -83,6 +83,7 @@ router.post("/", function(req, res) {
                                                 region: regions[Math.floor(i / order.length)],
                                                 name: teamName,
                                                 seed: order[i % order.length],
+                                                firstMatchNum: Math.floor(i / 2) + 1
                                             };
                                             Team.create(team, function(err, newTeam){
                                                 if(err) console.log(err);
@@ -107,13 +108,17 @@ router.post("/", function(req, res) {
                                                 var matchNumber =  Math.floor((i-1)/2) + 1;
                                                 Match.create({
                                                     matchNumber: matchNumber,
-                                                    teams: [],
+                                                    topTeam: team,
+                                                    bottomTeam: null,
+                                                    // teams: [],
                                                     nextMatch: Math.floor(0.5*(matchNumber + teams.length + 1))
                                                 }, function(err, newMatch){
                                                     if (err) console.log(err);
                                                     else {
-                                                        newMatch.teams.push(team);
+                                                        // newMatch.teams.push(team);
+                                                        // newMatch.topTeam = team;
                                                         createdRound.matches.addToSet(newMatch);
+                                                        
                                                         createdRound.save();
                                                         i++;
                                                         next();
@@ -122,7 +127,9 @@ router.post("/", function(req, res) {
                                             }
                                             else {
                                                 var location = Math.floor((i-1)/2);
-                                                createdRound.matches[location].teams.push(team);
+                                                // createdRound.matches[location].teams.push(team);
+                                                createdRound.matches[location].bottomTeam = team;
+                                                console.log(createdRound.matches[location]);
                                                 createdRound.matches[location].save();
                                                 i++;
                                                 next();
@@ -184,7 +191,9 @@ router.post("/", function(req, res) {
                                                     Match.create(
                                                     {
                                                         matchNumber: matchNumStart + j,
-                                                        teams: [],
+                                                        topTeam: null,
+                                                        bottomTeam: null,
+                                                        // teams: [],
                                                         nextMatch: Math.floor(0.5*((matchNumStart + j) + teamNames.length + 1))
                                                     }, function(err, newMatch){
                                                         if (err) console.log(err);
@@ -237,23 +246,21 @@ router.post("/", function(req, res) {
 //SHOW - shows more information about a particular tournament
 router.get("/:year", function(req, res){
     var year = req.params.year;
-    Tournament.findOne({year: year}).populate({
-        path: "rounds",
-        populate: {
-            path: "matches",
-            populate: {
-                path: "teams",
-                }
-            }
-    }).populate("champion").exec(function(err, foundTournament){
+    Tournament.findOne({year: year})
+        .populate({path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }})
+        .populate({path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }})
+        .populate("champion")
+        .exec(function(err, foundTournament){
          if (err || !foundTournament){
             req.flash("error", "Tournament not found");
             return res.redirect("/tournaments");
         } else {
-            // for(var i = 0; i < foundTournament.rounds[0].matches.length; i++) {
-            //     console.log(foundTournament.rounds[0].matches[i]);
+            // for(var i = 1; i < foundTournament.rounds.length; i++) {
+            //     for(var j = 0; j < foundTournament.rounds[i].matches.length; j++) {
+            //         foundTournament.rounds[i].matches[j].teams.sort(compareTeams);
+            //     }
             // }
-            
+             
             res.render("tournaments/show", {tournament: foundTournament});
         }
     });
@@ -300,6 +307,17 @@ function compare(a,b) {
         return 1;
     return 0;
 }
+
+//order teams correctly by matchNum from lowest to highest
+function compareTeams(a,b) {
+    // console.log(a.firstMatchNum + " " + b.firstMatchNum);
+    if (a.firstMatchNum < b.firstMatchNum)
+        return -1;
+    else if (a.firstMatchNum > b.firstMatchNum)
+        return 1;
+    return 0;
+}
+
 
 var teamNames = [
         "Villanova",

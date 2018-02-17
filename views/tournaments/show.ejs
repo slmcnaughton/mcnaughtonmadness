@@ -11,19 +11,26 @@
 <% for(var i = 0; i < tournament.rounds.length; i++) { %>
     <h2>Round <%=tournament.rounds[i].numRound%></h2>
     <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
-        <% if(tournament.rounds[i].matches[j].teams.length === 0) { %>
-            <h5><%=tournament.rounds[i].matches[j].matchNumber%></h5>
-            <h5>Team 1</h5>
-            <h5>Team 2</h5>
+        <% var match = tournament.rounds[i].matches[j] %>
+        <h5><%=match.matchNumber%></h5>
+        
+        <% if(match.topTeam === null) { %>
+            <h5>Team TBD</h5>
         <% } else { %>
-            <% for(var k = 0; k < tournament.rounds[i].matches[j].teams.length; k++) { %>
-                <h5><%=tournament.rounds[i].matches[j].teams[k].seed%>) <%=tournament.rounds[i].matches[j].teams[k].name%></h5>
-            <% } %>
+            <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>
         <% } %>
+         <% if(match.bottomTeam === null) { %>
+            <h5>Team TBD</h5>
+        <% } else { %>
+            <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>
+        <% } %>
+
+
     <% } %>
 <% } %>
 <h2>Champion</h2>
 <% if (tournament.champion) { %>
+
     <h5><%= tournament.champion.seed %>) <%= tournament.champion.name%></h5>
 <% } else { %>
     <br>
