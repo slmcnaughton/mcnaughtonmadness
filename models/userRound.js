@@ -5,6 +5,14 @@ var userRoundSchema = new mongoose.Schema({
     roundScore: Number,
     possiblePointsRemaining: Number,
     
+    user: {
+        id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        },
+        name: String
+    },
+    
     //reference the actual round
     round: {
         id: {

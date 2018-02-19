@@ -24,7 +24,7 @@ router.get("/:numRound/edit", function(req, res){
     });
 });
 
-//UPDATE - comment
+//UPDATE - Round of Tournament
 // middleware.checkCommentOwnership,
 router.put("/:numRound", function(req, res){
     Tournament.findOne({year: req.params.year})

@@ -2,32 +2,16 @@ var mongoose = require("mongoose");
 
 var userTournamentSchema = new mongoose.Schema({
     
-    player: {
-        id: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
-        },
-        firstName: String,
-        lastName: String,
-    },
+    score: Number,
     
-    rounds: {
-       id: {
+    //Round 7 is final four
+    //Round 8 is champion
+    userRounds: [
+        {
             type: mongoose.Schema.Types.ObjectId,
             ref: "UserRound"
-        },
-        firstName: String, 
-    }
-    
-    
-    // year: Number,
-    // numTeams: Number,
-    // rounds: [
-    //     {
-    //         type: mongoose.Schema.Types.ObjectId,
-    //         ref: "Round"
-    //     }
-    // ]
+        }
+    ],
     
 
 });
