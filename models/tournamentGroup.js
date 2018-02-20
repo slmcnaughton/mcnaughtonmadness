@@ -16,17 +16,26 @@ var tournamentGroupSchema = new mongoose.Schema({
             ref: "UserMatchAggregate"
         }
     ],
-    tournamentReference: 
-        {
+    tournamentReference: {
+        id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Tournament"
         },
+        year: Number
+    },
     submissionDeadline: [
         { 
             type: Date 
         },  //moment js... , default: Date.now
-    ]
+    ],
+    commissioner: {
+        id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        },
+        name: String
+    },
 });
 
 
-module.exports = mongoose.model("Tournament", tournamentGroupSchema);
+module.exports = mongoose.model("TournamentGroup", tournamentGroupSchema);

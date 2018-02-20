@@ -18,7 +18,6 @@ router.get("/:numRound/edit", function(req, res){
             req.flash("error", "tournament combination not found");
             res.redirect("back");
         } else {
-            // res.send("hi" + foundTournament.rounds);
             res.render("rounds/edit.ejs", {tournament: foundTournament, round: foundTournament.rounds[req.params.numRound-1]});
         }
     });

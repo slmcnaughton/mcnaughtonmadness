@@ -1,0 +1,88 @@
+<% include ../partials/header %>
+
+<% var numRound = round.numRound %>
+<h1 style="text-align: left;"> 
+    <% if (numRound < 7) { %>
+        Round <%= numRound %> Picks:
+    <% } else if (numRound === 7) { %>
+        Final Four Picks:
+    <% } else {%>
+        Champion Pick:
+    <% } %>
+        </h1>
+
+<!--=======================================================-->
+<!--UPDATE FORM ACTION AND LOCATION-->
+<!--=======================================================-->
+
+<form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= userTournamentId %>/<%=numRound%>?_method=PUT" method="POST">
+    <% for(var j = 0; j < tournament.rounds[numRound - 1].matches.length; j++) { %>
+        <% var match = tournament.rounds[numRound - 1].matches[j]; %>
+        
+        <% if (!match.winner) { %>
+        
+            <div class="form-group match">
+                <% var matchNum = match.matchNumber %>
+                <% var idMaker = tournament.year + "m" + match.matchNumber %>
+                
+                <label for="<%=idMaker%>">
+                    <div class="team">
+                        <% if(match.topTeam === null) { %>
+                            <h5>Team TBD</h5>
+                        <% } else { %>
+                            <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>
+                        <% } %>
+                    </div>
+                </label>
+                 <input class="form-control" type="radio" id=idMaker name="<%=matchNum%>" value="<%= match.topTeam._id %>">
+                 <label>
+                    <div class="team">
+                        <% if(match.bottomTeam === null) { %>
+                        <h5>Team TBD</h5>
+                        <% } else { %>
+                            <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>
+                        <% } %>
+                    </div>
+                </label> 
+                 <input class="form-control" type="radio" id=idMaker name="<%=matchNum%>" value="<%= match.bottomTeam._id %>">
+                <div class="form-group">
+                    <input class="form-control" type="text" name="<%=matchNum%>" placeholder="Optional comment">
+                </div>
+
+            </div>
+        <% } %>    
+    <% } %>
+    <div class="form-group">
+        <button class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
+    </div>
+</form>
+
+
+    
+<!--</div>-->
+
+<!--<script>-->
+<!--    var teamList = document.querySelectorAll(".team");-->
+<!--    var matchList = document.querySelectorAll(".match");-->
+    
+<!--    for (var i = 0; i < teamList.length; i++)-->
+<!--    {-->
+<!--        teamList[i].addEventListener("click", function() {-->
+<!--            this.classList.toggle("bg-success");-->
+<!--        });-->
+<!--    }-->
+    
+<!--    for (var i = 0; i < matchList.length; i++)-->
+<!--    {-->
+<!--        matchList[i].addEventListener("click", function() {-->
+<!--            this.classList.toggle("bg-info");-->
+<!--        });-->
+<!--    }-->
+
+
+<!--</script>-->
+
+<!--<div>-->
+
+
+<% include ../partials/footer %>

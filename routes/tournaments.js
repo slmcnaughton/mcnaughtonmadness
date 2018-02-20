@@ -14,7 +14,7 @@ router.get("/", function(req, res) {
     //get all tournaments from db
     Tournament.find({}, function(err, allTournaments) {
         if(err) {
-            console.log(err)
+            console.log(err);
         } else {
             res.render("tournaments/index", {tournaments: allTournaments, page: "tournaments"});        //rename the page when I do the navbar
         }
@@ -129,7 +129,7 @@ router.post("/", function(req, res) {
                                                 var location = Math.floor((i-1)/2);
                                                 // createdRound.matches[location].teams.push(team);
                                                 createdRound.matches[location].bottomTeam = team;
-                                                console.log(createdRound.matches[location]);
+                                                // console.log(createdRound.matches[location]);
                                                 createdRound.matches[location].save();
                                                 i++;
                                                 next();
@@ -255,12 +255,6 @@ router.get("/:year", function(req, res){
             req.flash("error", "Tournament not found");
             return res.redirect("/tournaments");
         } else {
-            // for(var i = 1; i < foundTournament.rounds.length; i++) {
-            //     for(var j = 0; j < foundTournament.rounds[i].matches.length; j++) {
-            //         foundTournament.rounds[i].matches[j].teams.sort(compareTeams);
-            //     }
-            // }
-             
             res.render("tournaments/show", {tournament: foundTournament});
         }
     });

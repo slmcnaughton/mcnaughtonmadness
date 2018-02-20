@@ -4,11 +4,21 @@ var Campground = require("./models/campground");
 var User = require("./models/user");
 var Trophy = require("./models/trophy");
 var Tournament = require("./models/tournament");
+var TournamentGroup = require("./models/tournamentGroup");
+var UserTournament = require("./models/userTournament");
 var Round = require("./models/round");
 var Match = require("./models/match");
 var Team = require("./models/team");
 
 function seedDB() {
+    // TournamentGroup.remove({}, function(err){
+    //     if(err) console.log(err);
+    //     else console.log("removed all tournament groups");
+    // });
+    // UserTournament.remove({}, function(err){
+    //     if(err) console.log(err);
+    //     else console.log("removed all userTournaments");
+    // });
     // Team.remove({}, function(err){
     //     if(err) console.log(err);
     //     else console.log("removed all teams");

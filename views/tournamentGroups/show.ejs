@@ -1,0 +1,18 @@
+<% include ../partials/header %>
+
+<h4><%=tournamentGroup.groupName%></h4>
+<h4>Current Round: <%=tournamentGroup.currentRound%></h4>
+<h4>Commissioner: <%=tournamentGroup.commissioner.name%></h4>
+
+<div class="text-left">
+    <a class="btn btn-success btn-lg" href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/new">Join Group</a>
+</div>
+
+<% tournamentGroup.userTournaments.forEach(function(userTournament){ %>
+    <% if (userTournament.user) { %>
+        <h5><%= userTournament.user.firstName%></h5>
+    <% } %>
+<% }) %>
+
+
+<% include ../partials/footer %>

@@ -1,0 +1,20 @@
+
+<% include ../partials/header %>
+
+<h1>Making your picks is as easy as 1, 2, 3</h1>
+<h2>Step 1: Pick a winner for each matchup in round 1</h2>
+<h2>Step 2: Pick your final four teams</h2>
+<h2>Step 3: Pick your champion!</h2>
+
+
+<form action="/tournamentGroups/<%= tournamentGroup.groupName%>/userTournaments" method="POST">
+    <div class="form-group">
+        <button class="btn btn-success btn-lg btn-default btn-block">Ready to Begin</button>
+    </div>
+</form>
+
+<a href="/campgrounds">Go back</a>
+
+
+
+<% include ../partials/footer %>

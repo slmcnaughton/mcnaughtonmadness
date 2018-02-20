@@ -1,0 +1,39 @@
+<% include ../partials/header %>
+
+
+<!--=========================================-->
+<!--Change to Tournament Groups-->
+<!--=========================================-->
+
+<header class="jumbotron">
+    <div class="container">
+        <h1>Welcome to MMM!</h1>
+        <p>View our historical tournaments</p>
+        <p>
+            <!--make this only if admin????-->
+            <a class="btn btn-primary btn-lg" href="/tournamentGroups/new">Add New Tournament Group</a>    
+        </p>
+    </div>
+</header>
+
+<div class="row itemDisplay">
+    <div class="col-lg-12">
+        <h3>Tournament Groups</h3>
+    </div>
+    <% tournamentGroups.forEach(function(tournamentGroup) { %>
+    
+        <div class="col-md-3 col-sm-6">
+            
+            <h4><%= tournamentGroup.groupName %></h4>
+                <p>
+                    <!--Fix link to make it by year, not by id-->
+                    <a href="/tournamentGroups/<%= tournamentGroup.groupName %>" class="btn btn-primary">More Info</a>
+                </p>
+            
+        </div>    
+    
+    <% }); %>
+</div>
+
+
+<% include ../partials/footer %>

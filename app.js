@@ -20,7 +20,11 @@ var commentRoutes = require("./routes/comments"),
     indexRoutes       = require("./routes/index"),
     tournamentStandingsRoutes = require("./routes/tournamentStandings"),
     tournamentRoutes = require("./routes/tournaments"),
-    roundRoutes = require("./routes/rounds");
+    roundRoutes = require("./routes/rounds"),
+    tournamentGroupRoutes = require("./routes/tournamentGroups"),
+    userTournamentRoutes = require("./routes/userTournaments"),
+    userRoundRoutes = require("./routes/userRounds");
+    
 
 mongoose.connect("mongodb://localhost/mcnaughtonmadness");
 // mongoose.connect(process.env.DATABASEURL);
@@ -58,7 +62,10 @@ app.use("/campgrounds", campgroundRoutes);  //all campgroundRoutes should start 
 app.use("/campgrounds/:id/comments", commentRoutes);
 app.use("/tournamentStandings", tournamentStandingsRoutes);
 app.use("/tournaments", tournamentRoutes);
-app.use("/tournaments/:year/rounds/", roundRoutes);
+app.use("/tournaments/:year/rounds", roundRoutes);
+app.use("/tournamentGroups", tournamentGroupRoutes);
+app.use("/tournamentGroups/:groupName/userTournaments", userTournamentRoutes);
+app.use("/tournamentGroups/:groupName/userTournaments/:id", userRoundRoutes);
 
 
 app.listen(process.env.PORT, process.env.IP, function(){
