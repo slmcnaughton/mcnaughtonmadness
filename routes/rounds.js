@@ -25,76 +25,12 @@ router.get("/:numRound/edit", function(req, res){
 
 //UPDATE - Round of Tournament
 // middleware.checkCommentOwnership,
-router.put("/:numRound", function(req, res){
-    Tournament.findOne({year: req.params.year})
-        .populate({path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }})
-        .populate({path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }})
-        .exec(function (err, foundTournament){
-        if(err) {
-          res.redirect("back");
-        }
-        else {
-        
-        var round = foundTournament.rounds[req.params.numRound-1];
-        var roundFirstMatch = round.matches[0].matchNumber;
-        
-        //replace 6 with foundTournament.rounds.length
-        if (round.numRound === foundTournament.rounds.length)
-        {
-            //roundFirstMatch will be match number 63 for a 64 team tournament
-            Team.findById(req.body[roundFirstMatch]).exec(function(err, winner) {
-                if(err) console.log(err);
-                else{
-                    round.matches[0].winner = winner;
-                    round.matches[0].save();
-                    foundTournament.champion = winner;
-                    foundTournament.save();
-                }
-                
-            });
-        } else{
-            
-            var nextRound = foundTournament.rounds[req.params.numRound];
-            var numMatches = round.matches.length;
-            
-            async.times(numMatches, function(i, next){
-                    //need to look for body[matchNumber]
-                    var bodyIndex = roundFirstMatch + i;
-                    
-                    if(req.body[bodyIndex]) {
-                        Team.findById(req.body[bodyIndex]).exec(function(err, winner) {
-                            if(err) console.log(err);
-                            round.matches[i].winner = winner;
-                            round.matches[i].save();
-                            
-                            var nextMatchIndex = Math.floor(i / 2);
-                            var nextRoundMatch = nextRound.matches[nextMatchIndex];
-                            
-                            if (i % 2 === 0) {
-                                nextRoundMatch.topTeam = winner;
-                            }
-                            else {
-                                nextRoundMatch.bottomTeam = winner;
-                            }
-                            // nextRoundMatch.teams.addToSet(winner);
-                            nextRound.matches[nextMatchIndex].save();
-                        });
-                    }
-                    next();
-                    
-                }, function(err){
-                    if(err) console.log(err);
-                    else {
-                        
-                    }
-                });
-                
-                //   res.redirect("/campgrounds/" + req.params.id);
-        }
-      }
-      foundTournament.save();
-      res.redirect("back");
-   });
+router.put("/:numRound", middleware.updateTournamentRound, middleware.scoreUserMatchPredictions, function(req, res){
+    // console.log(req.body);
+    // console.log("=======");
+    // console.log(req.params);
+    // console.log(res.locals);
+    res.redirect("back");
 });
 
 //order teams correctly by matchNum from lowest to highest

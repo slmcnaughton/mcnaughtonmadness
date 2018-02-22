@@ -60,7 +60,6 @@ router.post("/", function(req, res) {
             TournamentGroup.create(newTournamentGroup, function(err, newlyCreated) {
                 if(err) console.log(err);
                 else {
-                    console.log(newlyCreated);
                     // console.log(newlyCreated.groupName);
                     res.redirect("/tournamentGroups/");
                     // res.redirect("/tournamentGroups/" + newlyCreated.groupName);

@@ -13,12 +13,12 @@ var matchSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Team"
         },
-    teams: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Team"
-        }
-    ],
+    // teams: [
+    //     {
+    //         type: mongoose.Schema.Types.ObjectId,
+    //         ref: "Team"
+    //     }
+    // ],
     winner: 
         {
             type: mongoose.Schema.Types.ObjectId,
