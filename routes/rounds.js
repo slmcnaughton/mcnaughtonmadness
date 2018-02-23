@@ -25,7 +25,8 @@ router.get("/:numRound/edit", function(req, res){
 
 //UPDATE - Round of Tournament
 // middleware.checkCommentOwnership,
-router.put("/:numRound", middleware.updateTournamentRound, middleware.scoreUserMatchPredictions, function(req, res){
+router.put("/:numRound", middleware.updateTournamentRound, middleware.scoreUserMatchPredictions, 
+                        middleware.updateTournamentGroupScores, middleware.isRoundComplete, function(req, res){
     // console.log(req.body);
     // console.log("=======");
     // console.log(req.params);

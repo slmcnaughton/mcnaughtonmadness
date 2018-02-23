@@ -81,7 +81,7 @@ router.get("/:groupName", function(req, res){
         .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }}})
         .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }}})
         .populate({path: "tournamentReference.id", populate: "champion"})
-        // .populate({path: "userTournaments", populate: "user"})
+        .populate({path: "userTournaments", populate: "user"})
         // .populate()  userMatchAggregates & userRounds -> userMatchPredictions
         .exec(function(err, foundTournamentGroup){
         if (err || !foundTournamentGroup){

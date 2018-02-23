@@ -72,12 +72,19 @@ router.get("/:id", function(req, res){
             req.flash("error", "User tournament not found");
             return res.redirect("/tournamentGroups");
         } else {
+            foundUserTournament.userRounds.sort(compare);
             res.render("userTournaments/show", {userTournament: foundUserTournament});
         }
     });
-    
-    
 });
+
+function compare(a,b) {
+    if (a.round.numRound < b.round.numRound)
+        return -1;
+    else if (a.round.numRound > b.round.numRound)
+        return 1;
+    return 0;
+}
 
 // router.get("/:commentId/edit", middleware.isLoggedIn, function(req, res){
 //     // find campground by id

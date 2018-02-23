@@ -113,9 +113,11 @@ router.put("/:numRound", function(req, res){
                             //============================================================================================
                             // userRound Created -> now fill with userMatchPredictions
                             //============================================================================================
+                            
                             async.forEachSeries(foundRound.matches, function(match, next){
                                 var newUserMatchPrediction = {
                                      score: 0,
+                                     numRound: newUserRound.round.numRound,
                                      winner: req.body[match.matchNumber][0],
                                      match: {
                                          id: match.id,
@@ -143,8 +145,8 @@ router.put("/:numRound", function(req, res){
                                     } else if (round ===7 ) {
                                         req.flash('success', 'Final Four picks submitted!');
                                         res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id + "/8/edit");
-                                    } else if (newUserRound.round.numRound === 8 ) {
-                                        req.flash('success', 'Final Four picks submitted!');
+                                    } else if (round === 8 ) {
+                                        req.flash('success', 'Championship pick submitted!');
                                         res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id);
                                     } else {
                                         req.flash('success', 'Round ' + round + ' picks submitted!');
@@ -163,5 +165,6 @@ router.put("/:numRound", function(req, res){
 
 
 });
+
 
 module.exports = router;

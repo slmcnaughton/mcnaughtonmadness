@@ -10,7 +10,12 @@
 
 <% tournamentGroup.userTournaments.forEach(function(userTournament){ %>
     <% if (userTournament.user) { %>
-        <h5><%= userTournament.user.firstName%></h5>
+        <h5>
+            <a href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= userTournament._id %>">
+                <%= userTournament.user.firstName%> - 
+            </a>
+            <%= userTournament.score %>
+        </h5>
     <% } %>
 <% }) %>
 
