@@ -7,13 +7,15 @@
 
 <% for(var i = 0; i < userTournament.userRounds.length; i++) { %>
     <% var numRound = Number(userTournament.userRounds[i].round.numRound) %>
+    <h2>
     <% if (numRound < 7) { %>
-        <h2>Round <%=numRound%> - <%=userTournament.userRounds[i].roundScore%></h2>
+        Round <%=numRound%>:
     <% } else if (numRound === 7) { %>
-        <h2>Final Four</h2>
+        Final Four:
     <% } else { %>
-        <h2>Champion</h2>
+        Champion:
     <% } %>
+    <%=userTournament.userRounds[i].roundScore%></h2>
     <% for(var j = 0; j < userTournament.userRounds[i].userMatchPredictions.length; j++) { %>
         <% var userMatch = userTournament.userRounds[i].userMatchPredictions[j] %>
         <h5>

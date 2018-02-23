@@ -85,79 +85,91 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
           res.redirect("back");
         }
         else {
-        res.locals.tournamentId = foundTournament;
-        var round = foundTournament.rounds[req.params.numRound-1];
-        var roundFirstMatch = round.matches[0].matchNumber;
-        
+            res.locals.tournamentId = foundTournament;
+            var round = foundTournament.rounds[req.params.numRound-1];
+            var roundFirstMatch = round.matches[0].matchNumber;
+            
+            // console.log(round.matches[0]);
+            // console.log(req.body);
         //===========================================================
         // Handle championship game
         //===========================================================
-        if (round.numRound === foundTournament.rounds.length)
-        {
-            //roundFirstMatch will be match number 63 for a 64 team tournament
-            Team.findById(req.body[roundFirstMatch]).exec(function(err, winner) {
-                if(err) console.log(err);
-                else{
-                    res.locals.updatedMatches.push(
-                            {
-                                matchId: round.matches[i].id, 
-                                winner: req.body[bodyIndex]
-                            });
-                    round.matches[0].winner = winner;
-                    round.matches[0].save();
-                    foundTournament.champion = winner;
-                    foundTournament.save();
-                }
-            });
-        } else{
-            //===========================================================
-            // Find the correct match and move the winner along
-            //===========================================================
-            var nextRound = foundTournament.rounds[req.params.numRound];
-            var numMatches = round.matches.length;
-            
-            async.times(numMatches, function(i, next){
-                    //need to look for body[matchNumber]
-                    var bodyIndex = roundFirstMatch + i;
+        async.series([
+            function(callback) {
+                if (round.numRound === foundTournament.rounds.length)
+                {
+                    //roundFirstMatch will be match number 63 for a 64 team tournament
+                    Team.findById(req.body[roundFirstMatch]).exec(function(err, winner) {
+                        if(err) console.log(err);
+                        else{
+                            res.locals.updatedMatches.push(
+                                {
+                                    matchId: round.matches[0].id, 
+                                    winner: req.body[63]
+                                });
+                            round.matches[0].winner = winner;
+                            round.matches[0].save();
+                            foundTournament.champion = winner;
+                            foundTournament.save();
+                            callback();
+                        }
+                    });
+                } else{
+                    //===========================================================
+                    // Find the correct match and move the winner along
+                    //===========================================================
+                    var nextRound = foundTournament.rounds[req.params.numRound];
+                    var numMatches = round.matches.length;
                     
-                    if(req.body[bodyIndex]) {
-                        
-                        res.locals.updatedMatches.push(
-                            {
-                                matchId: round.matches[i].id, 
-                                winner: req.body[bodyIndex]
-                            });
-                        
-                        Team.findById(req.body[bodyIndex]).exec(function(err, winner) {
+                    async.times(numMatches, function(i, next){
+                            //need to look for body[matchNumber]
+                            var bodyIndex = roundFirstMatch + i;
+                            
+                            if(req.body[bodyIndex]) {
+                                
+                                res.locals.updatedMatches.push(
+                                    {
+                                        matchId: round.matches[i].id, 
+                                        winner: req.body[bodyIndex]
+                                    });
+                                
+                                Team.findById(req.body[bodyIndex]).exec(function(err, winner) {
+                                    if(err) console.log(err);
+                                    round.matches[i].winner = winner;
+                                    
+                                    round.matches[i].save();
+                                    
+                                    var nextMatchIndex = Math.floor(i / 2);
+                                    var nextRoundMatch = nextRound.matches[nextMatchIndex];
+                                    
+                                    if (i % 2 === 0) {
+                                        nextRoundMatch.topTeam = winner;
+                                    }
+                                    else {
+                                        nextRoundMatch.bottomTeam = winner;
+                                    }
+                                    nextRound.matches[nextMatchIndex].save();
+                                });
+                            }
+                            next();
+                            
+                        }, function(err){
                             if(err) console.log(err);
-                            round.matches[i].winner = winner;
-                            
-                            round.matches[i].save();
-                            
-                            var nextMatchIndex = Math.floor(i / 2);
-                            var nextRoundMatch = nextRound.matches[nextMatchIndex];
-                            
-                            if (i % 2 === 0) {
-                                nextRoundMatch.topTeam = winner;
-                            }
                             else {
-                                nextRoundMatch.bottomTeam = winner;
+                                callback();
                             }
-                            nextRound.matches[nextMatchIndex].save();
                         });
                     }
+                }
+            ], function(err) {
+                if(err) console.log(err);
+                else {
+                    foundTournament.save();
                     next();
-                    
-                }, function(err){
-                    if(err) console.log(err);
-                    else {
-                        
-                    }
-                });
+                }
+            });
         }
-      }
-      foundTournament.save();
-      next();
+      
     });
 };
 
@@ -173,14 +185,14 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
 middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
     // console.log("the length is ....................." + res.locals.updatedMatches.length);
     var updatedMatches = res.locals.updatedMatches;
-    // console.log(updatedMatches);
+    console.log("Updated matches: " + updatedMatches);
     async.forEachSeries(updatedMatches, function(match, next) {
-        console.log(match.matchId);
+        // console.log(match.matchId);
          //find the match, get the seeds, calculate winning/losing score
         async.series([
             function(callback) {
                 Match.findById(match.matchId).populate("topTeam").populate("bottomTeam").exec(function(err, foundMatch) {
-                    console.log("==========found match here ========" + foundMatch);
+                    // console.log("==========found match here ========" + foundMatch);
                     if(err) console.log(err);
                     else {
                         var ts = foundMatch.topTeam.seed;   //ts = topseed
@@ -205,7 +217,6 @@ middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
                             if(err) console.log(err);
                             else {
                                 //  var i = 0;
-                                 
                                 async.forEachSeries(foundUserMatchPredictions, function(prediction, next){
                                     console.log(prediction.numRound + " " + typeof(prediction.numRound));
                                     var userPick = String(prediction.winner);
@@ -215,7 +226,7 @@ middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
                                     }
                                     else if (prediction.numRound === 8){
                                         prediction.score = (userPick === winner) ? 10 : 0;
-                                        console.log("winningScore:" + winningScore + ", LS: " + losingScore);
+                                        console.log("winningScore:" + 10 + ", LS: " + 0);
                                     }
                                     else {
                                         console.log("winningScore:" + winningScore + ", LS: " + losingScore);
@@ -281,7 +292,9 @@ middlewareObj.updateTournamentGroupScores = function(req, res, next) {
                         // console.log("d) round " + userRound.round.numRound + " score: " + userRound.roundScore);
                         async.series([
                             function(callback){
-                                 if (userRound.round.numRound === group.currentRound) { //both are numbers
+                                //if rounds is the current round, or if the round matches a bonus round
+                                 if (userRound.round.numRound === group.currentRound || (userRound.round.numRound === 7 && group.currentRound === 4) 
+                                                                || (userRound.round.numRound === 8 && group.currentRound === 6)) { 
                                     userRound.roundScore = 0;
                                     async.forEachSeries(userRound.userMatchPredictions, function(userPrediction, next) {
                                         if(userPrediction)
