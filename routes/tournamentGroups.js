@@ -75,12 +75,10 @@ router.post("/", function(req, res) {
 //SHOW - shows more information about a particular tournament
 router.get("/:groupName", function(req, res){
     var groupName = req.params.groupName;
-    
-    // TournamentGroup.findOne({groupName: groupName}).exec(function(err, foundGroup) {
     TournamentGroup.findOne({groupName: groupName})
-        .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }}})
-        .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }}})
-        .populate({path: "tournamentReference.id", populate: "champion"})
+        // .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }}})
+        // .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }}})
+        // .populate({path: "tournamentReference.id", populate: "champion"})
         .populate({path: "userTournaments", populate: "user"})
         // .populate()  userMatchAggregates & userRounds -> userMatchPredictions
         .exec(function(err, foundTournamentGroup){
@@ -91,18 +89,41 @@ router.get("/:groupName", function(req, res){
             // res.send(req.params.groupName);
             res.render("tournamentGroups/show", {tournamentGroup: foundTournamentGroup});
         }
-
     });
-    
+});
+
+//Note: this must be below the /tournaments/new route
+//SHOW - shows more information about a particular tournament
+router.get("/:groupName/bracket", function(req, res){
+    var groupName = req.params.groupName;
+    TournamentGroup.findOne({groupName: groupName})
+        .populate({path: "tournamentReference.id", populate: {path: "champion"}})
+        .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: {path: "matches", populate: { path: "topTeam"} } }})
+        .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: {path: "matches", populate: { path: "bottomTeam"} } }})
+        .populate({path: "userMatchAggregates", populate: "topTeamPickers"})
+        .populate({path: "userTournaments", populate: "user"})
+        // .populate()  userMatchAggregates & userRounds -> userMatchPredictions
+        .exec(function(err, foundTournamentGroup){
+        if (err || !foundTournamentGroup){
+            req.flash("error", "Tournament Group not found");
+            return res.redirect("/tournamentGroups");
+        } else {
+            console.log(foundTournamentGroup.userMatchAggregates[0].topTeamPickers);
+            res.render("tournamentGroups/showBracket", {tournamentGroup: foundTournamentGroup});
+        }
+    });
 });
 
 
-function compare(a,b) {
-    if (a.year > b.year)
-        return -1;
-    else if (a.year < b.year)
-        return 1;
-    return 0;
-}
+
+
+// function compare(a,b) {
+//     if (a.year > b.year)
+//         return -1;
+//     else if (a.year < b.year)
+//         return 1;
+//     return 0;
+// }
+
 
 module.exports = router;

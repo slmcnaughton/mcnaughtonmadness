@@ -61,107 +61,24 @@ router.get("/:numRound/edit", function(req, res){
 });
 
 
-    //req.body[matchNum][0] -> winningTeamId
-    //req.body[matchNum][1] -> comments
-    //req.params 
-    //      groupName -> March Madness 2012
-    //      id -> 5a8b0a650e17ab1749702c4b
-    //      numRound -> 1
-    
-    //find a user tournament
-    //create the round
-    //add matches
-    //      score: 0
-    //      winner: 
-    //      match 
-    //          id
-    //          matchnumber
-    //      comment: 
 //UPDATE - UserRound of Tournament
 // middleware.checkCommentOwnership,
-router.put("/:numRound", function(req, res){
-    UserTournament.findById(req.params.id).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
-        if(err) console.log(err);
-        else {
-            var numRound = Number(req.params.numRound);
-            if (numRound === 7) {
-                numRound = 4;
-            } else if (numRound === 8)
-            {
-                numRound = 6;
-            }
-            Round.findById(foundUserTournament.tournamentReference.id.rounds[numRound-1]).populate("matches").exec(function(err, foundRound){
-                if(err) console.log(err);
-                else {
-                    var newUserRound = {
-                        roundScore: 0,
-                        possiblePointsRemaining: 0,
-                        // user: {
-                        //     id: ,
-                        //     name:
-                        // }
-                        round: {
-                            id: foundRound.id,
-                            numRound: req.params.numRound
-                        },
-                        userMatchPredictions: [],
-                        // submissionDeadline: { type: Date },  //moment js... , default: Date.now
-                    };
-                    UserRound.create(newUserRound, function(err, newUserRound){
-                        if(err) console.log(err);
-                        else {
-                            //============================================================================================
-                            // userRound Created -> now fill with userMatchPredictions
-                            //============================================================================================
-                            
-                            async.forEachSeries(foundRound.matches, function(match, next){
-                                var newUserMatchPrediction = {
-                                     score: 0,
-                                     numRound: newUserRound.round.numRound,
-                                     winner: req.body[match.matchNumber][0],
-                                     match: {
-                                         id: match.id,
-                                         matchNumber: match.matchNumber
-                                     },
-                                     comment: req.body[match.matchNumber][1]
-                                };
-                                UserMatchPrediction.create(newUserMatchPrediction, function(err, newUserMatchPrediction){
-                                    if(err) console.log(err);
-                                    else {
-                                        newUserRound.userMatchPredictions.addToSet(newUserMatchPrediction);
-                                        newUserRound.save();
-                                        next();
-                                    }
-                                });
-                            }, function(err){
-                                if(err) console.log(err);
-                                else {
-                                    foundUserTournament.userRounds.push(newUserRound);
-                                    foundUserTournament.save();
-                                    var round = newUserRound.round.numRound;
-                                    if(round === 1) {
-                                        req.flash('success', 'Round 1 picks submitted!');
-                                        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id + "/7/edit");
-                                    } else if (round ===7 ) {
-                                        req.flash('success', 'Final Four picks submitted!');
-                                        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id + "/8/edit");
-                                    } else if (round === 8 ) {
-                                        req.flash('success', 'Championship pick submitted!');
-                                        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id);
-                                    } else {
-                                        req.flash('success', 'Round ' + round + ' picks submitted!');
-                                        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id);
-                                    }
-                                    
-                                   
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    });
+router.put("/:numRound", middleware.userRoundCreation, middleware.updateUserMatchAggregates, function(req, res){
+    
+    var round = Number(req.params.numRound);
+    if(round === 1) {
+        req.flash('success', 'Round 1 picks submitted!');
+        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id + "/7/edit");
+    } else if (round ===7 ) {
+        req.flash('success', 'Final Four picks submitted!');
+        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id + "/8/edit");
+    } else if (round === 8 ) {
+        req.flash('success', 'Championship pick submitted!');
+        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id);
+    } else {
+        req.flash('success', 'Round ' + round + ' picks submitted!');
+        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id);
+    }
 
 
 });

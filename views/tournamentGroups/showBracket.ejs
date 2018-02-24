@@ -1,0 +1,64 @@
+<% include ../partials/header %>
+
+<!--=========================================-->
+<!--Change to A SPECIFIC TOURNAMENT-->
+<!--=========================================-->
+
+<% var tournament = tournamentGroup.tournamentReference.id %>
+<h4><%=tournament.year%></h4>
+<h4><%=tournament.numTeams%></h4>
+<h4><%=tournament.rounds.length%></h4>
+
+<% var count = 0 %>
+<% for(var i = 0; i < tournament.rounds.length; i++) { %>
+    <h2>Round <%=tournament.rounds[i].numRound%></h2>
+    <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
+        <% var match = tournament.rounds[i].matches[j] %>
+        <h5><%=match.matchNumber%></h5>
+        
+        <% if(match.topTeam === null) { %>
+            <h5>Team TBD</h5>
+        <% } else { %>
+            <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>
+        <% } %>
+         <% if(match.bottomTeam === null) { %>
+            <h5>Team TBD</h5>
+        <% } else { %>
+            <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>
+        <% } %>
+        <% if(tournamentGroup.userMatchAggregates[count]) { %>
+            <% var agg = tournamentGroup.userMatchAggregates[count] %>
+            <h5>Top Pickers win: <%=agg.topWinScore%></h5>
+            <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
+                <h6>
+                    <%= agg.topTeamPickers[k].firstName %>
+                    <% if(agg.topTeamPickers[k].comment) { %>
+                        <em>- <%= agg.topTeamPickers[k].comment %></em>
+                    <% } %>
+                </h6>
+            <% } %>
+             <h5>Bottom Pickers win: <%=agg.bottomWinScore%></h5>
+            <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
+                <h6>
+                    <%= agg.bottomTeamPickers[k].firstName %>
+                    <% if(agg.bottomTeamPickers[k].comment) { %>
+                        <em>- <%= agg.bottomTeamPickers[k].comment %></em>
+                    <% } %>
+                </h6>
+            <% } %>
+        <% } %>
+        <% count++ %>
+
+    <% } %>
+<% } %>
+<h2>Champion</h2>
+<% if (tournament.champion) { %>
+
+    <h5><%= tournament.champion.seed %>) <%= tournament.champion.name%></h5>
+<% } else { %>
+    <h5>Team TBD</h5>
+    <br>
+<% } %>
+
+
+<% include ../partials/footer %>

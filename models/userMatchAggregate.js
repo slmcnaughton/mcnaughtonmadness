@@ -8,12 +8,16 @@ var userMatchAggregateSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Match"
         },
-    numTeams: Number,
+    // numTeams: Number,
     
     topTeamPickers: [
         {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
+            id: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User"
+            },
+            firstName: String,
+            comment: String
         }
     ],
     topWinScore: Number,
@@ -21,8 +25,12 @@ var userMatchAggregateSchema = new mongoose.Schema({
     
     bottomTeamPickers: [
         {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
+            id: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User"
+            },
+            firstName: String,
+            comment: String
         }
     ],
     bottomWinScore: Number,
@@ -33,4 +41,4 @@ var userMatchAggregateSchema = new mongoose.Schema({
 });
 
 
-module.exports = mongoose.model("Tournament", userMatchAggregateSchema);
+module.exports = mongoose.model("UserMatchAggregate", userMatchAggregateSchema);

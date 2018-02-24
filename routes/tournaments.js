@@ -34,7 +34,6 @@ router.post("/", function(req, res) {
     // var year = 2017;
     var regions = ["East", "West", "Midwest", "South"];
     var year = Math.floor((Math.random()*100+2000));
-    // var year = 2000;
     //   teamNames sample data below
      
     // var regions = req.body.regions;

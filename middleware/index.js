@@ -3,11 +3,16 @@ var Campground = require("../models/campground");
 var Comment = require("../models/comment");
 var async = require("async");
 var Tournament = require("../models/tournament");
-var TournamentGroup = require("../models/tournamentGroup");
-var UserMatchPrediction = require("../models/userMatchPrediction");
-// var Round = require("../models/round");
-var Team = require("../models/team");
+var Round = require("../models/round");
 var Match = require("../models/match");
+var Team = require("../models/team");
+var TournamentGroup = require("../models/tournamentGroup");
+var UserTournament = require("../models/userTournament");
+var UserRound = require("../models/userRound");
+var UserMatchPrediction = require("../models/userMatchPrediction");
+var UserMatchAggregate = require("../models/userMatchAggregate");
+
+
 
 var middlewareObj = {};
 
@@ -395,6 +400,190 @@ middlewareObj.isRoundComplete = function(req, res, next) {
         }
     });
    
+};
+
+
+//=========================================================================
+// MIDDDLEWARE FOR:
+//                 UPDATE - UserRound (userRounds.js route)
+//                  router.put("/:numRound")
+//  *1) userRoundCreation
+//  2) updateUserMatchAggregates
+//=========================================================================
+    //req.body[matchNum][0] -> winningTeamId
+    //req.body[matchNum][1] -> comments
+    //req.params 
+    //      groupName -> March Madness 2012
+    //      id -> 5a8b0a650e17ab1749702c4b
+    //      numRound -> 1
+middlewareObj.userRoundCreation = function(req, res, next) {
+    //find the correct userTournament
+    UserTournament.findById(req.params.id).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
+        if(err) console.log(err);
+        else {
+            res.locals.userFirstName = foundUserTournament.user.firstName;
+            var numRound = Number(req.params.numRound);
+            if (numRound === 7) {
+                numRound = 4;
+            } else if (numRound === 8)
+            {
+                numRound = 6;
+            }
+            //find the tournament round associated with this userRound
+            Round.findById(foundUserTournament.tournamentReference.id.rounds[numRound-1]).populate("matches").exec(function(err, foundRound){
+                if(err) console.log(err);
+                else {
+                    var newUserRound = {
+                        roundScore: 0,
+                        possiblePointsRemaining: 0,
+                        // user: {
+                        //     id: ,
+                        //     name:
+                        // }
+                        round: {
+                            id: foundRound.id,
+                            numRound: req.params.numRound
+                        },
+                        userMatchPredictions: [],
+                        // submissionDeadline: { type: Date },  //moment js... , default: Date.now
+                    };
+                    UserRound.create(newUserRound, function(err, newUserRound){
+                        if(err) console.log(err);
+                        else {
+                            //============================================================================================
+                            // userRound Created -> now fill with the userMatchPredictions
+                            //============================================================================================
+                            async.forEachSeries(foundRound.matches, function(match, next){
+                                var newUserMatchPrediction = {
+                                     score: 0,
+                                     numRound: newUserRound.round.numRound,
+                                     winner: req.body[match.matchNumber][0],
+                                     match: {
+                                         id: match.id,
+                                         matchNumber: match.matchNumber
+                                     },
+                                     comment: req.body[match.matchNumber][1]
+                                };
+                                UserMatchPrediction.create(newUserMatchPrediction, function(err, newUserMatchPrediction){
+                                    if(err) console.log(err);
+                                    else {
+                                        newUserRound.userMatchPredictions.addToSet(newUserMatchPrediction);
+                                        newUserRound.save();
+                                        next();
+                                    }
+                                });
+                            }, function(err){
+                                if(err) console.log(err);
+                                else {
+                                    res.locals.newUserRound = newUserRound;
+                                    foundUserTournament.userRounds.push(newUserRound);
+                                    foundUserTournament.save();
+                                    next();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
+
+
+//=========================================================================
+// MIDDDLEWARE FOR:
+//                 UPDATE - UserRound (userRounds.js route)
+//                  router.put("/:numRound")
+//  1) userRoundCreation
+//  *2) updateUserMatchAggregates
+//=========================================================================
+    //req.body[matchNum][0] -> winningTeamId
+    //req.body[matchNum][1] -> comments
+    //req.params 
+    //      groupName -> March Madness 2012
+    //      id -> 5a8b0a650e17ab1749702c4b
+    //      numRound -> 1
+middlewareObj.updateUserMatchAggregates = function(req, res, next) {
+    TournamentGroup.findOne({groupName: req.params.groupName}).exec(function(err, foundTournamentGroup) {
+        if(err) console.log(err);
+        else {
+            console.log(foundTournamentGroup.userMatchAggregates);
+            async.forEachSeries(res.locals.newUserRound.userMatchPredictions, function(userPrediction, next){
+                Match.findOne({_id : userPrediction.match.id}).populate("topTeam").populate("bottomTeam").exec(function(err, userPredictionMatch) {
+                    if(err) console.log(err);
+                    else {
+                        //Try to find a userMatchAggregate whose matchReference is the same as athis userMatchPrediction's matchReference
+                        // {_id: {$in: [req.body.data]}, 
+                        UserMatchAggregate.findOne({matchReference : userPrediction.match.id}).exec(function(err, foundUserMatchAggregate) {
+                            if(err) console.log(err);
+                            else {
+                                if (req.params.numRound < 7) {
+                                    async.series([
+                                        function(callback) {
+                                            // if none exist, create a userMatchAggregate for the userMatchPrediction:
+                                            if (!foundUserMatchAggregate) {
+                                                var ts = userPredictionMatch.topTeam.seed;   //ts = topseed
+                                                var bs = userPredictionMatch.bottomTeam.seed;    //bs = bottomseed
+                                                var nr = req.params.numRound;               //nr = numRound
+                                                
+                                                var newUserMatchAggregate = {
+                                                    matchNumber: userPredictionMatch.matchNumber,
+                                                    matchReference: userPredictionMatch.id,
+                                                    topTeamPickers: [],
+                                                    topWinScore: nr * ts / bs,
+                                                    topLossScore: (ts < bs) ? -ts / bs * nr : -nr ,
+                                                    bottomTeamPickers: [],
+                                                    bottomWinScore:  nr * bs / ts,
+                                                    bottomLossScore: (bs < ts) ? -bs / ts * nr : -nr,
+                                                };
+                                                UserMatchAggregate.create(newUserMatchAggregate, function(err, newUserMatchAggregate){
+                                                    if(err) console.log(err);
+                                                    else {
+                                                        foundUserMatchAggregate = newUserMatchAggregate;
+                                                        foundTournamentGroup.userMatchAggregates.push(foundUserMatchAggregate);
+                                                        callback();
+                                                    }
+                                                });
+                                            }
+                                            else callback();
+                                        }, function(callback) {
+                                            // If userMatchPrediction picks the topTeam…assign name and comments to topTeamPickerArray
+                                            // Otherwise assign name and comments to BottomPickerArray
+                                            var packedPrediction = {
+                                                id: userPrediction._id,
+                                                firstName: res.locals.userFirstName,
+                                                comment: userPrediction.comment
+                                            };
+                                            if (String(userPrediction.winner) === userPredictionMatch.topTeam.id) {
+                                                foundUserMatchAggregate.topTeamPickers.push(packedPrediction);
+                                            } else {
+                                                foundUserMatchAggregate.bottomTeamPickers.push(packedPrediction);
+                                            }
+                                            callback();
+                                        }
+                                    ], function(err) {
+                                        if(err) console.log(err);
+                                        else {
+                                            console.log(foundUserMatchAggregate);
+                                            foundUserMatchAggregate.save();
+                                            next();
+                                        }
+                                    });
+                                }
+                                else next();
+                            } 
+                        });
+                    }
+                });
+            }, function(err) {
+                if(err) console.log(err);
+                else {
+                    foundTournamentGroup.save();
+                    next();
+                }
+            });
+        }
+    });
 };
 
 
