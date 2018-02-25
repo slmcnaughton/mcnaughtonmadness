@@ -15,7 +15,7 @@ var tournamentSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Team"
         },
-    
+    regions: [String]
 
 });
 

@@ -108,7 +108,6 @@ router.get("/:groupName/bracket", function(req, res){
             req.flash("error", "Tournament Group not found");
             return res.redirect("/tournamentGroups");
         } else {
-            console.log(foundTournamentGroup.userMatchAggregates[0].topTeamPickers);
             res.render("tournamentGroups/showBracket", {tournamentGroup: foundTournamentGroup});
         }
     });

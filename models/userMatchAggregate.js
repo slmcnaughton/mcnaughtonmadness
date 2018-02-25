@@ -36,7 +36,6 @@ var userMatchAggregateSchema = new mongoose.Schema({
     bottomWinScore: Number,
     bottomLossScore: Number,
     
-    
 
 });
 

@@ -49,7 +49,8 @@ router.post("/", function(req, res) {
         {
             year: year,
             numTeams: teamNames.length,
-            rounds: []
+            rounds: [],
+            regions: regions
         }, function (err, createdTournament) {
             if(err) console.log(err);
             else {

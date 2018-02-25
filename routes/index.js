@@ -12,6 +12,10 @@ router.get("/", function(req, res) {
    res.render("landing");
 });
 
+router.get("/sampleBracket", function(req, res) {
+    res.render("bracketSample");
+})
+
 
 //=============
 // Auth Routes

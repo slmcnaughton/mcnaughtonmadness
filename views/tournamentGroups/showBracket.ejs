@@ -1,56 +1,200 @@
-<% include ../partials/header %>
-
-<!--=========================================-->
-<!--Change to A SPECIFIC TOURNAMENT-->
-<!--=========================================-->
+<!DOCTYPE>
+<html>
+    <head>
+        <!--Make site responsive on mobile/tablet-->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <title>McNaughton March Madness</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        
+    	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    	
+    	<link href='https://fonts.googleapis.com/css?family=Holtwood+One+SC' rel='stylesheet' type='text/css'>
+    	<link href='https://fonts.googleapis.com/css?family=Kaushan+Script|Herr+Von+Muellerhoff' rel='stylesheet' type='text/css'>
+    	<link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
+    	<link href='https://fonts.googleapis.com/css?family=Istok+Web|Roboto+Condensed:700' rel='stylesheet' type='text/css'>
+        
+        <link rel="stylesheet" href="/stylesheets/main.css">
+        <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+        
+<% include ../partials/navBar %>
 
 <% var tournament = tournamentGroup.tournamentReference.id %>
-<h4><%=tournament.year%></h4>
-<h4><%=tournament.numTeams%></h4>
-<h4><%=tournament.rounds.length%></h4>
 
-<% var count = 0 %>
-<% for(var i = 0; i < tournament.rounds.length; i++) { %>
-    <h2>Round <%=tournament.rounds[i].numRound%></h2>
-    <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
-        <% var match = tournament.rounds[i].matches[j] %>
-        <h5><%=match.matchNumber%></h5>
-        
-        <% if(match.topTeam === null) { %>
-            <h5>Team TBD</h5>
-        <% } else { %>
-            <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>
-        <% } %>
-         <% if(match.bottomTeam === null) { %>
-            <h5>Team TBD</h5>
-        <% } else { %>
-            <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>
-        <% } %>
-        <% if(tournamentGroup.userMatchAggregates[count]) { %>
-            <% var agg = tournamentGroup.userMatchAggregates[count] %>
-            <h5>Top Pickers win: <%=agg.topWinScore%></h5>
-            <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
-                <h6>
-                    <%= agg.topTeamPickers[k].firstName %>
-                    <% if(agg.topTeamPickers[k].comment) { %>
-                        <em>- <%= agg.topTeamPickers[k].comment %></em>
-                    <% } %>
-                </h6>
-            <% } %>
-             <h5>Bottom Pickers win: <%=agg.bottomWinScore%></h5>
-            <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
-                <h6>
-                    <%= agg.bottomTeamPickers[k].firstName %>
-                    <% if(agg.bottomTeamPickers[k].comment) { %>
-                        <em>- <%= agg.bottomTeamPickers[k].comment %></em>
-                    <% } %>
-                </h6>
-            <% } %>
-        <% } %>
-        <% count++ %>
+	<header class="hero">
+    <div class="hero-wrap">
+     <p class="intro" id="intro">McNaughton</p>
+		 <h1 id="headline">March Madness</h1>
+		 <p class="year"><i class="fas fa-star"></i> <%=tournament.year%> <i class="fa fa-star"></i></p>
+     <p><%=tournamentGroup.groupName%></p>
+   </div>
+	</header>
+	
 
-    <% } %>
-<% } %>
+                    
+<main id="tournament">
+    <div class="container-fluid" style="padding-bottom: 50px; min-height: 300px">
+        <div class="row">
+            <div class="col-xs-12 bracket"> 
+            
+                <!--=========================-->
+                <!--      FOUR QUADRANTS     -->
+                <!--=========================-->
+                <% for (quadNum = 0; quadNum < 4; quadNum++) { %>
+                    <% if (quadNum === 0) { %>
+                        <div class="bracketContents leftSide">
+                    <% } else if (quadNum === 2) { %>
+                        <div class="bracketContents rightSide">
+                    <% } %>
+                    
+                            <% if (quadNum % 2 === 0) { %>
+                                <div class="bracketQuadrant bracketRegion topRegion">
+                            <% } else { %>
+                                <div class="bracketQuadrant bracketRegion bottomRegion">
+                            <% } %>
+                                    <h2 class="regionLocation"><%=tournament.regions[quadNum]%></h2>
+                                    <div>
+                                        <div class="regionRounds">
+                                            <!--5 rounds per region-->
+                                            <% for(var i = 0; i < tournament.rounds.length-1; i++) { %>
+                                                <div class="oneRound">
+                                                    <!--number of matches vary per round: we only want 1/4 of all matches in the round in this quadrant-->
+                                                    <% var quarterNumMatches = tournament.rounds[i].matches.length / 4 %>
+                                                    <% for(var j = 0; j < quarterNumMatches; j++) { %>
+                                                        <% var match = tournament.rounds[i].matches[Math.floor(quadNum * quarterNumMatches) + j] %>
+                                                        <div class="match">
+                                                            <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
+                                                                <div class="team">
+                                                                    <div class="teamTitle">
+                                                                        <% if(match.topTeam !== null) { %>
+                                                                            <span class="seed"><%=match.topTeam.seed%></span>
+                                                                            <span class="teamName"><%=match.topTeam.name%></span>
+                                                                         <% } else { %>
+                                                                            &nbsp
+                                                                        <% } %>
+                                                                    </div>
+                                                                    <!--end team title-->
+                                                                </div>
+                                                                <!--end top team-->
+                                                            <% } %>
+                                                            <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 1) { %>
+                                                                <div class="team">
+                                                                    <div class="teamTitle">
+                                                                        <% if(match.bottomTeam !== null) { %>
+                                                                            <span class="seed"><%=match.bottomTeam.seed%></span>
+                                                                            <span class="teamName"><%=match.bottomTeam.name%></span>
+                                                                        <% } else { %>
+                                                                            &nbsp
+                                                                        <% } %>
+                                                                    </div>
+                                                                    <!--end team title-->
+                                                                </div>
+                                                                <!--end bottom team-->
+                                                            <% } %>
+                                                        </div>
+                                                        <!--end match-->
+                                                    <% } %> 
+                                                    <!--end looping through quarterNumMatches-->
+                                                </div>
+                                                <!--end oneRound-->
+                                            <% } %>
+                                            <!--end looping through rounds-->
+                                        </div>
+                                        <!--end regionRounds-->
+                                    </div>
+                                    <!--end blank div-->
+                            </div>
+                            <!--end top/bottom region-->
+                    
+                    <% if (quadNum % 2 === 1) { %>
+                        </div>
+                    <% } %>
+                    <!--end left/right side-->
+                <% } %>
+                <!--end quadNum for loop-->
+                
+                
+                
+                <!--=========================-->
+                <!--       CHAMPIONSHIP      -->
+                <!--=========================-->
+                <div class="bracketContents championshipSide">
+                    <div class="bracketQuadrant centerRegion">
+                        <h2 class="regionLocation">Final Four</h2>
+                        <div>
+                            <div class="regionRounds">
+                                
+                                <!--need this div to eat up a selector...probably should just fix the css-->
+                                <div class="oneRound"></div>
+                                <div class="oneRound">
+                                    <% var match = tournament.rounds[5].matches[0] %>
+                                    <div class="match">
+                                        <div class="team">
+                                            <div class="teamTitle">
+                                                <% if(match.topTeam !== null) { %>
+                                                    <span class="seed"><%=match.topTeam.seed%></span>
+                                                    <span class="teamName"><%=match.topTeam.name%></span>
+                                                 <% } else { %>
+                                                    &nbsp
+                                                <% } %>
+                                            </div>
+                                            <!--end team title-->
+                                        </div>
+                                        <!--end top team-->
+                                        <div class="team">
+                                            <div class="teamTitle">
+                                                <% if(match.bottomTeam !== null) { %>
+                                                    <span class="seed"><%=match.bottomTeam.seed%></span>
+                                                    <span class="teamName"><%=match.bottomTeam.name%></span>
+                                                <% } else { %>
+                                                    &nbsp
+                                                <% } %>
+                                            </div>
+                                            <!--end team title-->
+                                        </div>
+                                        <!--end bottom team-->
+                                    </div>
+                                    <!--end match-->
+                                </div>
+                                <!--end oneRound-->
+                                
+                                
+                                <!--champion-->
+                                <div class="oneRound">
+                                    <div class="match">
+                                        <div class="team">
+                                            <div class="teamTitle">
+                                                <% if(tournament.champion) { %>
+                                                    <span class="seed"><%=tournament.champion.seed%></span>
+                                                    <span class="teamName"><%= tournament.champion.name%></span>
+                                                <% } else { %>
+                                                    &nbsp
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!--endMatch-->
+                                </div>  
+                                <!--endOneRound-->
+                            </div>
+                            <!--end region round-->
+                        </div>
+                        <!--end empty div-->
+                    </div>
+                    <!--end center region-->
+                </div>
+                <!--end championshipSide-->
+            </div>
+            <!--end col-xs-12 bracket-->
+        </div>
+        <!--end row-->
+    </div> 
+    <!--end container-fluid-->
+    
+</main>
+<!--end tournament-->
+
+
 <h2>Champion</h2>
 <% if (tournament.champion) { %>
 
@@ -59,6 +203,7 @@
     <h5>Team TBD</h5>
     <br>
 <% } %>
-
+                    
+                    
 
 <% include ../partials/footer %>
