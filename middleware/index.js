@@ -397,8 +397,6 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
                 }
                 else {
                     if (moment().isBefore( moment(foundRound.startTime) ) ) {
-                        console.log(moment().format());
-                        console.log(moment(foundRound.startTime).format());
                         next();
                     } else {
                         req.flash("error", "Too late! Tipoff for the round has already started.");
@@ -416,8 +414,9 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
 // MIDDDLEWARE FOR:
 //                 UPDATE - UserRound (userRounds.js route)
 //                  router.put("/:numRound")
-//  *1) userRoundCreation
-//  2) updateUserMatchAggregates
+//  1) checkTipoffTime
+//  *2) userRoundCreation
+//  3) updateUserMatchAggregates
 //=========================================================================
     //req.body[matchNum][0] -> winningTeamId
     //req.body[matchNum][1] -> comments
@@ -503,8 +502,9 @@ middlewareObj.userRoundCreation = function(req, res, next) {
 // MIDDDLEWARE FOR:
 //                 UPDATE - UserRound (userRounds.js route)
 //                  router.put("/:numRound")
-//  1) userRoundCreation
-//  *2) updateUserMatchAggregates
+//  1) checkTipoffTime
+//  2) userRoundCreation
+//  *3) updateUserMatchAggregates
 //=========================================================================
     //req.body[matchNum][0] -> winningTeamId
     //req.body[matchNum][1] -> comments

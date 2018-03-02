@@ -107,7 +107,7 @@
                                                         <!--end match-->
                                                         
                                                         <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "display: none;">
-                                                            
+                                                            <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
                                                             <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
                                                                 <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
                                                             
@@ -216,7 +216,7 @@
                                 <div class="oneRound"></div>
                                 <div class="oneRound">
                                     <% var match = tournament.rounds[5].matches[0] %>
-                                    <div class="match">
+                                    <div class="match" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
                                         <div class="team">
                                             <div class="teamTitle">
                                                 <% if(match.topTeam !== null) { %>
@@ -243,6 +243,86 @@
                                         <!--end bottom team-->
                                     </div>
                                     <!--end match-->
+                                    
+                                    
+                                    <!--Copied and pasted from above...possibly a better way???-->
+                                    <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "display: none;">
+                                        <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
+                                        <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
+                                            <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
+                                        
+                                           
+                                            <% if (!match.winner) { %> 
+                                                <div class="aggregate noWin" >
+                                            <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
+                                               <div class="aggregate win" >
+                                            <% } else { %>
+                                                <div class="aggregate loss" >
+                                            <% } %>
+                                                    <div class="teamHeader">
+                                                        <%var winScore = Math.round(agg.topWinScore * 10000)/10000 %>
+                                                        <%var lossScore = Math.round(agg.topLossScore * 10000)/10000 %>
+                                                        <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong></h5>
+                                                        <h6 style="display: inline-block; float: right;">(
+                                                            <% if (!match.winner) { %> 
+                                                                +<%=winScore%> or <%=lossScore%>
+                                                            <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
+                                                               +<%=winScore%>
+                                                            <% } else { %>
+                                                               <%=lossScore%>
+                                                            <% } %>
+                                                        )</h6>
+                                                    </div>
+                                                    <ul>
+                                                        <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
+                                                            <li>
+                                                                <%= agg.topTeamPickers[k].firstName %>
+                                                                <% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0 ) { %>
+                                                                    <em>- <%= agg.topTeamPickers[k].comment %></em>
+                                                                <% } %>
+                                                            </li>
+                                                        <% } %>
+                                                    </ul>
+                                                </div>
+                                           
+                                             <% if (!match.winner) { %> 
+                                                <div class="aggregate noWin" >
+                                            <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
+                                               <div class="aggregate win" >
+                                            <% } else { %>
+                                                <div class="aggregate loss" >
+                                            <% } %>
+                                                    <div class="teamHeader">
+                                                        <%var winScore = Math.round(agg.bottomWinScore * 10000)/10000 %>
+                                                        <%var lossScore = Math.round(agg.bottomLossScore * 10000)/10000 %>
+                                                        <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong></h5>
+                                                        <h6 style="display: inline-block; float: right;">(
+                                                            <% if (!match.winner) { %> 
+                                                                +<%=winScore%> or <%=lossScore%>
+                                                            <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
+                                                               +<%=winScore%>
+                                                            <% } else { %>
+                                                               <%=lossScore%>
+                                                            <% } %>
+                                                        )</h6>
+                                                    </div>
+                                                    <ul>
+                                                        <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
+                                                            <li>
+                                                                <%= agg.bottomTeamPickers[k].firstName %>
+                                                                <% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0 ) { %>
+                                                                    <em>- <%= agg.bottomTeamPickers[k].comment %></em>
+                                                                <% } %>
+                                                            </li>
+                                                        <% } %>
+                                                    </ul>
+                                            </div>
+                                            
+                                        <% } %>
+                                        
+                                    </div>
+                                    
+                                    
                                 </div>
                                 <!--end oneRound-->
                                 
@@ -284,38 +364,9 @@
 
 <script>
 
-// function handleShow( matchNum ) {
-//     return function(ev) {
-//         $("#table" + matchNum).stop(true,true).fadeIn(); 
-//     }
-// }
-
-// function handleHide( matchNum ) {
-//     return function(ev) {
-//         $("#table" + matchNum).stop(true,true).fadeOut();
-//     }
-// }
-
-// function handleMouse( matchNum ) {
-//     return function(ev) {
-//         $("#table" + matchNum).css({left:ev.clientX+10,top:ev.clientY+10});;
-//     }
-// }
-
-// for (var i = 1; i < 64; i++) {
-//     $("#match" + i).hover( handleShow(i), handleHide(i) ).mousemove( handleMouse(i) );
-// }
-
-// $("#match3").hover(function(ev){
-//     $('#table3').stop(true,true).fadeIn(); 
-// },function(ev){
-//     $('#table3').stop(true,true).fadeOut();
-// }).mousemove(function(ev){
-//     $('#table3').css({left:ev.layerX+10,top:ev.layerY+10});
-// });
 
 
-    
+
 </script>
 
 

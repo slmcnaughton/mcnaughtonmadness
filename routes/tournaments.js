@@ -36,9 +36,11 @@ router.post("/", function(req, res) {
     var regions = ["East", "West", "Midwest", "South"];
     var year = Math.floor((Math.random()*100+2000));
     var startDay = moment([2018, 02, 15]);
-    console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
-    console.log("here");
+    
     //[year, month, day, hour, minute, second, millisecond]
+    // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
+    // console.log("here");
+
     
     //   teamNames sample data below
      
