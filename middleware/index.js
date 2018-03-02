@@ -520,14 +520,14 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                 Match.findOne({_id : userPrediction.match.id}).populate("topTeam").populate("bottomTeam").exec(function(err, userPredictionMatch) {
                     if(err) console.log(err);
                     else {
-                        //Try to find a userMatchAggregate whose matchReference is the same as athis userMatchPrediction's matchReference
+                        //Try to find a userMatchAggregate whose matchReference is the same as this userMatchPrediction's matchReference
                         UserMatchAggregate.findOne({matchReference : userPrediction.match.id}).exec(function(err, foundUserMatchAggregate) {
                             if(err) console.log(err);
                             else {
                                 if (req.params.numRound < 7) {
                                     async.series([
+                                         // if none exist, create a userMatchAggregate for the userMatchPrediction:
                                         function(callback) {
-                                            // if none exist, create a userMatchAggregate for the userMatchPrediction:
                                             if (!foundUserMatchAggregate) {
                                                 var ts = userPredictionMatch.topTeam.seed;   //ts = topseed
                                                 var bs = userPredictionMatch.bottomTeam.seed;    //bs = bottomseed

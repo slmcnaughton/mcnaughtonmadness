@@ -27,10 +27,7 @@ router.get("/:numRound/edit", function(req, res){
 // middleware.checkCommentOwnership,
 router.put("/:numRound", middleware.updateTournamentRound, middleware.scoreUserMatchPredictions, 
                         middleware.updateTournamentGroupScores, middleware.isRoundComplete, function(req, res){
-    // console.log(req.body);
-    // console.log("=======");
-    // console.log(req.params);
-    // console.log(res.locals);
+
     res.redirect("back");
 });
 

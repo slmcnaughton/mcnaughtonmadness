@@ -133,9 +133,7 @@ router.post("/", function(req, res) {
                                             }
                                             else {
                                                 var location = Math.floor((i-1)/2);
-                                                // createdRound.matches[location].teams.push(team);
                                                 createdRound.matches[location].bottomTeam = team;
-                                                // console.log(createdRound.matches[location]);
                                                 createdRound.matches[location].save();
                                                 i++;
                                                 next();
@@ -212,7 +210,6 @@ router.post("/", function(req, res) {
                                                         matchNumber: matchNumStart + j,
                                                         topTeam: null,
                                                         bottomTeam: null,
-                                                        // teams: [],
                                                         nextMatch: Math.floor(0.5*((matchNumStart + j) + teamNames.length + 1))
                                                     }, function(err, newMatch){
                                                         if (err) console.log(err);
