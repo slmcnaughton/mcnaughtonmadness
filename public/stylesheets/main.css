@@ -44,29 +44,81 @@
 }
 
 
-
-
-
- /*Landscape phones and portrait tablets */
-@media (max-width: 767px) {
-    
-
+/*===========================================*/
+/*Basic Tournament Standings Table Styles*/
+/*===========================================*/
+table {  
+    color: #333; /* Lighten up font color */
+    font-family: Helvetica, Arial, sans-serif; /* Nicer font */
+    width: 400px; 
+    border-collapse: 
+    collapse; border-spacing: 0; 
 }
 
- /*Portrait phones and smaller */
-@media (max-width: 480px) {
-    
+td, th { 
+    border: 1px solid #CCC; 
+    height: 30px; 
+} /* Make cells a bit taller */
+
+th {  
+    background: #F3F3F3; /* Light grey background */
+    font-weight: bold; /* Make sure they're bold */
+    text-align: center; /* Center our text 
+
+*/
 }
 
-/* ===========================================================
+td {  
+    background: #FAFAFA; /* Lighter grey background */
+    text-align: center; /* Center our text */
+}
+
+
+/*==================================*/
+/*Navbar styles*/
+/*==================================*/
+
+
+.navbar-inverse{
+  background:#444;
+  color:#fff;
+  margin: 0;
+} 
+
+.navbar-brand, .navbar-inverse .navbar-nav > li > a{
+	color:#fff !important;
+}
+.navbar-inverse .navbar-nav li a:hover{
+    text-decoration:underline
+}
+
+@media screen and (min-width: 992px) {
+    .nav li:hover > .dropdown-menu {
+    	display: block;
+    }
+    
+    /*triangle*/
+    .navbar-inverse .navbar-nav > .dropdown:hover > a:after{
+    	background: #444;
+        content: " ";
+        display: block;
+        height: 15px;
+        left: 20px;
+        position: absolute;
+        top: 100%;
+    	margin-top:-10px;
+        transform: rotate(45deg);
+        width: 15px;
+    	z-index:10001;
+    }
+}
+
+
+/*===========================================================
 
 ALL BRACKET CSS BEGINS HERE
 ==========================================================*/
 body {
-    /*font-family: 'Istok Web', sans-serif;*/
-    /*background: url("http://picjumbo.com/wp-content/uploads/HNCK2189-1300x866.jpg") no-repeat #000;*/
-    /*background-size: cover;*/
-    /*min-height: 100%;*/
     margin: 0;
 }
 

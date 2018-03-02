@@ -9,7 +9,7 @@ router.get("/", function(req, res) {
         if(err) {
             console.log(err)
         } else {
-            res.render("tournamentStandings/index", {tournaments: allTournaments});
+            res.render("tournamentStandings/index", {tournaments: allTournaments, page: "about"});
         }
     });
 });
@@ -24,7 +24,7 @@ router.get("/:id", function(req, res){
             res.redirect("back");
         } else {
             //render the show template with that campground
-            res.render("tournamentStandings/show", {tournament: foundTournamentStanding});
+            res.render("tournamentStandings/show", {tournament: foundTournamentStanding, page: "about"});
         }
     });
 });

@@ -2,7 +2,11 @@ var mongoose = require("mongoose");
 
 var tournamentGroupSchema = new mongoose.Schema({
     
-    groupName: String,
+    groupName: 
+        {
+            type: String,
+            // unique: true
+        },
     currentRound: Number,
     userTournaments: [
         {
@@ -23,11 +27,6 @@ var tournamentGroupSchema = new mongoose.Schema({
         },
         year: Number
     },
-    submissionDeadline: [
-        { 
-            type: Date 
-        },  //moment js... , default: Date.now
-    ],
     commissioner: {
         id: {
             type: mongoose.Schema.Types.ObjectId,

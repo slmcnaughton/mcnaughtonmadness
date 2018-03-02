@@ -2,6 +2,11 @@ var mongoose = require("mongoose");
 
 var userMatchAggregateSchema = new mongoose.Schema({
     
+    tournamentGroup:
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "TournamentGroup"
+        },
     matchNumber: Number,
     matchReference: 
         {

@@ -14,7 +14,7 @@
 <!--UPDATE FORM ACTION AND LOCATION-->
 <!--=======================================================-->
 
-<form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= userTournamentId %>/<%=numRound%>?_method=PUT" method="POST">
+<form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
     <% for(var i = 0; i < 4; i++) { %>
         <div class="form-group column">
             <label for="finalFourPicks"><%=tournament.rounds[0].matches[i * 8].topTeam.region%></label>

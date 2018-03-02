@@ -1,7 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var async = require("async");
-var moment = require('moment');
+var moment = require('moment-timezone');
 var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var Round = require("../models/round");
@@ -35,7 +35,8 @@ router.post("/", function(req, res) {
     // var year = 2017;
     var regions = ["East", "West", "Midwest", "South"];
     var year = Math.floor((Math.random()*100+2000));
-    var startDay = moment([2018, 02, 15]);
+    var startDay = moment.tz([2018, 02, 15], "America/New_York");
+    // var startDay = moment.tz([2018, 02, 2], "America/New_York");
     
     //[year, month, day, hour, minute, second, millisecond]
     // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
@@ -74,7 +75,7 @@ router.post("/", function(req, res) {
                         {
                             numRound: 1,
                             matches: [],
-                            startTime: moment([startDay.year(), startDay.month(), startDay.date(), 12, 00]),
+                            startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
@@ -166,15 +167,15 @@ router.post("/", function(req, res) {
                                         var startTime;
                                                             // year         month           day      hour  min
                                         if(i == 0)
-                                            startTime = moment(startDay).add({days: 2, hours: 12, minutes: 15});
+                                            startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
                                         else if (i == 1)
-                                            startTime = moment(startDay).add({days: 7, hours: 19, minutes: 10});
+                                            startTime = moment(startDay).add({days: 7, hours: 19, minutes: 9}, "America/New_York");
                                         else if (i == 2)
-                                            startTime = moment(startDay).add({days: 9, hours: 18, minutes: 9});
+                                            startTime = moment(startDay).add({days: 9, hours: 18, minutes: 9}, "America/New_York");
                                         else if (i == 3)
-                                            startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9});
+                                            startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9}, "America/New_York");
                                         else if (i == 4)
-                                            startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20});
+                                            startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20}, "America/New_York");
                                         Round.create(
                                         {
                                             numRound: i+2,  //i = 0 should be round 2

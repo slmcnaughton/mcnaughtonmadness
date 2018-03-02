@@ -15,7 +15,7 @@
 <!--UPDATE FORM ACTION AND LOCATION-->
 <!--=======================================================-->
 
-<form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= userTournamentId %>/<%=numRound%>?_method=PUT" method="POST">
+<form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
     <% for(var j = 0; j < tournament.rounds[numRound - 1].matches.length; j++) { %>
         <% var match = tournament.rounds[numRound - 1].matches[j]; %>
         

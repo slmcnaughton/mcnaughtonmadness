@@ -17,7 +17,7 @@ router.get("/new", middleware.isLoggedIn, function(req, res){
         if(err){
             console.log(err);
         } else {
-             res.render("userTournaments/new", {tournamentGroup: foundTournamentGroup});
+             res.render("userTournaments/new", {tournamentGroup: foundTournamentGroup, page: "tournamentGroups"});
         }
         
     });
@@ -35,10 +35,15 @@ router.post("/", middleware.isLoggedIn, function(req, res){
         } else {
             var newUserTournament = {
                 score: 0,
+                tournamentGroup: {
+                    id: foundTournamentGroup.id,
+                    groupName: foundTournamentGroup.groupName
+                },
                 user: {
                     id: req.user._id,
                     firstName: req.user.firstName,
-                    lastName: req.user.lastName
+                    lastName: req.user.lastName,
+                    username: req.user.username
                 },
                 tournamentReference: {
                     id: foundTournamentGroup.tournamentReference.id,
@@ -53,7 +58,7 @@ router.post("/", middleware.isLoggedIn, function(req, res){
                     foundTournamentGroup.userTournaments.addToSet(userTournament);
                     foundTournamentGroup.save();
                     req.flash('success', 'Entry started!');
-                    res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName + "/userTournaments/" + userTournament._id + "/1/edit");
+                    res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName + "/userTournaments/" + userTournament.user.username + "/1/edit");
                 }
             });
         }
@@ -62,8 +67,8 @@ router.post("/", middleware.isLoggedIn, function(req, res){
 });
 
 //SHOW - shows more information about a particular userTournament
-router.get("/:id", function(req, res){
-    UserTournament.findById(req.params.id)
+router.get("/:username", function(req, res){
+    UserTournament.findOne({"user.username" : req.params.username})
             .populate({path: "userRounds", populate: {path: "round.id"}})
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "winner"}}})
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "match.id"}}})
@@ -73,7 +78,7 @@ router.get("/:id", function(req, res){
             return res.redirect("/tournamentGroups");
         } else {
             foundUserTournament.userRounds.sort(compare);
-            res.render("userTournaments/show", {userTournament: foundUserTournament});
+            res.render("userTournaments/show", {userTournament: foundUserTournament, page: "tournamentGroups"});
         }
     });
 });

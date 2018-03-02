@@ -7,11 +7,20 @@ var userTournamentSchema = new mongoose.Schema({
     //Round 7 is final four
     //Round 8 is champion
     
+    tournamentGroup: {
+        id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "TournamentGroup"
+        },
+        groupName: String
+    },
+    
     user: {
         id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
         },
+        username: String,
         firstName: String,
         lastName: String,
     },

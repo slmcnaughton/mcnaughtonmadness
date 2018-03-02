@@ -65,7 +65,7 @@ app.use("/tournaments", tournamentRoutes);
 app.use("/tournaments/:year/rounds", roundRoutes);
 app.use("/tournamentGroups", tournamentGroupRoutes);
 app.use("/tournamentGroups/:groupName/userTournaments", userTournamentRoutes);
-app.use("/tournamentGroups/:groupName/userTournaments/:id", userRoundRoutes);
+app.use("/tournamentGroups/:groupName/userTournaments/:username", userRoundRoutes);
 
 
 app.listen(process.env.PORT, process.env.IP, function(){

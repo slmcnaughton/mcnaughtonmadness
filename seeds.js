@@ -8,6 +8,7 @@ var TournamentGroup = require("./models/tournamentGroup");
 var UserTournament = require("./models/userTournament");
 var UserRound = require("./models/userRound");
 var UserMatchPrediction = require("./models/userMatchPrediction");
+var UserMatchAggregate = require("./models/userMatchAggregate");
 var Round = require("./models/round");
 var Match = require("./models/match");
 var Team = require("./models/team");
@@ -28,6 +29,10 @@ function seedDB() {
     // UserMatchPrediction.remove({}, function(err){
     //     if(err) console.log(err);
     //     else console.log("removed all user match predictions");
+    // });
+    // UserMatchAggregate.remove({}, function(err){
+    //     if(err) console.log(err);
+    //     else console.log("removed all user match aggregates");
     // });
     // Team.remove({}, function(err){
     //     if(err) console.log(err);

@@ -2,7 +2,7 @@
 var Campground = require("../models/campground");
 var Comment = require("../models/comment");
 var async = require("async");
-var moment = require('moment');
+var moment = require('moment-timezone');
 var Tournament = require("../models/tournament");
 var Round = require("../models/round");
 var Match = require("../models/match");
@@ -377,7 +377,7 @@ middlewareObj.isRoundComplete = function(req, res, next) {
 //  3) updateUserMatchAggregates
 //=========================================================================
 middlewareObj.checkTipoffTime = function(req, res, next) {
-     UserTournament.findById(req.params.id).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
+    UserTournament.findOne({"user.username": req.params.username, "tournamentGroup.groupName" : req.params.groupName}).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
         if(err) {
             console.log(err);
             req.flash("error", "UserTournament not found");
@@ -426,8 +426,12 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
     //      numRound -> 1
 middlewareObj.userRoundCreation = function(req, res, next) {
     //find the correct userTournament
-    UserTournament.findById(req.params.id).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
-        if(err) console.log(err);
+    UserTournament.findOne({"user.username": req.params.username, "tournamentGroup.groupName" : req.params.groupName})
+            .populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
+        if(err || !foundUserTournament){
+            req.flash("error", "User Tournament not found");
+            res.redirect("back");
+        } 
         else {
             res.locals.userFirstName = foundUserTournament.user.firstName;
             var numRound = Number(req.params.numRound);
@@ -453,7 +457,6 @@ middlewareObj.userRoundCreation = function(req, res, next) {
                             numRound: req.params.numRound
                         },
                         userMatchPredictions: [],
-                        // submissionDeadline: { type: Date },  //moment js... , default: Date.now
                     };
                     UserRound.create(newUserRound, function(err, newUserRound){
                         if(err) console.log(err);
@@ -521,7 +524,7 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                     if(err) console.log(err);
                     else {
                         //Try to find a userMatchAggregate whose matchReference is the same as this userMatchPrediction's matchReference
-                        UserMatchAggregate.findOne({matchReference : userPrediction.match.id}).exec(function(err, foundUserMatchAggregate) {
+                        UserMatchAggregate.findOne({matchReference : userPrediction.match.id, tournamentGroup : foundTournamentGroup.id}).exec(function(err, foundUserMatchAggregate) {
                             if(err) console.log(err);
                             else {
                                 if (req.params.numRound < 7) {
@@ -536,6 +539,7 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                                 var newUserMatchAggregate = {
                                                     matchNumber: userPredictionMatch.matchNumber,
                                                     matchReference: userPredictionMatch.id,
+                                                    tournamentGroup: foundTournamentGroup.id,
                                                     topTeamPickers: [],
                                                     topWinScore: nr * ts / bs,
                                                     topLossScore: (ts < bs) ? -ts / bs * nr : -nr ,

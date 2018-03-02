@@ -48,8 +48,8 @@ router.post("/register", function(req, res){
         addPastTrophies(user);
         //once the user is registered, log them in
         passport.authenticate("local")(req, res, function(){
-            req.flash("success", "Welcome to McNaughton March Madness " + user.username);
-            res.redirect("/users/" + user.firstName + "." + user.lastName);
+            req.flash("success", "Welcome to McNaughton March Madness " + user.firstName);
+            res.redirect("/users/" + user.username);
         });
     });
 });
@@ -74,7 +74,7 @@ router.post("/login",
 
 //Used with login post route to send user directly to their profile page upon login
 router.get('/profile', middleware.isLoggedIn, function(req, res) {
-    res.redirect ("/users/" + req.user.firstName + "." + req.user.lastName);   // get the user out of session and pass to template
+    res.redirect ("/users/" + req.user.username);   // get the user out of session and pass to template
 });
 
 
@@ -98,12 +98,11 @@ router.get("/users", function(req, res) {
 });
 
 
-router.get("/users/:firstName.:lastName", function(req, res) {
+router.get("/users/:username", function(req, res) {
     
-    var firstName = req.params.firstName;
-    var lastName = req.params.lastName;
+    var username = req.params.username
     
-    User.findOne( {firstName: firstName, lastName: lastName}).populate("trophies").exec(function(err, foundUser){
+    User.findOne( {username: username}).populate("trophies").exec(function(err, foundUser){
         if (err || !foundUser){
             req.flash("error", "User not found");
             return res.redirect("/users");
@@ -160,7 +159,6 @@ function compare(a,b) {
 var addPastTrophies = function(user){
     //find tournaments the user has participated in
     TournamentStanding.find({"standings.firstName" : user.firstName, "standings.lastName" : user.lastName}).exec(function(err, tournamentYears) {
-        // console.log(user.firstName + " has participated for " + tournamentYears.length + " years");
         if (err) {
             console.log(err);
         } else {

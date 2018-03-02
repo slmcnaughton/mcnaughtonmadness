@@ -1,4 +1,42 @@
-<% include ../partials/header %>
+<!DOCTYPE>
+<html>
+    <head>
+        <!--Make site responsive on mobile/tablet-->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <title>McNaughton March Madness</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        
+    	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    	
+        <link href='https://fonts.googleapis.com/css?family=Holtwood+One+SC' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Kaushan+Script|Herr+Von+Muellerhoff' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Istok+Web|Roboto+Condensed:700' rel='stylesheet' type='text/css'>
+    
+    	<script
+          src="https://code.jquery.com/jquery-2.2.4.min.js"
+          integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+          crossorigin="anonymous"></script>
+          
+        <script type="text/javascript" src="/js/nhpup_1.1.js"></script>
+          
+        
+        <link rel="stylesheet" href="/stylesheets/main.css">
+        <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+        
+<% include ../partials/navBar %>
+
+<div class="container">
+	<header class="hero">
+    <div class="hero-wrap">
+     <p class="intro" id="intro">McNaughton</p>
+		 <h1 id="headline">March Madness</h1>
+		 <p class="year"><i class="fas fa-star"></i> <%=tournamentGroup.tournamentReference.year%> <i class="fa fa-star"></i></p>
+     <p><%=tournamentGroup.groupName%></p>
+   </div>
+	</header>
+	
 
 <h4><%=tournamentGroup.groupName%></h4>
 <h4>Current Round: <%=tournamentGroup.currentRound%></h4>
@@ -11,7 +49,7 @@
 <% tournamentGroup.userTournaments.forEach(function(userTournament){ %>
     <% if (userTournament.user) { %>
         <h5>
-            <a href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= userTournament._id %>">
+            <a href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= userTournament.user.username %>">
                 <%= userTournament.user.firstName%> - 
             </a>
             <%= userTournament.score %>
