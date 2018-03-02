@@ -10,6 +10,7 @@
 
 <% for(var i = 0; i < tournament.rounds.length; i++) { %>
     <h2>Round <%=tournament.rounds[i].numRound%></h2>
+    <h3>Start Time: <% console.log(moment(tournament.rounds[i].startTime).format("dddd, MMMM Do YYYY, h:mm:ss a")) %></h3>
     <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
         <% var match = tournament.rounds[i].matches[j] %>
         <h5><%=match.matchNumber%></h5>

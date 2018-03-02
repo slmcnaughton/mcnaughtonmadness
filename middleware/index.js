@@ -2,6 +2,7 @@
 var Campground = require("../models/campground");
 var Comment = require("../models/comment");
 var async = require("async");
+var moment = require('moment');
 var Tournament = require("../models/tournament");
 var Round = require("../models/round");
 var Match = require("../models/match");
@@ -93,9 +94,7 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
             res.locals.tournamentId = foundTournament;
             var round = foundTournament.rounds[req.params.numRound-1];
             var roundFirstMatch = round.matches[0].matchNumber;
-            
-            // console.log(round.matches[0]);
-            // console.log(req.body);
+ 
         //===========================================================
         // Handle championship game
         //===========================================================
@@ -188,16 +187,12 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
 //  4) isRoundComplete
 //=========================================================================
 middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
-    // console.log("the length is ....................." + res.locals.updatedMatches.length);
     var updatedMatches = res.locals.updatedMatches;
-    console.log("Updated matches: " + updatedMatches);
     async.forEachSeries(updatedMatches, function(match, next) {
-        // console.log(match.matchId);
-         //find the match, get the seeds, calculate winning/losing score
+        //find the match, get the seeds, calculate winning/losing score
         async.series([
             function(callback) {
                 Match.findById(match.matchId).populate("topTeam").populate("bottomTeam").exec(function(err, foundMatch) {
-                    // console.log("==========found match here ========" + foundMatch);
                     if(err) console.log(err);
                     else {
                         var ts = foundMatch.topTeam.seed;   //ts = topseed
@@ -221,33 +216,22 @@ middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
                         UserMatchPrediction.find( {"match.id" : match.matchId}).exec(function(err, foundUserMatchPredictions) {
                             if(err) console.log(err);
                             else {
-                                //  var i = 0;
                                 async.forEachSeries(foundUserMatchPredictions, function(prediction, next){
-                                    console.log(prediction.numRound + " " + typeof(prediction.numRound));
+                                    // console.log(prediction.numRound + " " + typeof(prediction.numRound));
                                     var userPick = String(prediction.winner);
                                     if (prediction.numRound === 7){
                                         prediction.score = (userPick === winner) ? 5 : 0;
-                                        console.log("winningScore:" + 5 + ", LS: " + 0);
+                                        // console.log("winningScore:" + 5 + ", LS: " + 0);
                                     }
                                     else if (prediction.numRound === 8){
                                         prediction.score = (userPick === winner) ? 10 : 0;
                                         console.log("winningScore:" + 10 + ", LS: " + 0);
                                     }
                                     else {
-                                        console.log("winningScore:" + winningScore + ", LS: " + losingScore);
+                                        // console.log("winningScore:" + winningScore + ", LS: " + losingScore);
                                     
                                          prediction.score = (userPick === winner) ? winningScore : losingScore;
                                     }
-                                    
-                                    // if (userPick === winner) //winner is a string
-                                    // {
-                                    //     prediction.score = winningScore;
-                                    //   console.log("Player " + i + " won " + winningScore);
-                                    // } else {
-                                    //     prediction.score = losingScore;
-                                    //     console.log("Player " + i + " lost " + losingScore);
-                                    // }
-                                    // i++;
                                     prediction.save();
                                     next();
                                 }, function(err) {
@@ -285,16 +269,10 @@ middlewareObj.updateTournamentGroupScores = function(req, res, next) {
         .exec(function(err, foundTournamentGroups) {
         if(err) console.log(err);
         else {
-            // console.log("a) # of tournament groups:" + foundTournamentGroups.length);
             async.forEachSeries(foundTournamentGroups, function(group, next){
-                // console.log("b) # of players: " + group.userTournaments.length);
-                // var j = 1;
                 async.forEachSeries(group.userTournaments, function(userTournament, next){
-                    // console.log("c) player " + j + "'s cumulative score:" + userTournament.score);
                     userTournament.score = 0;
-                    // var i = 1;
                     async.forEachSeries(userTournament.userRounds, function(userRound, next){
-                        // console.log("d) round " + userRound.round.numRound + " score: " + userRound.roundScore);
                         async.series([
                             function(callback){
                                 //if rounds is the current round, or if the round matches a bonus round
@@ -304,45 +282,33 @@ middlewareObj.updateTournamentGroupScores = function(req, res, next) {
                                     async.forEachSeries(userRound.userMatchPredictions, function(userPrediction, next) {
                                         if(userPrediction)
                                         {
-                                            // console.log("=============" + userPrediction.score);
                                             userRound.roundScore += userPrediction.score;
-                                            // console.log(userRound.roundScore);
                                         }
                                         next();
                                     }, function(err) {
                                         if(err) console.log(err);
                                         else {
-                                            // console.log("d, 2.0)" + " round " + i + " score after update: " + userRound.roundScore);
                                             userRound.save();
                                             callback();
-                                           
                                         }
-                                        
                                     });
                                 } else {
                                     callback();
                                 }
-                               
                             },
                             function(callback) {
-                                
                                 userTournament.score += userRound.roundScore;
                                 callback();
                             }
                         ], function(err) {
                             if(err) console.log(err);
                             else {
-                               
-                                // i++;
-                                
                                 next();
                             }
                         });
                     }, function(err) {
                         if(err) console.log(err);
                         else {
-                            // console.log("c, 2.0) new tournament score: " + userTournament.score);
-                            // j++;
                             userTournament.save();
                             next();
                         }
@@ -372,7 +338,6 @@ middlewareObj.updateTournamentGroupScores = function(req, res, next) {
 //=========================================================================
 middlewareObj.isRoundComplete = function(req, res, next) {
    TournamentGroup.findOne( {"tournamentReference.id" : res.locals.tournamentId._id})
-    // .populate({path: "userTournaments", populate: {path: "userRounds", populate: {path: "userMatchPredictions"}}})
     .populate({path: "tournamentReference.id", populate: { path: "rounds", populate: {path: "matches"  }}})
     .exec(function(err, foundTournamentGroup) {
         if(err) console.log(err);
@@ -400,6 +365,50 @@ middlewareObj.isRoundComplete = function(req, res, next) {
         }
     });
    
+};
+
+
+//=========================================================================
+// MIDDDLEWARE FOR:
+//                 UPDATE - UserRound (userRounds.js route)
+//                  router.put("/:numRound")
+//  *1) checkTipoffTime
+//  2) userRoundCreation
+//  3) updateUserMatchAggregates
+//=========================================================================
+middlewareObj.checkTipoffTime = function(req, res, next) {
+     UserTournament.findById(req.params.id).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
+        if(err) {
+            console.log(err);
+            req.flash("error", "UserTournament not found");
+            res.redirect("back");
+        }
+        else {
+            res.locals.userFirstName = foundUserTournament.user.firstName;
+            var numRound = Number(req.params.numRound);
+            if (numRound === 7 || numRound === 8)
+                numRound = 1;
+            //find the tournament round associated with this userRound
+            Round.findById(foundUserTournament.tournamentReference.id.rounds[numRound-1]).exec(function(err, foundRound){
+                if(err || !foundRound) {
+                    console.log(err);
+                    req.flash("error", "Round not found");
+                    res.redirect("back");
+                }
+                else {
+                    if (moment().isBefore( moment(foundRound.startTime) ) ) {
+                        console.log(moment().format());
+                        console.log(moment(foundRound.startTime).format());
+                        next();
+                    } else {
+                        req.flash("error", "Too late! Tipoff for the round has already started.");
+                        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id);
+                    }
+                }
+            });
+        }
+     });
+            
 };
 
 
@@ -507,13 +516,11 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
     TournamentGroup.findOne({groupName: req.params.groupName}).exec(function(err, foundTournamentGroup) {
         if(err) console.log(err);
         else {
-            console.log(foundTournamentGroup.userMatchAggregates);
             async.forEachSeries(res.locals.newUserRound.userMatchPredictions, function(userPrediction, next){
                 Match.findOne({_id : userPrediction.match.id}).populate("topTeam").populate("bottomTeam").exec(function(err, userPredictionMatch) {
                     if(err) console.log(err);
                     else {
                         //Try to find a userMatchAggregate whose matchReference is the same as athis userMatchPrediction's matchReference
-                        // {_id: {$in: [req.body.data]}, 
                         UserMatchAggregate.findOne({matchReference : userPrediction.match.id}).exec(function(err, foundUserMatchAggregate) {
                             if(err) console.log(err);
                             else {
@@ -564,7 +571,7 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                     ], function(err) {
                                         if(err) console.log(err);
                                         else {
-                                            console.log(foundUserMatchAggregate);
+                                            // console.log(foundUserMatchAggregate);
                                             foundUserMatchAggregate.save();
                                             next();
                                         }

@@ -43,26 +43,9 @@
   background-color : #f2f5ff; 
 }
 
-table {  
-    color: #333; /* Lighten up font color */
-    font-family: Helvetica, Arial, sans-serif; /* Nicer font */
-    width: 400px; 
-    border-collapse: 
-    collapse; border-spacing: 0; 
-}
 
-td, th { border: 1px solid #CCC; height: 30px; } /* Make cells a bit taller */
 
-th {  
-    background: #F3F3F3; /* Light grey background */
-    font-weight: bold; /* Make sure they're bold */
-    text-align: center; /* Center our text */
-}
 
-td {  
-    background: #FAFAFA; /* Lighter grey background */
-    text-align: center; /* Center our text */
-}
 
  /*Landscape phones and portrait tablets */
 @media (max-width: 767px) {
@@ -224,7 +207,7 @@ body {
         content: " ";
         position: absolute;
         width: 1px;
-        background: #ddd;
+        background: #ccc;
         height: calc(100% + 2em);
         top: 50%
     }
@@ -396,7 +379,7 @@ body {
 .bracketContents .oneRound:first-child .match:before {
     content: " ";
     position: absolute;
-    border-right: 1px solid #ddd;
+    border-right: 1px solid #ccc;
     border-left: none;
     top: calc(50% - .125em - 15px);
     height: calc(.25em + 30px);
@@ -411,7 +394,7 @@ body {
 .bracketContents .oneRound:not(:first-child):not(:last-child) .match:before {
     content: " ";
     position: absolute;
-    border-right: 1px solid #ddd;
+    border-right: 1px solid #ccc;
     border-left: none;
     top: 25%;
     height: 50%;
@@ -427,7 +410,7 @@ body {
     .rightSide .oneRound:first-child .match:before {
         content:" ";
         position: absolute;
-        border-left: 1px solid #ddd;
+        border-left: 1px solid #ccc;
         border-right: none;
         top: calc(50% - .125em - 15px);
         height: calc(.25em + 30px);
@@ -438,7 +421,7 @@ body {
     .rightSide .oneRound:not(:first-child):not(:last-child) .match:before {
         content: " ";
         position: absolute;
-        border-left: 1px solid #ddd;
+        border-left: 1px solid #ccc;
         border-right: none;
         top: 25%;
         height: 50%;
@@ -503,7 +486,7 @@ body {
     position: absolute;
     height: 1px;
     width: .5em;
-    background: #ddd;
+    background: #ccc;
     top: 50%;
     right: -.5em;
     left: auto
@@ -517,7 +500,7 @@ body {
     position: absolute;
     height: 1px;
     width: .5em;
-    background: #ddd;
+    background: #ccc;
     top: 50%;
     left: -.5em;
     right: auto
@@ -531,7 +514,7 @@ body {
     position: absolute;
     height: 1px;
     width: .5em;
-    background: #ddd;
+    background: #ccc;
     top: 50%;
     right: -.5em;
     left: auto
@@ -547,7 +530,7 @@ body {
         position: absolute;
         height: 1px;
         width: .5em;
-        background: #ddd;
+        background: #ccc;
         top: 50%;
         right: -.5em;
         left: auto
@@ -558,7 +541,7 @@ body {
         position: absolute;
         height: 1px;
         width: .5em;
-        background: #ddd;
+        background: #ccc;
         top: 50%;
         left: -.5em;
         right: auto
@@ -603,7 +586,7 @@ body {
     -ms-flex-pack: start;
     justify-content: flex-start;
     padding: 0 .25em;
-    border: 1px solid #ddd;
+    border: 1px solid #ccc;
     font-size: 1em;
     line-height: 2em;
     background: #fff
@@ -907,4 +890,107 @@ body {
         right: 0;
         left: 0
     }
+}
+
+/*===================================================*/
+/*UserMatchAggregate CSS*/
+/*===================================================*/
+
+/*table{*/
+/*    display:none;*/
+/*    position:absolute;*/
+/*    z-index: 100;*/
+/*}*/
+
+tr {
+    background-color: rgba(50, 180, 50, 0.5);
+    
+    /*border:2px solid blue;   */
+    /*background-color: blue;*/
+}
+
+tbody {
+    /*color: red;*/
+
+}
+
+table {
+    /*width: 100%;*/
+
+}
+
+.aggregate {
+    width: 120%; 
+    /*float: left;*/
+    /*background-color: rgba(50, 225, 50, 0.8);*/
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    padding: 0 3px;
+    border: 1px solid rgb(102, 102, 102);;
+    border-left: 2px solid rgb(102, 102, 102);
+    border-right: 2px solid rgb(102, 102, 102);
+}
+
+.aggregate:first-child {
+    border-top: 2px solid rgb(102, 102, 102);
+
+}
+.aggregate:last-child {
+    border-top: none;
+    border-bottom: 2px solid rgb(102, 102, 102);
+}
+
+.aggregate ul {
+    padding-left: 10px;
+    list-style-type: none;
+}
+
+.teamHeader {
+    display: inline-block;
+}
+.aggregate ul{
+    line-height: 1.45em;
+
+}
+.win {
+    background-color: rgba(50, 225, 50, 0.75);
+}
+
+.loss {
+    background-color: rgba(225, 50, 50, 0.75);
+}
+
+.noWin {
+    background-color: rgba(225, 225, 50, 0.75);
+}
+
+#pup {
+    position: absolute;
+    z-index:200; /* aaaalways on top*/
+    padding: 0;
+    width: 500px;
+    color: black;
+    font-size: 0.95em;
+    line-height: 30px;
+    margin: 0 0 15px 0;
+    text-align: left;
+  
+  /*border: 1px solid rgb(102, 102, 102);*/
+   /*border-collapse: collapse;*/
+   /*border-image-outset: 0px;*/
+   /*border-image-repeat: stretch;*/
+   /*border-image-slice: 100%;*/
+   /*border-image-source: none;*/
+   /*border-image-width: 1;*/
+   /*color: rgb(17, 17, 17);*/
+   /*display: table;*/
+   /*font-family: Georgia, Palatino, "Palatino Linotype", FreeSerif, serif;*/
+   /*font-size: 18px;*/
+   /*font-weight: 400;*/
+   /*background-image: url("bg-pup.png");*/
+   /*height: auto;*/
+  
+   /*width: 100%;*/
+
 }

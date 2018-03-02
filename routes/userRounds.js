@@ -63,7 +63,7 @@ router.get("/:numRound/edit", function(req, res){
 
 //UPDATE - UserRound of Tournament
 // middleware.checkCommentOwnership,
-router.put("/:numRound", middleware.userRoundCreation, middleware.updateUserMatchAggregates, function(req, res){
+router.put("/:numRound", middleware.checkTipoffTime, middleware.userRoundCreation, middleware.updateUserMatchAggregates, function(req, res){
     
     var round = Number(req.params.numRound);
     if(round === 1) {

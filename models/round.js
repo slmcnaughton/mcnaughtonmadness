@@ -9,7 +9,10 @@ var roundSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Match"
         }
-    ]
+    ],
+    startTime: { 
+        type: {Date, default: Date.now }
+    }
     
 });
 

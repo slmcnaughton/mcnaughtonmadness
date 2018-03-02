@@ -1,6 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var async = require("async");
+var moment = require('moment');
 var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var Round = require("../models/round");
@@ -16,7 +17,7 @@ router.get("/", function(req, res) {
         if(err) {
             console.log(err);
         } else {
-            res.render("tournaments/index", {tournaments: allTournaments, page: "tournaments"});        //rename the page when I do the navbar
+            res.render("tournaments/index", {tournaments: allTournaments, moment: moment, page: "tournaments"});        //rename the page when I do the navbar
         }
     });
 });
@@ -34,6 +35,11 @@ router.post("/", function(req, res) {
     // var year = 2017;
     var regions = ["East", "West", "Midwest", "South"];
     var year = Math.floor((Math.random()*100+2000));
+    var startDay = moment([2018, 02, 15]);
+    console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
+    console.log("here");
+    //[year, month, day, hour, minute, second, millisecond]
+    
     //   teamNames sample data below
      
     // var regions = req.body.regions;
@@ -65,7 +71,8 @@ router.post("/", function(req, res) {
                         Round.create(
                         {
                             numRound: 1,
-                            matches: []
+                            matches: [],
+                            startTime: moment([startDay.year(), startDay.month(), startDay.date(), 12, 00]),
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
@@ -110,13 +117,10 @@ router.post("/", function(req, res) {
                                                     matchNumber: matchNumber,
                                                     topTeam: team,
                                                     bottomTeam: null,
-                                                    // teams: [],
                                                     nextMatch: Math.floor(0.5*(matchNumber + teams.length + 1))
                                                 }, function(err, newMatch){
                                                     if (err) console.log(err);
                                                     else {
-                                                        // newMatch.teams.push(team);
-                                                        // newMatch.topTeam = team;
                                                         createdRound.matches.addToSet(newMatch);
                                                         
                                                         createdRound.save();
@@ -159,10 +163,23 @@ router.post("/", function(req, res) {
                              function(callback) {
                                 async.timesSeries(numRounds-1, 
                                     function(i, next){
+                                        var startTime;
+                                                            // year         month           day      hour  min
+                                        if(i == 0)
+                                            startTime = moment(startDay).add({days: 2, hours: 12, minutes: 15});
+                                        else if (i == 1)
+                                            startTime = moment(startDay).add({days: 7, hours: 19, minutes: 10});
+                                        else if (i == 2)
+                                            startTime = moment(startDay).add({days: 9, hours: 18, minutes: 9});
+                                        else if (i == 3)
+                                            startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9});
+                                        else if (i == 4)
+                                            startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20});
                                         Round.create(
                                         {
                                             numRound: i+2,  //i = 0 should be round 2
-                                            matches: []
+                                            matches: [],
+                                            startTime: startTime
                                         }, function(err, newRound){
                                             if(err) console.log(err);
                                             else {

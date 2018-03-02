@@ -116,13 +116,13 @@ router.get("/:groupName/bracket", function(req, res){
 
 
 
-// function compare(a,b) {
-//     if (a.year > b.year)
-//         return -1;
-//     else if (a.year < b.year)
-//         return 1;
-//     return 0;
-// }
+function compare(a,b) {
+    if (a.year > b.year)
+        return -1;
+    else if (a.year < b.year)
+        return 1;
+    return 0;
+}
 
 
 module.exports = router;
