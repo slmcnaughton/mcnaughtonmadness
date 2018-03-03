@@ -4,15 +4,15 @@
         <!--Make site responsive on mobile/tablet-->
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="utf-8">
-        <title>McNaughton March Madness</title>
+        <title>McNaughton Madness</title>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
         
     	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
     	
         <link href='https://fonts.googleapis.com/css?family=Holtwood+One+SC' rel='stylesheet' type='text/css'>
-        <link href='https://fonts.googleapis.com/css?family=Kaushan+Script|Herr+Von+Muellerhoff' rel='stylesheet' type='text/css'>
         <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
-        <link href='https://fonts.googleapis.com/css?family=Istok+Web|Roboto+Condensed:700' rel='stylesheet' type='text/css'>
+        <!--<link href='https://fonts.googleapis.com/css?family=Kaushan+Script|Herr+Von+Muellerhoff' rel='stylesheet' type='text/css'>-->
+        <!--<link href='https://fonts.googleapis.com/css?family=Istok+Web|Roboto+Condensed:700' rel='stylesheet' type='text/css'>-->
     
     	<script
           src="https://code.jquery.com/jquery-2.2.4.min.js"
@@ -27,15 +27,16 @@
         
 <% include ../partials/navBar %>
 
+
 <div class="container">
-	<header class="hero">
-        <div class="hero-wrap">
-            <p class="intro" id="intro">McNaughton</p>
-                <h1 id="headline">March Madness</h1>
-                <p class="year"><i class="fas fa-star"></i> <%=tournamentGroup.tournamentReference.year%> <i class="fa fa-star"></i></p>
-            <p><%=tournamentGroup.groupName%></p>
-       </div>
-	</header>
+    
+    <div class="jumbotron hero">
+        <p class="intro" id="intro">McNaughton</p>
+        <h1 id="headline">Madness</h1>
+        <p class="year"><span class="icomoon icon-bracketLeft"></span><%=tournamentGroup.tournamentReference.year%><span class="icomoon icon-bracketRight"></span></p>
+        <p><%=tournamentGroup.groupName%></p>
+    </div>
+    
 	
 
 <h4><%=tournamentGroup.groupName%></h4>

@@ -15,7 +15,7 @@ router.get("/", function(req, res) {
 router.get("/home", function(req, res) {
     //get all campgrounds from db
            
-    res.render("home", {page: "home"});   
+    res.render("about/home", {page: "home"});   
 
 });
 
