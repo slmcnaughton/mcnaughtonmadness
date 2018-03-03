@@ -465,15 +465,21 @@ middlewareObj.userRoundCreation = function(req, res, next) {
                             // userRound Created -> now fill with the userMatchPredictions
                             //============================================================================================
                             async.forEachSeries(foundRound.matches, function(match, next){
+                                var winner;
+                                var comment;
+                                if (req.body[match.matchNumber]){
+                                    winner = req.body[match.matchNumber][0];
+                                    comment = req.body[match.matchNumber][1];
+                                }
                                 var newUserMatchPrediction = {
                                      score: 0,
                                      numRound: newUserRound.round.numRound,
-                                     winner: req.body[match.matchNumber][0],
+                                     winner: winner,
                                      match: {
                                          id: match.id,
                                          matchNumber: match.matchNumber
                                      },
-                                     comment: req.body[match.matchNumber][1]
+                                     comment: comment
                                 };
                                 UserMatchPrediction.create(newUserMatchPrediction, function(err, newUserMatchPrediction){
                                     if(err) console.log(err);

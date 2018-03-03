@@ -54,9 +54,15 @@ router.post("/", middleware.isLoggedIn, function(req, res){
             UserTournament.create(newUserTournament, function(err, userTournament){
                 if(err) console.log(err);
                 else {
-                    // console.log(userTournament);
                     foundTournamentGroup.userTournaments.addToSet(userTournament);
                     foundTournamentGroup.save();
+                    req.user.tournamentGroups.push({
+                        id: foundTournamentGroup._id, 
+                        groupName: foundTournamentGroup.groupName, 
+                        year: userTournament.tournamentReference.year
+                    });
+                    req.user.tournamentGroups.sort(compareUserTournaments);
+                    req.user.save();
                     req.flash('success', 'Entry started!');
                     res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName + "/userTournaments/" + userTournament.user.username + "/1/edit");
                 }
@@ -88,6 +94,14 @@ function compare(a,b) {
         return -1;
     else if (a.round.numRound > b.round.numRound)
         return 1;
+    return 0;
+}
+
+function compareUserTournaments(a,b) {
+    if (a.year < b.year)
+        return 1;
+    else if (a.year > b.year)
+        return -1;
     return 0;
 }
 

@@ -12,9 +12,17 @@ router.get("/", function(req, res) {
    res.render("landing");
 });
 
-router.get("/sampleBracket", function(req, res) {
-    res.render("bracketSample");
-})
+router.get("/home", function(req, res) {
+    //get all campgrounds from db
+           
+    res.render("home", {page: "home"});   
+
+});
+
+
+// router.get("/sampleBracket", function(req, res) {
+//     res.render("bracketSample");
+// })
 
 
 //=============
@@ -108,44 +116,15 @@ router.get("/users/:username", function(req, res) {
             return res.redirect("/users");
         } else {
             foundUser.trophies.sort(compare);
-            res.render("users/show", {user: foundUser});
+            if (req.user && req.user.username === foundUser.username)
+                res.render("users/show", {user: foundUser, page: "profile"});
+            else
+                res.render("users/show", {user: foundUser, page: "users"});
         }
         
-    })
-    
-//If I need to go back to using ids, not first and last names
-//   User.findById(req.params.id).populate("trophies").exec(function(err, foundUser) {
-//       if(err){
-//           req.flash("error", "User not found");
-//           return res.redirect("/");
-//       } else {
-//             // console.log(foundUser.trophies.length);
-//             // foundUser.trophies = newarr(foundUser.trophies);
-//             foundUser.trophies.sort(compare);
-//             // console.log(foundUser.trophies.length);
-//             res.render("users/show", {user: foundUser});
-            
-//       }
-//   })
+    });
 });
 
-
-//USER PROFILE by ID
-// router.get("/users/:id", function(req, res) {
-    
-//   User.findById(req.params.id).populate("trophies").exec(function(err, foundUser) {
-//       if(err){
-//           req.flash("error", "User not found");
-//           return res.redirect("/");
-//       } else {
-//             // console.log(foundUser.trophies.length);
-//             // foundUser.trophies = newarr(foundUser.trophies);
-//             foundUser.trophies.sort(compare);
-//             // console.log(foundUser.trophies.length);
-//             res.render("users/show", {user: foundUser});
-//       }
-//   })
-// });
 
 //order trophies from newest year
 function compare(a,b) {
@@ -200,9 +179,9 @@ var addPastTrophies = function(user){
                 if(err) {
                     console.log(err);
                 } 
-            }) //end of async.forEachSeries
-        };
-     }); //end of TournamentStanding.find()
- }
+            }); //end of async.forEachSeries
+        }
+    }); //end of TournamentStanding.find()
+};
 
 module.exports = router;

@@ -1,7 +1,7 @@
 </head>
     <body>
         <!--navbar-static-top-->
-        <nav class="navbar navbar-inverse" role="navigation"> 
+        <nav class="navbar navbar-inverse navbar-static-top" role="navigation"> 
             <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls-"navbar">
@@ -17,7 +17,7 @@
                     <ul class="nav navbar-nav">
                         <!--If a local variable named page and is equal to "campgrounds", then give this list item a class of active-->
                         <!--We pass page into each view via the res.render() method in routes/campgrounds.js-->
-                        <li class="<%= typeof page !== 'undefined' && page === 'campgrounds' ? 'active' : '' %>"><a href="/campgrounds">Home</a></li>
+                        <li class="<%= typeof page !== 'undefined' && page === 'home' ? 'active' : '' %>"><a href="/home">Home</a></li>
                         <li class="<%= typeof page !== 'undefined' && page === 'users' ? 'active' : '' %>"><a href="/users">Users</a></li>
                         <li class="dropdown <%= typeof page !== 'undefined' && page === 'about' ? 'active' : '' %>">
         				  <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a> 
@@ -28,11 +28,18 @@
         						<li><a href="#">Website Creation</a></li>
         					</ul>
         				</li>
-        				<li class="<%= typeof page !== 'undefined' && page === 'tournaments' ? 'active' : '' %>"><a href="tournaments">Current Bracket</a></li>
+        				<li class="<%= typeof page !== 'undefined' && page === 'tournaments' ? 'active' : '' %>"><a href="/tournaments">Current Bracket</a></li>
         				<li class="dropdown <%= typeof page !== 'undefined' && page === 'tournamentGroups' ? 'active' : '' %>">
         				  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Groups <b class="caret"></b></a> 
         					<ul class="dropdown-menu">
         						<li><a href="/tournamentGroups">All Groups</a></li>
+        						<% if(currentUser) { %>
+            						<% for (var i = 0; i < currentUser.tournamentGroups.length; i++) { %>
+            						    <% if (currentUser.tournamentGroups[i].year === (new Date()).getFullYear() ) { %>
+            						        <li><a href="/tournamentGroups/<%= currentUser.tournamentGroups[i].groupName %>" ><%= currentUser.tournamentGroups[i].groupName %></a></li>
+            						    <% } %>
+            						<% } %>
+            					<% } %>
         						<li><a href="/tournamentGroups/new">Create Group</a></li>
         					</ul>
         				</li>
@@ -47,7 +54,12 @@
             				  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Hi <%= currentUser.firstName %>! <b class="caret"></b></a> 
             					<ul class="dropdown-menu">
             						<li><a href="/users/<%= currentUser.username %>">Profile</a></li>
-            						<li><a href="#">My Groups</a></li>
+            						<% for (var i = 0; i < currentUser.tournamentGroups.length; i++) { %>
+            						    <% if (currentUser.tournamentGroups[i].year === (new Date()).getFullYear() ) { %>
+            						        <li><a href="/tournamentGroups/<%= currentUser.tournamentGroups[i].groupName %>" ><%= currentUser.tournamentGroups[i].groupName %></a></li>
+            						    <% } %>
+            						<% } %>
+            						<!--<li><a href="#">My Groups</a></li>-->
             						<li><a href="#">Edit Profile</a></li>
             						<li><a href="/logout">Log Out</a></li>
             					</ul>

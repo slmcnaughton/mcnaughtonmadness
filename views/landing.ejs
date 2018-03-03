@@ -23,8 +23,20 @@
     
     <div id="landing-header">
  		<h1>McNaughton March Madness</h1>
-		<a href="/tournamentGroups" class="btn btn-lg btn-success">Join a Group</a>
-		<a href="/login" class="btn btn-lg btn-success">Sign in</a>
+ 		<% if(!currentUser) { %>
+ 		    <a href="/login" class="btn btn-lg btn-primary">Login</a>
+ 		    <a href="/login" class="btn btn-lg btn-primary">Sign up</a>
+        <% } else { %>
+                <a href="/users/<%= currentUser.username %>" class="btn btn-lg btn-primary">My Profile</a>
+                <% if (currentUser.tournamentGroups.length === 0 || (currentUser.tournamentGroups[0].year !== new Date().getFullYear() )) { %>
+                    <a href="/tournamentGroups" class="btn btn-lg btn-primary">Join a Group</a>
+                <% } else { %>
+                    <a href="/tournamentGroups/<%= currentUser.tournamentGroups[0].groupName %>"
+                            class="btn btn-lg btn-primary" ><%= currentUser.tournamentGroups[0].groupName %></a>
+                <% } %>
+        <% } %>
+		
+		
     </div>
     
     <ul class="slideshow">

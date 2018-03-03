@@ -15,6 +15,15 @@ var UserSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Trophy"
         }
+    ],
+    tournamentGroups: [ {
+            id: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "TournamentGroup"
+            },
+            groupName: String,
+            year: Number
+        }
     ]
     //newUser.isAdmin = true;
     //use something like: || currentUser && currentUser.isAdmin
