@@ -1,6 +1,127 @@
 <% include ../partials/header %>
 
-    <p>Round by Round bracket scoring</p>
-    <p>Tournament Group</p>
+<div class="homeBackground">
+    <div class="container general-gameplay">
+        
+    <div class="jumbotron hero">
+        <p class="intro" id="intro">McNaughton</p>
+        <h1 id="headline">Madness</h1>
+        <p class="year"><span class="icomoon icon-bracketLeft"></span><%=new Date().getFullYear()%><span class="icomoon icon-bracketRight"></span></p>
+        <p class="tagline">No more busted brackets!</p>
+    </div>
+    
+    <div class="container introduction">
+        <p>The NCAA tournament is a great equalizer in terms of basketball prognostication. When making predictions,
+        do you play it safe and hope your bracket doesn't get busted? Or do you go with the Cinderella story and pick the underdog you <em>actually</em> want to win?</p>
+        
+        <p>All scoring systems reward correct picks. However with the McNaughton Madness round-by-round scoring system, it finally may pay off to pick (and root for!) those underdogs. 
+        No matter which team you pick, you always have a rooting interest in each tournament matchup, keeping the madness alive for the entire tournament.</p>
+        
+        <p>How many points can you score this year? Create or join a group today!</p>
+    </div>
+    
+    <div class="container-fluid" id="bracketOptions">
+        <div class="row">
+            <div class="col-xs-12 bracket"> 
+                <div class="bracketContents leftSide">
+                    <div class="bracketQuadrant bracketRegion">
+                        <div>
+                            <div class="regionRounds">
+                                <!--oneRound = 5 per region-->
+                                <div class="oneRound">
+                                    <div class="match">
+                                        <div class="team">
+                                            <a href="/register" >
+                                                <div class="teamTitle">
+                                                    <h5 class="homeLink">Create Account</h5>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="team">
+                                            <a href="/login" >
+                                                <div class="teamTitle">
+                                                    <h5 class="homeLink">Login</h5>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <!--endMatch-->
+                                  
+                                </div>  
+                                <!--endOneRound-->
+                                <div class="oneRound">
+                                    <div class="match">
+                                        <a href="/tournamentGroups/new">
+                                            <div class="team">
+                                                <div class="teamTitle">
+                                                    <h5 class="homeLink">Create a Group</h5>
+                                                    <h5 class="homeSubheading">Invite Family or Friends</h5>
+                                                </div>
+                                            </div>
+                                        </a>
+                                        
+                                        <a href="/tournamentGroups">
+                                            <div class="team">
+                                                <div class="teamTitle">
+                                                    <h5 class="homeLink">Join a Group</h5>
+                                                    <h5 class="homeSubheading">With Family or Friends</h5>
+                                                </div>
+                                                
+                                                <!--endTeamTitle-->
+                                            </div>
+                                        </a>
+                                        <!--endTeam-->
+                                    </div>
+                                    <!--endMatch-->
+                                </div>  
+                                <!--endOneRound-->
+                                <div class="oneRound">
+                                    <div class="match">
+                                        <a href="/rules">
+                                            <div class="team">
+                                                <div class="teamTitle" >
+                                                    <h5 class="homeLink">Make Picks Each Round</h5>
+                                                    <h5 class="homeSubheading">Read about bracket scoring</h5>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <!--endMatch-->
+                                </div>  
+                                <!--endOneRound-->
+                                    
+                            </div>
+                            <!--endRegionRounds-->
+                        </div>
+                        <!--endRegionLocation/empty div-->
+                    </div>
+                    <!--end top region-->
+                </div>
+                <!--end left side-->
+            </div>
+            <!--end bracket-->
+               
+        </div>
+        <!--end row   -->
+    </div>
+    <!--end container-->
+    
+    <!--<div class="bracketOptions">-->
+        
+    <!--    <div class="step stepOne">-->
+    <!--        text-->
+    <!--    </div>-->
+        
+    <!--    <div class="step stepTwo">-->
+    <!--        text-->
+    <!--    </div>-->
+        
+    <!--    <div class="step stepThree">-->
+    <!--        text-->
+    <!--    </div>-->
+        
+    <!--    <div class="step stepThree">-->
+    <!--        text-->
+    <!--    </div>-->
 
 <% include ../partials/footer %>

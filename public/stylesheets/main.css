@@ -55,6 +55,151 @@
 }
 
 
+
+/*===========================================*/
+/*                HOME PAGE                  */
+/*===========================================*/
+.general-gameplay{
+    background-color: rgba(0,90,180, 0.8);
+    color: black;
+}
+
+.general-gameplay > .jumbotron.hero {
+    background: none;
+    padding: 50px 0 0;
+    margin-top: 1em;
+}
+
+.homeBackground{
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-size: cover;
+    background-image: url("/imgs/wood-floor-compress.jpg");
+    background-repeat: no-repeat;
+    z-index: 0;
+    background-position: center center;
+
+}
+
+.introduction{
+    width: 1000px;
+    max-width: 100%;
+    color: white;
+    font-size: 1.1em;
+}
+
+#bracketOptions .bracketContents{
+    width: 80%;
+    margin: -10 auto;
+    text-align: center;
+}
+
+#bracketOptions .oneRound:last-child .team:after {
+    height: 0;
+}
+
+#bracketOptions .team:last-child-of {
+    /*margin: 10px 0 ;*/
+    display: block;
+    /*height: 90px;*/
+}
+
+#bracketOptions .team {
+    /*margin: 10px 0 ;*/
+    display: block;
+    height: 90px;
+}
+
+#bracketOptions .teamTitle {
+    display: block;
+}
+
+
+/*left column top team*/
+#bracketOptions .oneRound:first-child .team:first-child {
+    margin: 0.5em 0 0;
+    padding: 8px 0;
+}
+/*left column bottom team*/
+#bracketOptions .oneRound:first-child .team:last-child {
+    margin: 0.5em 0 0em;
+    height: 95px;
+    padding: 8px 0;
+}
+
+/*left column vertical bar*/
+#bracketOptions .bracketContents .oneRound:first-child .match:before {
+    top: 40px;
+    height: 100px
+}
+/*left column horizontal bar*/
+#bracketOptions .oneRound:first-child .team:after {
+    top: 29%;
+}
+
+
+
+
+/*middle column top team*/
+#bracketOptions .oneRound:not(:first-child):not(:last-child) .match .team:first-child {
+    margin-top: -.9em;
+    height: 70px;
+    
+}
+
+/*middle column lower team*/
+#bracketOptions .oneRound:not(:first-child):not(:last-child) .match .team:last-child{
+    margin-bottom: .9em;
+    /*padding: 0 0 15px;*/
+    height: 70px;
+}
+
+/*middle column left horizontal bar*/
+#bracketOptions .oneRound:not(:first-child):not(:last-child) .team:before{
+    top: 44%
+}
+
+/*middle column right horizontal bar*/
+#bracketOptions .oneRound:not(:first-child):not(:last-child) .team:after{
+    top: 44%;
+}
+
+/*middle colum right vertical bar*/
+#bracketOptions .bracketContents .oneRound:not(:first-child):not(:last-child) .match:before{
+    top: 19%;
+    height: 100px;
+}
+
+
+#bracketOptions .oneRound:last-child .team {
+    height: 60px;
+    margin-top: -2.5em;
+}
+
+#bracketOptions .oneRound:last-child .team:before{
+    top: 50%;
+}
+
+
+#bracketOptions .homeLink {
+    font-size: 1em;
+    font-weight: 700;
+    color: rgb(0,25,50);
+}
+
+#bracketOptions .homeSubheading {
+    font-size: 1em;
+    color: #5b6c77;
+}
+
+#bracketOptions {
+    padding: 50px;
+}
+
+
+
 /*===========================================*/
 /*Basic Tournament Standings Table Styles*/
 /*===========================================*/
@@ -62,8 +207,8 @@ table {
     color: #333; /* Lighten up font color */
     font-family: Helvetica, Arial, sans-serif; /* Nicer font */
     width: 400px; 
-    border-collapse: 
-    collapse; border-spacing: 0; 
+    border-collapse:  collapse; 
+    border-spacing: 0; 
 }
 
 td, th { 
@@ -250,6 +395,9 @@ background-color: #002851;
     margin: -50px 0 10px;
 }
 
+.hero .tagline{
+    margin-left: 10px;
+}
 
 
 

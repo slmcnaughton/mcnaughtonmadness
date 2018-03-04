@@ -13,10 +13,19 @@ router.get("/", function(req, res) {
 });
 
 router.get("/home", function(req, res) {
-    //get all campgrounds from db
-           
-    res.render("about/home", {page: "home"});   
+    res.render("about/home", {page: "home"});
+});
 
+router.get("/rules", function(req, res) {
+    res.render("about/rules", {page: "home"});
+});
+
+router.get("/history", function(req, res) {
+    res.render("about/history", {page: "home"});
+});
+
+router.get("/website", function(req, res) {
+    res.render("about/website", {page: "home"});
 });
 
 

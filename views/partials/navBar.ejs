@@ -22,10 +22,10 @@
                         <li class="dropdown <%= typeof page !== 'undefined' && page === 'about' ? 'active' : '' %>">
         				  <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a> 
         					<ul class="dropdown-menu">
-        						<li><a href="#">Rules</a></li>
-        						<li><a href="#">History</a></li>
+        						<li><a href="/rules">Rules</a></li>
+        						<li><a href="/history">History</a></li>
         						<li><a href="/tournamentStandings">Previous Standings</a></li>
-        						<li><a href="#">Website Creation</a></li>
+        						<li><a href="/website">Website Creation</a></li>
         					</ul>
         				</li>
         				<li class="<%= typeof page !== 'undefined' && page === 'tournaments' ? 'active' : '' %>"><a href="/tournaments">Current Bracket</a></li>
@@ -59,13 +59,10 @@
             						        <li><a href="/tournamentGroups/<%= currentUser.tournamentGroups[i].groupName %>" ><%= currentUser.tournamentGroups[i].groupName %></a></li>
             						    <% } %>
             						<% } %>
-            						<!--<li><a href="#">My Groups</a></li>-->
             						<li><a href="#">Edit Profile</a></li>
             						<li><a href="/logout">Log Out</a></li>
             					</ul>
             				</li>
-                            
-                           
                         <% } %>
                     </ul>
                 </div>
