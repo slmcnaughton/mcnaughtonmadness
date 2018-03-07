@@ -95,10 +95,11 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
             var round = foundTournament.rounds[req.params.numRound-1];
             var roundFirstMatch = round.matches[0].matchNumber;
  
-        //===========================================================
-        // Handle championship game
-        //===========================================================
+       
         async.series([
+            //===========================================================
+            // Handle championship game
+            //===========================================================
             function(callback) {
                 if (round.numRound === foundTournament.rounds.length)
                 {
@@ -127,6 +128,7 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
                     
                     async.times(numMatches, function(i, next){
                             //need to look for body[matchNumber]
+                            // i is the ith match of the round
                             var bodyIndex = roundFirstMatch + i;
                             
                             if(req.body[bodyIndex]) {
@@ -221,15 +223,11 @@ middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
                                     var userPick = String(prediction.winner);
                                     if (prediction.numRound === 7){
                                         prediction.score = (userPick === winner) ? 5 : 0;
-                                        // console.log("winningScore:" + 5 + ", LS: " + 0);
                                     }
                                     else if (prediction.numRound === 8){
                                         prediction.score = (userPick === winner) ? 10 : 0;
-                                        console.log("winningScore:" + 10 + ", LS: " + 0);
                                     }
                                     else {
-                                        // console.log("winningScore:" + winningScore + ", LS: " + losingScore);
-                                    
                                          prediction.score = (userPick === winner) ? winningScore : losingScore;
                                     }
                                     prediction.save();
@@ -353,15 +351,17 @@ middlewareObj.isRoundComplete = function(req, res, next) {
             }, function(err) {
                 if (err) console.log(err);
                 else if (numUnfinished === 0) {
+                    foundTournamentGroup.tournamentReference.id.currentRound++;
                     foundTournamentGroup.currentRound++;
                     foundTournamentGroup.save();
+                    
                 } 
                 else {
                     next();
                 }
                 
             });
-            next();
+            
         }
     });
    
@@ -602,7 +602,6 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
         }
     });
 };
-
 
 
 module.exports = middlewareObj;

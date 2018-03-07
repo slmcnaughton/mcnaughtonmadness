@@ -15,7 +15,14 @@ var tournamentSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Team"
         },
-    regions: [String]
+    regions: [String],
+    currentRound: Number,
+    scrapes: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Scrape"
+        }
+    ],
 
 });
 

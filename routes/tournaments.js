@@ -7,6 +7,9 @@ var Tournament = require("../models/tournament");
 var Round = require("../models/round");
 var Match = require("../models/match");
 var Team = require("../models/team");
+var Scrape = require("../models/scrape");
+var scrape         = require("../scrape");
+var schedule        = require('node-schedule');
 
 //Page:  /tournaments
 
@@ -32,15 +35,14 @@ router.get("/new", function(req, res) {
 //CREATE -
 router.post("/", function(req, res) {
     
-    // var year = 2017;
+    var year = 2018;
     var regions = ["East", "West", "Midwest", "South"];
-    var year = Math.floor((Math.random()*100+2000));
+    // var year = Math.floor((Math.random()*100+2000));
     var startDay = moment.tz([2018, 02, 15], "America/New_York");
-    // var startDay = moment.tz([2018, 02, 2], "America/New_York");
+    // var startDay = moment.tz([2018, 02, 7], "America/New_York");
     
     //[year, month, day, hour, minute, second, millisecond]
     // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
-    // console.log("here");
 
     
     //   teamNames sample data below
@@ -59,26 +61,46 @@ router.post("/", function(req, res) {
             year: year,
             numTeams: teamNames.length,
             rounds: [],
-            regions: regions
+            regions: regions,
+            currentRound: 1,
+            scrapes: []
         }, function (err, createdTournament) {
             if(err) console.log(err);
             else {
                 // ====================================================
                 // Parallel:
                 //      1) Steps 1 & 2: Create Round 1, Matches, and Teams
-                //      2) Steps 3 % 4: Create remaining (5) rounds and matches
+                //      2) Steps 3 & 4: Create remaining (5) rounds and matches
                 // Afterwards: Save Tournament to database
                 async.parallel([
                     //PART 1)
                     function(callback){
+                        
+                        
                         Round.create(
                         {
                             numRound: 1,
                             matches: [],
                             startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
+                            // startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 10, 9], "America/New_York"),
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
+                                
+                                //Add round 1 scrape listener
+                                var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
+                                var endTime = new moment(startTime).add(37, 'h').toDate();
+                                var job = { start: startTime, end: endTime, rule: '0 */10 * * * *' };
+                                var j = schedule.scheduleJob(job, function(){
+                                    scrape();
+                                });
+                                Scrape.create( job, function(err, createdJob) {
+                                    if(err) console.log(err);
+                                    createdTournament.scrapes.push(createdJob);
+                                });
+                                
+                                
+                                
                                 var teams = [];
                                 async.series([
                                     
@@ -181,10 +203,30 @@ router.post("/", function(req, res) {
                                             numRound: i+2,  //i = 0 should be round 2
                                             matches: [],
                                             startTime: startTime
-                                        }, function(err, newRound){
+                                        }, function(err, createdRound){
                                             if(err) console.log(err);
                                             else {
-                                                createdTournament.rounds.addToSet(newRound);
+                                                
+                                                //Add round scrape listeners
+                                                var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
+                                                var endTime;
+                                                if(i < 3) {
+                                                    endTime = new moment(startTime).add(36, 'h').toDate();
+                                                }
+                                                else {
+                                                    endTime = new moment(startTime).add(6, 'h').toDate();
+                                                }
+                                                var job = { start: startTime, end: endTime, rule: '* */10 * * * *' };
+                                                var j = schedule.scheduleJob(job, function(){
+                                                    scrape();
+                                                    // console.log("time for teeeeeaaaaa");
+                                                });
+                                                Scrape.create( job, function(err, createdJob) {
+                                                    if(err) console.log(err);
+                                                    createdTournament.scrapes.push(createdJob);
+                                                });
+                                                
+                                                createdTournament.rounds.addToSet(createdRound);
                                                 next();
                                             }
                                         });
@@ -331,22 +373,41 @@ function compareTeams(a,b) {
 
 
 var teamNames = [
-        "Villanova",
-        "Mount St Mary's",
-        "Wisconsin",
-        "Virginia Tech",
-        "Virginia",
-        "UNC Wilmington",
-        "Florida",
-        "East Tennessee State",
-        "SMU",
-        "USC",
-        "Baylor",
-        "New Mexico State",
-        "South Carolina",
-        "Marquette",
-        "Duke",
-        "Troy",
+        // "Villanova",
+        // "Mount St Mary's",
+        // "Wisconsin",
+        // "Virginia Tech",
+        // "Virginia",
+        // "UNC Wilmington",
+        // "Florida",
+        // "East Tennessee State",
+        // "SMU",
+        // "USC",
+        // "Baylor",
+        // "New Mexico State",
+        // "South Carolina",
+        // "Marquette",
+        // "Duke",
+        // "Troy",
+        
+        
+        "Stony Brook",
+        "Vermont",
+        "Wake Forest",
+        "Syracuse",
+        "Hartford",
+        "UMBC",
+        "Miss. Val.",
+        "Ark.-PB",
+        "Brigham Young",
+        "Gonzaga",
+        "South Dakota",
+        "S. Dak. St.",
+        "Alabama State",
+        "Texas Southern",
+        "Sacramento State",
+        "Portland State",
+        
         
         "Gonzaga",
         "South Dakota State",

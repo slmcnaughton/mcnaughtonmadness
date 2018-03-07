@@ -50,13 +50,6 @@ function seedDB() {
     //     if(err) console.log(err);
     //     else console.log("removed all matches");
     // });
-    // Trophy.remove({}, function(err){
-    //   if (err) {
-    //       console.log("oops");
-    //   } else {
-    //       console.log("removed all trophies");
-    //   }
-    // });
     // User.remove({}, function(err){
     //   if (err) {
     //       console.log("oops");
@@ -64,6 +57,14 @@ function seedDB() {
     //       console.log("removed all users");
     //   }
     // });
+    // Trophy.remove({}, function(err){
+    //   if (err) {
+    //       console.log("oops");
+    //   } else {
+    //       console.log("removed all trophies");
+    //   }
+    // });
+
     // Campground.remove({}, function(err){
     //   if (err) {
     //       console.log("oops");
@@ -1313,6 +1314,6 @@ var data = [
         ]
     }
     
-]
+];
 
 module.exports = seedDB;

@@ -2,14 +2,14 @@ var mongoose = require("mongoose");
 var passportLocalMongoose = require("passport-local-mongoose");
 
 var UserSchema = new mongoose.Schema({
-    username: String,
-    password: String,
+    username: {type: String, required: true, unique: true},
+    password: {type: String, required: true},
     isAdmin: {type: Boolean, default: false},
     //Other things we can add
     image: String,
     firstName: String,
     lastName: String,
-    email: String,
+    email: {type: String, required: true},
     trophies: [
         {
             type: mongoose.Schema.Types.ObjectId,
@@ -24,7 +24,9 @@ var UserSchema = new mongoose.Schema({
             groupName: String,
             year: Number
         }
-    ]
+    ],
+    resetPasswordToken: String,
+    resetPasswordExpires: Date
     //newUser.isAdmin = true;
     //use something like: || currentUser && currentUser.isAdmin
 });

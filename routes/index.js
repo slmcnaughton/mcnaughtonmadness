@@ -65,7 +65,7 @@ router.post("/register", function(req, res){
         addPastTrophies(user);
         //once the user is registered, log them in
         passport.authenticate("local")(req, res, function(){
-            req.flash("success", "Welcome to McNaughton March Madness " + user.firstName);
+            req.flash("success", "Welcome to McNaughton Madness " + user.firstName);
             res.redirect("/users/" + user.username);
         });
     });
@@ -85,7 +85,7 @@ router.post("/login",
         successRedirect: "/profile",
         failureRedirect: "/login",
         failureFlash: true,
-        successFlash: "Welcome back to McNaughton March Madness!",
+        successFlash: "Welcome back to McNaughton Madness!",
     }), function(req, res) {
 });
 
@@ -99,7 +99,7 @@ router.get('/profile', middleware.isLoggedIn, function(req, res) {
 router.get("/logout", function(req, res){
     req.logout();
     req.flash("success", "Logged you out!");
-    res.redirect("/campgrounds");
+    res.redirect("/home");
 });
 
 //INDEX - show all users
@@ -132,6 +132,10 @@ router.get("/users/:username", function(req, res) {
         }
         
     });
+});
+
+router.get('/forgot', function(req, res) {
+    res.render('forgot', { user: req.user, page: "login"});
 });
 
 

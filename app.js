@@ -9,10 +9,13 @@ var express        = require("express"),
     Campground     = require("./models/campground"),
     Comment        = require("./models/comment"),
     seedDB         = require("./seeds"),
+    scrape         = require("./scrape"),
     Trophy          = require("./models/trophy"),
     TournamentStanding          = require("./models/tournamentStanding"),
     Tournament      = require("./models/tournament"),
-    User           = require("./models/user");
+    User           = require("./models/user"),
+    schedule        = require('node-schedule'),
+     moment = require('moment');
     
 //requiring routes
 var commentRoutes = require("./routes/comments"),
@@ -37,6 +40,23 @@ app.use(flash());
 app.locals.moment = require('moment');
 
 seedDB();
+
+
+// var startTime = new moment();
+// var endTime = new moment().add(5, 'h').toDate();
+// // let startTime = new Date(Date.now() + 5000);
+// // let endTime = new Date(startTime.getTime() + 5000);
+// var j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/10 * * * * *' }, function(){
+// //   console.log('Time for tea!');
+//     console.log(new moment.tz('America/New_York').format('MMMM Do YYYY, h:mm:ss a') );
+//     scrape();
+// });
+
+
+
+
+
+
 
 // PASSPORT CONFIGURATION
 app.use(require("express-session")({
@@ -70,5 +90,27 @@ app.use("/tournamentGroups/:groupName/userTournaments/:username", userRoundRoute
 
 app.listen(process.env.PORT, process.env.IP, function(){
    console.log("McNaughton Madness Server has started"); 
+   
+    Tournament.find({year: new Date().getFullYear()}).populate("scrapes").exec(function(err, foundTournaments) {
+        if(err) console.log(err);
+        else {
+            for (var i = 0; i < foundTournaments.length; i++) {
+                // console.log("TournamentFound found: " + foundTournaments[i].year);
+                for(var j = 0; j < foundTournaments[i].scrapes.length; j++) {
+                    var job = {
+                        start: foundTournaments[i].scrapes[j].start, 
+                        end: foundTournaments[i].scrapes[j].end, 
+                        rule: foundTournaments[i].scrapes[j].rule
+                    };
+                    // console.log(job);
+                    schedule.scheduleJob(job, function() {
+                        console.log(scrape());
+                        // console.log("hi tea");
+                    });
+                }
+            }
+        }
+    });
+  
 });
 
