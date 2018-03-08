@@ -205,6 +205,7 @@
 /*===========================================*/
 table {  
     color: #333; /* Lighten up font color */
+    background: #FAFAFA; /* Lighter grey background */
     font-family: Helvetica, Arial, sans-serif; /* Nicer font */
     width: 400px; 
     border-collapse:  collapse; 
@@ -212,7 +213,7 @@ table {
 }
 
 td, th { 
-    border: 1px solid #CCC; 
+    /*border: 1px solid #CCC; */
     height: 30px; 
 } /* Make cells a bit taller */
 
@@ -225,8 +226,70 @@ th {
 }
 
 td {  
-    background: #FAFAFA; /* Lighter grey background */
-    text-align: center; /* Center our text */
+    /*text-align: center;*/
+}
+
+
+
+/*===========================================*/
+/*Rules Page and Rules Table Styles*/
+/*===========================================*/
+
+.introduction h2:first-child {
+    margin-top: -10px;
+}
+.scoringExample{
+    margin: 0 auto;
+    text-align: center;
+}
+
+
+.scoringTable {
+    border-collapse:collapse;
+    border-spacing:0;
+    padding: 0;
+    border-radius: 10px;
+    border: 3px solid #000000;
+    background-color:#eee;
+    font-size: 1em;
+    /*padding:10px 5px;*/
+    width: 85%;
+    overflow:hidden;
+    word-break:normal;
+    color:#333;
+    text-align: center;
+    margin: 0 auto;
+}
+
+.scoringTable td:first-child { 
+    text-align: left;
+    padding-left: 5px;
+}
+
+/*Giants Orange: #FC5D23*/
+/*Chrome Yellow: #FFA705*/
+/*Wageningen Green: #1FA52F*/
+/*Dark Cerulean: #004284*/
+/*Smoky Black: #0C0C0C*/
+
+/*.scoringTable-seedPicked{*/
+/*    background-color:#BED8D4;*/
+/*}*/
+/*.scoringTable-winningSeed{*/
+/*    background-color:#6EEB83;}*/
+.scoringTable-totalPoints{
+    background-color:#FFA705;
+    font-weight: 700;
+    /*color: #FEFEFE;*/
+}
+@media screen and (max-width: 767px) {
+    .scoringTable col {
+        width: auto !important;
+    }
+    .scoringTable-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 
@@ -1193,28 +1256,10 @@ body {
 /*UserMatchAggregate CSS*/
 /*===================================================*/
 
-/*table{*/
-/*    display:none;*/
-/*    position:absolute;*/
-/*    z-index: 100;*/
+/*tr {*/
+/*    background-color: rgba(50, 180, 50, 0.5);*/
 /*}*/
 
-tr {
-    background-color: rgba(50, 180, 50, 0.5);
-    
-    /*border:2px solid blue;   */
-    /*background-color: blue;*/
-}
-
-tbody {
-    /*color: red;*/
-
-}
-
-table {
-    /*width: 100%;*/
-
-}
 
 .aggregate {
     width: 120%; 
@@ -1272,22 +1317,4 @@ table {
     line-height: 30px;
     margin: 0 0 15px 0;
     text-align: left;
-  
-  /*border: 1px solid rgb(102, 102, 102);*/
-   /*border-collapse: collapse;*/
-   /*border-image-outset: 0px;*/
-   /*border-image-repeat: stretch;*/
-   /*border-image-slice: 100%;*/
-   /*border-image-source: none;*/
-   /*border-image-width: 1;*/
-   /*color: rgb(17, 17, 17);*/
-   /*display: table;*/
-   /*font-family: Georgia, Palatino, "Palatino Linotype", FreeSerif, serif;*/
-   /*font-size: 18px;*/
-   /*font-weight: 400;*/
-   /*background-image: url("bg-pup.png");*/
-   /*height: auto;*/
-  
-   /*width: 100%;*/
-
 }

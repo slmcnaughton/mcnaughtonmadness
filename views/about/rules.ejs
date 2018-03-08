@@ -29,82 +29,139 @@
             <h3>General Scoring Rules:</h3>
             <p>If team A represents the higher seed (ex. a 5 seed) and team B represents the lower seed (ex. 12):</p>
             <ul>
-                <li>If team A is selected and wins: Receive A/B points</li>
-                <li>If team B is selected and wins: Receive B/A points</li>
-                <li>If team A is selected and loses: Lose A/B points</li>
+                <li>If team A is selected and wins: Receive the fraction A/B points</li>
+                <li>If team A is selected and loses: Lose the fraction A/B points</li>
+                <li>If team B is selected and wins: Receive the fraction B/A points</li>
                 <li>If team B is selected and loses: Lose 1 point</li>
             </ul>
             <p>Each of these results are then multiplied by the round (ex. round 3 triples the values of each game's gains/losses.)</p>
             
-            <h3>Scoring Example 1 - A 5/12 matchup in Round 1:</h3>
-            <div class="scoringExample">
-
-<div class="tg-wrap"><table class="tg" style="undefined;table-layout: fixed; width: 345px">
-<colgroup>
-<col style="width: 126px">
-<col style="width: 63px">
-<col style="width: 46px">
-<col style="width: 60px">
-<col style="width: 50px">
-</colgroup>
-  <tr>
-    <th class="tg-uqap">Winning Seed</th>
-    <th class="tg-uqap">5</th>
-    <th class="tg-uqap">5</th>
-    <th class="tg-uqap">12</th>
-    <th class="tg-v47s">12</th>
-  </tr>
-  <tr>
-    <td class="tg-wsnc">Seed Picked</td>
-    <td class="tg-wsnc">5</td>
-    <td class="tg-wsnc">12</td>
-    <td class="tg-wsnc">5</td>
-    <td class="tg-v7c1">12</td>
-  </tr>
-  <tr>
-    <td class="tg-dm0n">Points Earned</td>
-    <td class="tg-dm0n">5/12</td>
-    <td class="tg-dm0n">-1</td>
-    <td class="tg-dm0n">-5/12</td>
-    <td class="tg-rzuq">12/5</td>
-  </tr>
-  <tr>
-    <td class="tg-031e">Round Multiplier</td>
-    <td class="tg-031e">1</td>
-    <td class="tg-031e">1</td>
-    <td class="tg-031e">1</td>
-    <td class="tg-yw4l">1</td>
-  </tr>
-  <tr>
-    <td class="tg-464h">Total Match Points</td>
-    <td class="tg-464h">0.417 </td>
-    <td class="tg-464h">-1</td>
-    <td class="tg-464h">-0.417</td>
-    <td class="tg-464h">2.4</td>
-  </tr>
-</table></div>
+            <div class="row">
+                <div class="scoringExample col-sm-12 col-md-6">
+                    <h3>Scoring Example 1:</h3>
+                    <h4>A 5 vs 12 matchup in Round 1</h4>
+                    <div class="scoringTable-wrap">
+                        <!--style="undefined;table-layout: fixed;-->
+                        <table class="scoringTable">    
+                            <colgroup>
+                                <col style="width: 40%">
+                                <col style="width: 15%">
+                                <col style="width: 15%">
+                                <col style="width: 15%">
+                                <col style="width: 15%">
+                            </colgroup>
+                            <tr class="scoringTable-seedPicked">
+                                <td>Seed Picked</td>
+                                <td>5</td>
+                                <td>5</td>
+                                <td>12</td>
+                                <td>12</td>
+                            </tr>
+                            <tr class="scoringTable-winningSeed">
+                                <td>Winning Seed</td>
+                                <td>5</td>
+                                <td>12</td>
+                                <td>12</td>
+                                <td>5</td>
+                            </tr>
+                            <tr class="scoringTable-pointsEarned">
+                                <td>Points Earned</td>
+                                <td>5/12</td>
+                                <td>-5/12</td>
+                                <td>12/5</td>
+                                <td>-1</td>
+                            </tr>
+                            <tr class="scoringTable-multiplier">
+                                <td>Round Multiplier</td>
+                                <td>1</td>
+                                <td>1</td>
+                                <td>1</td>
+                                <td>1</td>
+                            </tr>
+                            <tr class="scoringTable-totalPoints">
+                                <td>Total Match Points</td>
+                                <td>0.417 </td>
+                                <td>-0.417</td>
+                                <td>2.4</td>
+                                <td>-1</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="scoringExample col-sm-12 col-md-6">
+                    <h3>Scoring Example 2:</h3>
+                    <h4>A 2 vs 3 matchup in Round 3</h4>
+                    <div class="scoringTable-wrap">
+                        <!--style="undefined;table-layout: fixed;-->
+                        <table class="scoringTable">    
+                            <colgroup>
+                                <col style="width: 40%">
+                                <col style="width: 15%">
+                                <col style="width: 15%">
+                                <col style="width: 15%">
+                                <col style="width: 15%">
+                            </colgroup>
+                            <tr class="scoringTable-seedPicked">
+                                <td>Seed Picked</td>
+                                <td>2</td>
+                                <td>2</td>
+                                <td>3</td>
+                                <td>3</td>
+                            </tr>
+                            <tr class="scoringTable-winningSeed">
+                                <td>Winning Seed</td>
+                                <td>2</td>
+                                <td>3</td>
+                                <td>3</td>
+                                <td>2</td>
+                            </tr>
+                            <tr class="scoringTable-pointsEarned">
+                                <td>Points Earned</td>
+                                <td>2/3</td>
+                                <td>-2/3</td>
+                                <td>3/2</td>
+                                <td>-1</td>
+                            </tr>
+                            <tr class="scoringTable-multiplier">
+                                <td>Round Multiplier</td>
+                                <td>3</td>
+                                <td>3</td>
+                                <td>3</td>
+                                <td>3</td>
+                            </tr>
+                            <tr class="scoringTable-totalPoints">
+                                <td>Total Match Points</td>
+                                <td>2</td>
+                                <td>-2</td>
+                                <td>4.5</td>
+                                <td>-3</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <ul>
-                <li>If team A is selected and wins: Receive A/B points (ex: gain 5/12 of a point)</li>
-                <li>If team B is selected and wins: Receive B/A points (ex: gain 12/5 of a point)</li>
-                <li>If team A is selected and loses: Lose A/B points (ex: lose 5/12 of a point)</li>
-                <li>If team B is selected and loses: Lose 1 point</li>
-            </ul>
+            <!--<ul>-->
+            <!--    <li>If team A is selected and wins: Receive A/B points (ex: gain 5/12 of a point)</li>-->
+            <!--    <li>If team B is selected and wins: Receive B/A points (ex: gain 12/5 of a point)</li>-->
+            <!--    <li>If team A is selected and loses: Lose A/B points (ex: lose 5/12 of a point)</li>-->
+            <!--    <li>If team B is selected and loses: Lose 1 point</li>-->
+            <!--</ul>-->
             
             
             <h2>Other Rules</h2>
             <ul>
                 <li>Players choose their projected winners of each matchup in a round before first match in the round tips off.</li>
                 <li>Honesty Clause: Do not look at any player's picks for the round until you submit your own!</li>
-                <li>Bonus Scoring: Before the start of the tournament, players will also choose a Final Four team from each region, and an overall champion:</li>
+                <li>Bonus Scoring: Before the start of the tournament, players will also choose a Final Four team from each region, and a champion:</li>
                 <ul>
                     <li>5 bonus points are awarded for each initial final four pick to successfully reach the final four</li>
                     <li>10 bonus points are awarded for picking the correct champion before the tournament begins</li>
                 </ul>
-                
             </ul>
             
-        
+            <br>
+            <br>
 
 
         </div>
