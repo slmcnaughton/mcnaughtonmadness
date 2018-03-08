@@ -25,15 +25,14 @@ router.get("/", function(req, res) {
     });
 });
 
-// middleware.isLoggedIn, 
+
 //NEW - show form to create new tournament 
-router.get("/new", function(req, res) {
-    res.render("tournaments/new");
+router.get("/new", middleware.isLoggedIn, function(req, res) {
+    res.render("tournaments/new", {page: "tournaments"});
 });
 
-// middleware.isLoggedIn, 
 //CREATE -
-router.post("/", function(req, res) {
+router.post("/", middleware.isLoggedIn, function(req, res) {
     
     var year = 2018;
     var regions = ["East", "West", "Midwest", "South"];
@@ -320,14 +319,14 @@ router.get("/:year", function(req, res){
 });
 
 //EDIT Tournament Route
-router.get("/:id/edit", middleware.checkCampgroundOwnership, function(req, res){
+router.get("/:id/edit", middleware.checkTournamentGroupOwnership, function(req, res){
     Campground.findById(req.params.id, function(err, foundCampground){
         res.render("campgrounds/edit", {campground: foundCampground});
     });
 });
 
 // UPDATE Tournament Route
-router.put("/:id", middleware.checkCampgroundOwnership, function(req, res) {
+router.put("/:id", middleware.checkTournamentGroupOwnership, function(req, res) {
    //find and update the correct campground
    // Campground.findByIdAndUpdate(id, newData, callback)
    Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, updatedCampground){
@@ -340,7 +339,7 @@ router.put("/:id", middleware.checkCampgroundOwnership, function(req, res) {
 });
 
 //DESTROY Tournament Route
-router.delete("/:id", middleware.checkCampgroundOwnership, function(req, res){
+router.delete("/:id", middleware.checkTournamentGroupOwnership, function(req, res){
    Campground.findByIdAndRemove(req.params.id, function(err){
       if(err){
           res.redirect("/campgrounds");

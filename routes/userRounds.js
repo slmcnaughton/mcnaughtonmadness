@@ -12,8 +12,7 @@ var middleware = require("../middleware");
 
 
 //EDIT - render edit userRound form (aka...makePicks)
-// middleware.checkCommentOwnership, 
-router.get("/:numRound/edit", function(req, res){
+router.get("/:numRound/edit", middleware.checkUserTournamentOwnership, function(req, res){
     TournamentGroup.findOne({groupName: req.params.groupName})
         .exec(function (err, foundTournamentGroup){
         if(err || !foundTournamentGroup) {
@@ -60,9 +59,8 @@ router.get("/:numRound/edit", function(req, res){
 
 
 //UPDATE - UserRound of Tournament
-// middleware.checkCommentOwnership,
-router.put("/:numRound", middleware.checkTipoffTime, middleware.userRoundCreation, middleware.updateUserMatchAggregates, function(req, res){
-    
+router.put("/:numRound", middleware.checkUserTournamentOwnership, middleware.checkTipoffTime, middleware.userRoundCreation, 
+                                middleware.updateUserMatchAggregates, function(req, res){
     var round = Number(req.params.numRound);
     if(round === 1) {
         req.flash('success', 'Round 1 picks submitted!');

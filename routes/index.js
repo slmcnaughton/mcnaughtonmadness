@@ -7,7 +7,6 @@ var User = require("../models/user");
 var TournamentStanding = require("../models/tournamentStanding");
 var Trophy = require("../models/trophy");
 var crypto = require('crypto');
-var nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
 
 //Root Route
@@ -85,11 +84,12 @@ router.get("/login", function(req, res){
    //from the line in app.js: passport.use(new LocalStrategy(User.authenticate())); 
 router.post("/login", 
     passport.authenticate("local", {
-        successRedirect: "/profile",
+        successReturnToOrRedirect: "/profile",
         failureRedirect: "/login",
         failureFlash: true,
         successFlash: "Welcome back to McNaughton Madness!",
     }), function(req, res) {
+        delete req.session.returnTo;
 });
 
 //Used with login post route to send user directly to their profile page upon login
@@ -102,7 +102,7 @@ router.get('/profile', middleware.isLoggedIn, function(req, res) {
 router.get("/logout", function(req, res){
     req.logout();
     req.flash("success", "Logged you out!");
-    res.redirect("/home");
+    res.redirect("/login");
 });
 
 //INDEX - show all users
@@ -110,7 +110,7 @@ router.get("/users", function(req, res) {
     //get all users from db
     User.find({}, function(err, allUsers) {
         if(err) {
-            console.log(err)
+            console.log(err);
         } else {
             res.render("users/index", {users: allUsers, page: "users"});
         }
@@ -120,7 +120,7 @@ router.get("/users", function(req, res) {
 
 router.get("/users/:username", function(req, res) {
     
-    var username = req.params.username
+    var username = req.params.username;
     
     User.findOne( {username: username}).populate("trophies").exec(function(err, foundUser){
         if (err || !foundUser){

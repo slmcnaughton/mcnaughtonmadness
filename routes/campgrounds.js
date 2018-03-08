@@ -60,14 +60,16 @@ router.get("/:id", function(req, res){
 });
 
 //EDIT Campground Route
-router.get("/:id/edit", middleware.checkCampgroundOwnership, function(req, res){
+// middleware.checkCampgroundOwnership
+router.get("/:id/edit", function(req, res){
     Campground.findById(req.params.id, function(err, foundCampground){
         res.render("campgrounds/edit", {campground: foundCampground});
     });
 });
 
 // UPDATE Campground Route
-router.put("/:id", middleware.checkCampgroundOwnership, function(req, res) {
+// middleware.checkCampgroundOwnership
+router.put("/:id", function(req, res) {
    //find and update the correct campground
    // Campground.findByIdAndUpdate(id, newData, callback)
    Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, updatedCampground){
@@ -80,7 +82,8 @@ router.put("/:id", middleware.checkCampgroundOwnership, function(req, res) {
 });
 
 //DESTROY Campground Route
-router.delete("/:id", middleware.checkCampgroundOwnership, function(req, res){
+// middleware.checkCampgroundOwnership,
+router.delete("/:id", function(req, res){
    Campground.findByIdAndRemove(req.params.id, function(err){
       if(err){
           res.redirect("/campgrounds");

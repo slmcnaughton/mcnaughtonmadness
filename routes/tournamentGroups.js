@@ -13,28 +13,26 @@ router.get("/", function(req, res) {
         if(err) {
             console.log(err);
         } else {
-            res.render("tournamentGroups/index", {tournamentGroups: allTournamentGroups, page: "tournamentGroups"});        //rename the page when I do the navbar
+            res.render("tournamentGroups/index", {tournamentGroups: allTournamentGroups, page: "tournamentGroups"});
         }
     });
 });
 
-// middleware.isLoggedIn, 
 //NEW - show form to create new tournament Group
-router.get("/new", function(req, res) {
+router.get("/new", middleware.isLoggedIn, function(req, res) {
     Tournament.find({}, function(err, allTournaments) {
         if(err) {
             console.log(err);
         } else {
             allTournaments.sort(compare);
-            res.render("tournamentGroups/new", {tournaments: allTournaments, page: "tournamentGroups"});        //rename the page when I do the navbar
+            res.render("tournamentGroups/new", {tournaments: allTournaments, page: "tournamentGroups"});
         }
     });
 });
 
 
 //CREATE -
-// middleware.isLoggedIn, 
-router.post("/", function(req, res) {
+router.post("/", middleware.isLoggedIn, function(req, res) {
     Tournament.findOne({year: req.body.tournamentYear}).exec(function (err, foundTournament){
         if(err) {
             console.log(err);
@@ -43,13 +41,13 @@ router.post("/", function(req, res) {
         else {
             var newTournamentGroup = {
                 groupName: req.body.groupName,
-                commissioner: {
-                    name: "Seth"
-                },
                 // commissioner: {
-                //     id: req.user._id,
-                //     name: req.user.firstName //+ " " + req.user.lastName.substring(0,1) + "."
+                //     name: "Seth"
                 // },
+                commissioner: {
+                    id: req.user._id,
+                    name: req.user.firstName //+ " " + req.user.lastName.substring(0,1) + "."
+                },
                 tournamentReference: {
                     id: foundTournament.id,
                     year: foundTournament.year
@@ -69,8 +67,6 @@ router.post("/", function(req, res) {
                     }
                 }
                 else {
-                    
-                    // res.redirect("/tournamentGroups/");
                     res.redirect("/tournamentGroups/" + newlyCreated.groupName);
                 }
             });
@@ -86,7 +82,6 @@ router.get("/:groupName", function(req, res){
     var groupName = req.params.groupName;
     TournamentGroup.findOne({groupName: groupName})
         .populate({path: "userTournaments", populate: "user"})
-        // .populate("tournamentReference")
         .exec(function(err, foundTournamentGroup){
         if (err || !foundTournamentGroup){
             req.flash("error", "Tournament Group not found");
@@ -117,6 +112,56 @@ router.get("/:groupName/bracket", function(req, res){
     });
 });
 
+
+//Note: this must be below the /tournaments/new route
+//SHOW - shows more information about a particular tournament
+router.get("/:year", function(req, res){
+    var year = req.params.year;
+    Tournament.findOne({year: year})
+        .populate({path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }})
+        .populate({path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }})
+        .populate("champion")
+        .exec(function(err, foundTournament){
+         if (err || !foundTournament){
+            req.flash("error", "Tournament not found");
+            return res.redirect("/tournaments");
+        } else {
+            res.render("tournaments/show", {tournament: foundTournament});
+        }
+    });
+});
+
+//EDIT Tournament Route
+router.get("/:id/edit", middleware.checkTournamentGroupOwnership, function(req, res){
+    Campground.findById(req.params.id, function(err, foundCampground){
+        res.render("campgrounds/edit", {campground: foundCampground});
+    });
+});
+
+// UPDATE Tournament Route
+router.put("/:id", middleware.checkTournamentGroupOwnership, function(req, res) {
+   //find and update the correct campground
+   // Campground.findByIdAndUpdate(id, newData, callback)
+   Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, updatedCampground){
+       if(err){
+           res.redirect("/campgrounds");
+       } else {
+            res.redirect("/campgrounds/" + req.params.id);     
+       }
+   });
+});
+
+//DESTROY Tournament Route
+router.delete("/:id", middleware.checkTournamentGroupOwnership, function(req, res){
+   Campground.findByIdAndRemove(req.params.id, function(err){
+      if(err){
+          res.redirect("/campgrounds");
+      } else {
+          req.flash("success", "Campground deleted");
+          res.redirect("/campgrounds");
+      }
+   });
+});
 
 
 

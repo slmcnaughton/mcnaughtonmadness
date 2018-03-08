@@ -73,7 +73,7 @@ router.post("/", middleware.isLoggedIn, function(req, res){
 });
 
 //SHOW - shows more information about a particular userTournament
-router.get("/:username", function(req, res){
+router.get("/:username", middleware.isLoggedIn, function(req, res){
     UserTournament.findOne({"user.username" : req.params.username})
             .populate({path: "userRounds", populate: {path: "round.id"}})
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "winner"}}})
@@ -89,21 +89,7 @@ router.get("/:username", function(req, res){
     });
 });
 
-function compare(a,b) {
-    if (a.round.numRound < b.round.numRound)
-        return -1;
-    else if (a.round.numRound > b.round.numRound)
-        return 1;
-    return 0;
-}
 
-function compareUserTournaments(a,b) {
-    if (a.year < b.year)
-        return 1;
-    else if (a.year > b.year)
-        return -1;
-    return 0;
-}
 
 // router.get("/:commentId/edit", middleware.isLoggedIn, function(req, res){
 //     // find campground by id
@@ -136,5 +122,21 @@ function compareUserTournaments(a,b) {
 //     })
 // });
 
+
+function compare(a,b) {
+    if (a.round.numRound < b.round.numRound)
+        return -1;
+    else if (a.round.numRound > b.round.numRound)
+        return 1;
+    return 0;
+}
+
+function compareUserTournaments(a,b) {
+    if (a.year < b.year)
+        return 1;
+    else if (a.year > b.year)
+        return -1;
+    return 0;
+}
 
 module.exports = router;

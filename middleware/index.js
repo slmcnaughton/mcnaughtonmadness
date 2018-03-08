@@ -17,15 +17,37 @@ var UserMatchAggregate = require("../models/userMatchAggregate");
 
 var middlewareObj = {};
 
-middlewareObj.checkCampgroundOwnership = function(req, res, next) {
+middlewareObj.checkTournamentGroupOwnership = function(req, res, next) {
     if(req.isAuthenticated()){
-        Campground.findById(req.params.id, function(err, foundCampground){
-            if(err || !foundCampground) {
-                req.flash("error", "Campground not found");
+        TournamentGroup.findOne({groupName: req.params.groupName}).exec(function(err,foundTournamentGroup) {
+            if(err || !foundTournamentGroup) {
+                req.flash("error", "Tournament Group not found");
                 res.redirect("back");
             } else {
-                //does user own the campground?
-                if(foundCampground.author.id.equals(req.user.id)){
+                //does user own the tournament group?
+                if(foundTournamentGroup.commissioner.id.equals(req.user.id)){
+                    next();
+                } else {
+                    req.flash("error", "You don't have permission to do that");
+                    res.redirect("back");
+                }
+            }
+        });
+    } else {
+        req.flash("error", "You need to be logged in to do that");
+        res.redirect("back");
+    }
+};
+
+middlewareObj.checkUserTournamentOwnership = function(req, res, next) {
+    if(req.isAuthenticated()){
+       UserTournament.findOne({"user.username": req.params.username, "tournamentGroup.groupName" : req.params.groupName}).exec(function(err, foundUserTournament){
+            if(err || !foundUserTournament) {
+                req.flash("error", "User Tournament not found");
+                res.redirect("back");
+            } else {
+                //does user own the User Tournament?
+                if(foundUserTournament.user.id.equals(req.user.id)){
                     next();
                 } else {
                     req.flash("error", "You don't have permission to do that");
@@ -66,6 +88,7 @@ middlewareObj.isLoggedIn = function(req, res, next){
     if(req.isAuthenticated()){
         return next();
     }
+    req.session.returnTo = req.originalUrl;
     req.flash("error", "You need to be logged in to do that");
     res.redirect("/login");
 };
@@ -354,6 +377,7 @@ middlewareObj.isRoundComplete = function(req, res, next) {
                     foundTournamentGroup.tournamentReference.id.currentRound++;
                     foundTournamentGroup.currentRound++;
                     foundTournamentGroup.save();
+                    next();
                     
                 } 
                 else {
@@ -361,7 +385,7 @@ middlewareObj.isRoundComplete = function(req, res, next) {
                 }
                 
             });
-            
+            // next();
         }
     });
    
