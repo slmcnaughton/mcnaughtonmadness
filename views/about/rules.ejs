@@ -1,6 +1,123 @@
 <% include ../partials/header %>
 
+<div class="homeBackground">
+    <div class="container general-gameplay">
+        
+        <div class="jumbotron hero">
+            <p class="intro" id="intro">McNaughton</p>
+            <h1 id="headline">Madness</h1>
+            <p class="year"><span class="icomoon icon-bracketLeft"></span><%=new Date().getFullYear()%><span class="icomoon icon-bracketRight"></span></p>
+            <p class="tagline">Bracket Scoring and Other Rules</p>
+        </div>
 
-<h1>Rules Go Here</h1>
+        <div class="container introduction">
+            <h2>Bracket Scoring</h2>
+            <p>Have you ever considered picking a 16 seed to beat a 1 in your bracket? Probably not. Before the start of the tournament in 
+                <%= new Date().getFullYear() %> the 1 seeds were <%=132 + 4*(new Date().getFullYear()-2018) %>-0 against the 16 seeds.  
+                It doesn't matter who the teams are, you quickly take the slam dunk and spend your time on the rest of the bracket. The limited foresight suggests
+                this game should be worth as little as possible.</p>
+            
+            <p>On the other hand, the true puzzlers are typically the 8/9 matchups. Correctly picking these winners is significantly more challenging than the earlier
+                than the first. As a result, it should be worth more.</p>
+            
+            <p>But the truth is that picking an upset is harder still. The 9 seed over the 8, not so much. But the 12 seed over the 5? If you're right, 
+            you deserve something more for your chutzpah. The McNaughton Madness scoring system attempts to fairly reward your prognostication.
+            </p>
+  
+            <p>The seeding of the teams gives us a nice way to rank every possible matchup by theoretical difficulty.</p>
+            
+            <h3>General Scoring Rules:</h3>
+            <p>If team A represents the higher seed (ex. a 5 seed) and team B represents the lower seed (ex. 12):</p>
+            <ul>
+                <li>If team A is selected and wins: Receive A/B points</li>
+                <li>If team B is selected and wins: Receive B/A points</li>
+                <li>If team A is selected and loses: Lose A/B points</li>
+                <li>If team B is selected and loses: Lose 1 point</li>
+            </ul>
+            <p>Each of these results are then multiplied by the round (ex. round 3 triples the values of each game's gains/losses.)</p>
+            
+            <h3>Scoring Example 1 - A 5/12 matchup in Round 1:</h3>
+            <div class="scoringExample">
+
+<div class="tg-wrap"><table class="tg" style="undefined;table-layout: fixed; width: 345px">
+<colgroup>
+<col style="width: 126px">
+<col style="width: 63px">
+<col style="width: 46px">
+<col style="width: 60px">
+<col style="width: 50px">
+</colgroup>
+  <tr>
+    <th class="tg-uqap">Winning Seed</th>
+    <th class="tg-uqap">5</th>
+    <th class="tg-uqap">5</th>
+    <th class="tg-uqap">12</th>
+    <th class="tg-v47s">12</th>
+  </tr>
+  <tr>
+    <td class="tg-wsnc">Seed Picked</td>
+    <td class="tg-wsnc">5</td>
+    <td class="tg-wsnc">12</td>
+    <td class="tg-wsnc">5</td>
+    <td class="tg-v7c1">12</td>
+  </tr>
+  <tr>
+    <td class="tg-dm0n">Points Earned</td>
+    <td class="tg-dm0n">5/12</td>
+    <td class="tg-dm0n">-1</td>
+    <td class="tg-dm0n">-5/12</td>
+    <td class="tg-rzuq">12/5</td>
+  </tr>
+  <tr>
+    <td class="tg-031e">Round Multiplier</td>
+    <td class="tg-031e">1</td>
+    <td class="tg-031e">1</td>
+    <td class="tg-031e">1</td>
+    <td class="tg-yw4l">1</td>
+  </tr>
+  <tr>
+    <td class="tg-464h">Total Match Points</td>
+    <td class="tg-464h">0.417 </td>
+    <td class="tg-464h">-1</td>
+    <td class="tg-464h">-0.417</td>
+    <td class="tg-464h">2.4</td>
+  </tr>
+</table></div>
+            </div>
+            <ul>
+                <li>If team A is selected and wins: Receive A/B points (ex: gain 5/12 of a point)</li>
+                <li>If team B is selected and wins: Receive B/A points (ex: gain 12/5 of a point)</li>
+                <li>If team A is selected and loses: Lose A/B points (ex: lose 5/12 of a point)</li>
+                <li>If team B is selected and loses: Lose 1 point</li>
+            </ul>
+            
+            
+            <h2>Other Rules</h2>
+            <ul>
+                <li>Players choose their projected winners of each matchup in a round before first match in the round tips off.</li>
+                <li>Honesty Clause: Do not look at any player's picks for the round until you submit your own!</li>
+                <li>Bonus Scoring: Before the start of the tournament, players will also choose a Final Four team from each region, and an overall champion:</li>
+                <ul>
+                    <li>5 bonus points are awarded for each initial final four pick to successfully reach the final four</li>
+                    <li>10 bonus points are awarded for picking the correct champion before the tournament begins</li>
+                </ul>
+                
+            </ul>
+            
+        
+
+
+        </div>
+        
+    </div>
+    
+    
+    
+    
+    
+</div>
+
+
+
 
 <% include ../partials/footer %>

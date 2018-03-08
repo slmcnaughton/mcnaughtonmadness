@@ -33,21 +33,24 @@ router.get("/:numRound/edit", function(req, res){
                             tournament: foundTournament, 
                             round: foundTournament.rounds[numRound-1], 
                             tournamentGroup: foundTournamentGroup,
-                            username: req.params.username
+                            username: req.params.username,
+                            page: "tournamentGroups"
                         });
                     } else if (numRound === 7) {
                         res.render("userRounds/editFinalFour.ejs", {
                             tournament: foundTournament, 
                             numRound: numRound, 
                             tournamentGroup: foundTournamentGroup,
-                            username: req.params.username
+                            username: req.params.username,
+                            page: "tournamentGroups"
                         });
                     } else {
                         res.render("userRounds/editChamp.ejs", {
                             tournament: foundTournament, 
                             numRound: Number(numRound), 
                             tournamentGroup: foundTournamentGroup,
-                            username: req.params.username
+                            username: req.params.username,
+                            page: "tournamentGroups"
                         });
                     }
                 });

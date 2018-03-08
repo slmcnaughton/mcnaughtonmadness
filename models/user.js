@@ -3,7 +3,7 @@ var passportLocalMongoose = require("passport-local-mongoose");
 
 var UserSchema = new mongoose.Schema({
     username: {type: String, required: true, unique: true},
-    password: {type: String, required: true},
+    password: {type: String},
     isAdmin: {type: Boolean, default: false},
     //Other things we can add
     image: String,

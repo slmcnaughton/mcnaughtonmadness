@@ -6,6 +6,9 @@ var async = require("async");
 var User = require("../models/user");
 var TournamentStanding = require("../models/tournamentStanding");
 var Trophy = require("../models/trophy");
+var crypto = require('crypto');
+var nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 //Root Route
 router.get("/", function(req, res) {
@@ -65,7 +68,7 @@ router.post("/register", function(req, res){
         addPastTrophies(user);
         //once the user is registered, log them in
         passport.authenticate("local")(req, res, function(){
-            req.flash("success", "Welcome to McNaughton Madness " + user.firstName);
+            req.flash("success", "Welcome to McNaughton Madness, " + user.firstName + "!");
             res.redirect("/users/" + user.username);
         });
     });
@@ -137,6 +140,106 @@ router.get("/users/:username", function(req, res) {
 router.get('/forgot', function(req, res) {
     res.render('forgot', { user: req.user, page: "login"});
 });
+
+// http://sahatyalkabov.com/how-to-implement-password-reset-in-nodejs/
+router.post('/forgot', function(req, res, next) {
+    async.waterfall([
+        function(done) {
+            crypto.randomBytes(20, function(err, buf) {
+                var token = buf.toString('hex');
+                done(err, token);
+            });
+        },
+        function(token, done) {
+            User.findOne({ email: req.body.email }, function(err, user) {
+                if (err || !user) {
+                    req.flash('error', 'No account with that email address exists.');
+                    return res.redirect('/forgot');
+                }
+        
+                user.resetPasswordToken = token;
+                user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+        
+                user.save(function(err) {
+                    done(err, token, user);
+                });
+            });
+        },
+        function(token, user, done) {
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+                var mailOptions = {
+                to: user.email,
+                from: 'no-reply@mcnaughtonmadness.com',
+                subject: 'McNaughton Madness Password Reset',
+                text: 'Hello ' + user.firstName + ',\n\n' + 'You are receiving this because you have requested the reset of the password for your McNaughton Madness account.\n\n' +
+                  'Please click the following link, or paste this into your browser to complete the process:\n\n' +
+                  'http://' + req.headers.host + '/reset/' + token + '\n\n' +
+                  'If you did not request this, please ignore this email and your password will remain unchanged.\n'
+            };
+            sgMail.send(mailOptions, function(err) {
+                req.flash('info', 'An e-mail has been sent to ' + user.email + ' with further instructions (you may need to check your spam folder!)');
+                done(err, 'done');
+            });
+        }
+    ], function(err) {
+        if (err) return next(err);
+        res.redirect('/forgot');
+    });
+});
+
+
+router.get('/reset/:token', function(req, res) {
+
+    User.findOne({ resetPasswordToken: req.params.token, resetPasswordExpires: { $gt: Date.now() } }, function(err, user) {
+        if (err || !user) {
+            req.flash('error', 'Password reset token is invalid or has expired.');
+            return res.redirect('/forgot');
+        }
+        res.render('reset', {user: req.user, token: req.params.token, page: "login"});
+    });
+});
+
+router.post('/reset/:token', function(req, res) {
+    async.waterfall([
+        function(done) {
+            User.findOne({ resetPasswordToken: req.params.token, resetPasswordExpires: { $gt: Date.now() } }, function(err, user) {
+                if (err || !user) {
+                    req.flash('error', 'Password reset token is invalid or has expired.');
+                    return res.redirect('back');
+                }
+                
+                user.password = req.body.password;
+                user.resetPasswordToken = undefined;
+                user.resetPasswordExpires = undefined;
+                
+                user.save(function(err) {
+                    if (err) console.log(err);
+                    req.logIn(user, function(err) {
+                        done(err, user);
+                    });
+                });
+            });
+        },
+        function(user, done) {
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            var mailOptions = {
+                to: user.email,
+                from: 'no-reply@mcnaughtonmadness.com',
+                subject: 'Your password has been changed',
+                text: 'Hello ' + user.firstName + ',\n\n' +
+                'This is a confirmation that the password for your McNaughton Madness account ' + user.email + ' has just been changed.\n'
+            };
+            sgMail.send(mailOptions, function(err) {
+                req.flash('success', 'Success! Your password has been changed.');
+                done(err);
+            });
+        }
+    ], function(err) {
+        if (err) console.log(err);
+        res.redirect("/users/" + req.user.username);
+    });
+});
+
 
 
 //order trophies from newest year
