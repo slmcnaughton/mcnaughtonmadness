@@ -7,6 +7,7 @@ var Tournament = require("../models/tournament");
 var Round = require("../models/round");
 var Match = require("../models/match");
 var Team = require("../models/team");
+var TeamImage = require("../models/teamImage");
 var Scrape = require("../models/scrape");
 var scrape         = require("../scrape");
 var schedule        = require('node-schedule');
@@ -34,9 +35,9 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2018;
+    // var year = 2018;
     var regions = ["East", "West", "Midwest", "South"];
-    // var year = Math.floor((Math.random()*100+2000));
+    var year = Math.floor((Math.random()*100+2000));
     var startDay = moment.tz([2018, 02, 15], "America/New_York");
     // var startDay = moment.tz([2018, 02, 7], "America/New_York");
     
@@ -110,20 +111,29 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                         var i = 0;
                                         
                                         async.forEachSeries(teamNames, function(teamName, next){
-                                            var team = {
-                                                region: regions[Math.floor(i / order.length)],
-                                                name: teamName,
-                                                seed: order[i % order.length],
-                                                firstMatchNum: Math.floor(i / 2) + 1
-                                            };
-                                            Team.create(team, function(err, newTeam){
+                                            
+                                            TeamImage.findOne({name: teamName}).exec(function(err, foundTeamImage) {
                                                 if(err) console.log(err);
-                                                else {
-                                                    teams.push(newTeam);
-                                                    i++;
-                                                    next();
+                                                var image;
+                                                if(foundTeamImage) {
+                                                    image = foundTeamImage.image;
                                                 }
-                                            });
+                                                var team = {
+                                                    region: regions[Math.floor(i / order.length)],
+                                                    name: teamName,
+                                                    seed: order[i % order.length],
+                                                    firstMatchNum: Math.floor(i / 2) + 1,
+                                                    image: image
+                                                };
+                                                Team.create(team, function(err, newTeam){
+                                                    if(err) console.log(err);
+                                                    else {
+                                                        teams.push(newTeam);
+                                                        i++;
+                                                        next();
+                                                    }
+                                                });
+                                            })
                                         }, function(err) {
                                             if (err) console.log(err);
                                             else callback();

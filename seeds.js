@@ -12,6 +12,7 @@ var UserMatchAggregate = require("./models/userMatchAggregate");
 var Round = require("./models/round");
 var Match = require("./models/match");
 var Team = require("./models/team");
+var TeamImage = require("./models/teamImage");
 
 function seedDB() {
     // TournamentGroup.remove({}, function(err){
@@ -57,6 +58,13 @@ function seedDB() {
     //       console.log("removed all users");
     //   }
     // });
+    // TeamImage.remove({}, function(err){
+    //   if (err) {
+    //       console.log("oops");
+    //   } else {
+    //       console.log("removed all team images");
+    //   }
+    // });
     // Trophy.remove({}, function(err){
     //   if (err) {
     //       console.log("oops");
@@ -75,7 +83,6 @@ function seedDB() {
     
     // addTournamentStandings();
 }
-
 
 
 var addTournamentStandings = function (){

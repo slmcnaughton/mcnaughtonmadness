@@ -7,6 +7,7 @@ var User = require("../models/user");
 var TournamentStanding = require("../models/tournamentStanding");
 var Trophy = require("../models/trophy");
 var crypto = require('crypto');
+var TeamImage = require('../models/teamImage');
 const sgMail = require('@sendgrid/mail');
 
 //Root Route
@@ -31,9 +32,15 @@ router.get("/website", function(req, res) {
 });
 
 
-// router.get("/sampleBracket", function(req, res) {
-//     res.render("bracketSample");
-// })
+router.get("/test", function(req, res) {
+    TeamImage.find().sort("name").exec(function(err, foundTeamImages) {
+        // foundTeamImages.forEach(function(foundTeamImage) {
+        //     console.log(foundTeamImage.name + " " + foundTeamImage.image);
+        // });
+        res.render("test", {teamImages: foundTeamImages});
+    });
+    
+})
 
 
 //=============

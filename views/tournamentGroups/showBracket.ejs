@@ -60,8 +60,11 @@
                                                                 <div class="team">
                                                                     <div class="teamTitle">
                                                                         <% if(match.topTeam !== null) { %>
+                                                                            <img src="<%= match.topTeam.image %>">
                                                                             <span class="seed"><%=match.topTeam.seed%></span>
-                                                                            <span class="teamName"><%=match.topTeam.name%></span>
+                                                                            
+                                                                            
+                                                                            <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
                                                                          <% } else { %>
                                                                             &nbsp
                                                                         <% } %>
@@ -77,8 +80,9 @@
                                                                 <div class="team">
                                                                     <div class="teamTitle">
                                                                         <% if(match.bottomTeam !== null) { %>
+                                                                            <img src="<%= match.bottomTeam.image %>">
                                                                             <span class="seed"><%=match.bottomTeam.seed%></span>
-                                                                            <span class="teamName"><%=match.bottomTeam.name%></span>
+                                                                            <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
                                                                         <% } else { %>
                                                                             &nbsp
                                                                         <% } %>
@@ -197,129 +201,137 @@
                         <div>
                             <div class="regionRounds">
                                 
-                                <!--need this div to eat up a selector...probably should just fix the css-->
-                                <div class="oneRound"></div>
-                                <div class="oneRound">
-                                    <% var match = tournament.rounds[5].matches[0] %>
-                                    <div class="match" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
-                                        <div class="team">
-                                            <div class="teamTitle">
-                                                <% if(match.topTeam !== null) { %>
-                                                    <span class="seed"><%=match.topTeam.seed%></span>
-                                                    <span class="teamName"><%=match.topTeam.name%></span>
-                                                 <% } else { %>
-                                                    &nbsp
-                                                <% } %>
-                                            </div>
-                                            <!--end team title-->
-                                        </div>
-                                        <!--end top team-->
-                                        <div class="team">
-                                            <div class="teamTitle">
-                                                <% if(match.bottomTeam !== null) { %>
-                                                    <span class="seed"><%=match.bottomTeam.seed%></span>
-                                                    <span class="teamName"><%=match.bottomTeam.name%></span>
-                                                <% } else { %>
-                                                    &nbsp
-                                                <% } %>
-                                            </div>
-                                            <!--end team title-->
-                                        </div>
-                                        <!--end bottom team-->
-                                    </div>
-                                    <!--end match-->
-                                    
-                                    
-                                    <!--Copied and pasted from above...possibly a better way???-->
-                                    <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "display: none;">
-                                        <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
-                                        <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
-                                            <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
-                                        
-                                           
-                                            <% if (!match.winner) { %> 
-                                                <div class="aggregate noWin" >
-                                            <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
-                                               <div class="aggregate win" >
-                                            <% } else { %>
-                                                <div class="aggregate loss" >
-                                            <% } %>
-                                                    <div class="teamHeader">
-                                                        <%var winScore = Math.round(agg.topWinScore * 10000)/10000 %>
-                                                        <%var lossScore = Math.round(agg.topLossScore * 10000)/10000 %>
-                                                        <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong></h5>
-                                                        <h6 style="display: inline-block; float: right;">(
-                                                            <% if (!match.winner) { %> 
-                                                                +<%=winScore%> or <%=lossScore%>
-                                                            <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
-                                                               +<%=winScore%>
-                                                            <% } else { %>
-                                                               <%=lossScore%>
+                                <% for(var i = 4; i < tournament.rounds.length; i++) { %>
+                                    <div class="oneRound">
+                                        <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
+                                            <% var match = tournament.rounds[i].matches[j] %>
+                                            <div class="match" id="match<%= match.matchNumber%>" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
+                                                <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
+                                                    <div class="team">
+                                                        <div class="teamTitle">
+                                                            <% if(match.topTeam !== null) { %>
+                                                                <img src="<%= match.topTeam.image %>">
+                                                                <span class="seed"><%=match.topTeam.seed%></span>
+                                                                <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
+                                                             <% } else { %>
+                                                                &nbsp
                                                             <% } %>
-                                                        )</h6>
+                                                        </div>
+                                                        <!--end team title-->
                                                     </div>
-                                                    <ul>
-                                                        <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
-                                                            <li>
-                                                                <%= agg.topTeamPickers[k].firstName %>
-                                                                <% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0 ) { %>
-                                                                    <em>- <%= agg.topTeamPickers[k].comment %></em>
-                                                                <% } %>
-                                                            </li>
-                                                        <% } %>
-                                                    </ul>
-                                                </div>
-                                           
-                                             <% if (!match.winner) { %> 
-                                                <div class="aggregate noWin" >
-                                            <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
-                                               <div class="aggregate win" >
-                                            <% } else { %>
-                                                <div class="aggregate loss" >
-                                            <% } %>
-                                                    <div class="teamHeader">
-                                                        <%var winScore = Math.round(agg.bottomWinScore * 10000)/10000 %>
-                                                        <%var lossScore = Math.round(agg.bottomLossScore * 10000)/10000 %>
-                                                        <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong></h5>
-                                                        <h6 style="display: inline-block; float: right;">(
-                                                            <% if (!match.winner) { %> 
-                                                                +<%=winScore%> or <%=lossScore%>
-                                                            <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
-                                                               +<%=winScore%>
+                                                    <!--end top team-->
+                                                <% } %>
+
+                                                    <div class="team">
+                                                        <div class="teamTitle">
+                                                            <% if(match.bottomTeam !== null) { %>
+                                                                <img src="<%= match.bottomTeam.image %>">
+                                                                <span class="seed"><%=match.bottomTeam.seed%></span>
+                                                                <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
                                                             <% } else { %>
-                                                               <%=lossScore%>
+                                                                &nbsp
                                                             <% } %>
-                                                        )</h6>
+                                                        </div>
+                                                        <!--end team title-->
                                                     </div>
-                                                    <ul>
-                                                        <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
-                                                            <li>
-                                                                <%= agg.bottomTeamPickers[k].firstName %>
-                                                                <% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0 ) { %>
-                                                                    <em>- <%= agg.bottomTeamPickers[k].comment %></em>
-                                                                <% } %>
-                                                            </li>
-                                                        <% } %>
-                                                    </ul>
+                                                    <!--end bottom team-->
+                                             
+                                                
                                             </div>
+                                            <!--end match-->
                                             
-                                        <% } %>
-                                        
+                                            <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "display: none;">
+                                                <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
+                                                <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
+                                                    <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
+                                                
+                                                   
+                                                    <% if (!match.winner) { %> 
+                                                        <div class="aggregate noWin" >
+                                                    <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
+                                                       <div class="aggregate win" >
+                                                    <% } else { %>
+                                                        <div class="aggregate loss" >
+                                                    <% } %>
+                                                            <div class="teamHeader">
+                                                                <%var winScore = Math.round(agg.topWinScore * 10000)/10000 %>
+                                                                <%var lossScore = Math.round(agg.topLossScore * 10000)/10000 %>
+                                                                <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong></h5>
+                                                                <h6 style="display: inline-block; float: right;">(
+                                                                    <% if (!match.winner) { %> 
+                                                                        +<%=winScore%> or <%=lossScore%>
+                                                                    <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
+                                                                       +<%=winScore%>
+                                                                    <% } else { %>
+                                                                       <%=lossScore%>
+                                                                    <% } %>
+                                                                )</h6>
+                                                            </div>
+                                                            <ul>
+                                                                <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
+                                                                    <li>
+                                                                        <%= agg.topTeamPickers[k].firstName %>
+                                                                        <% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0 ) { %>
+                                                                            <em>- <%= agg.topTeamPickers[k].comment %></em>
+                                                                        <% } %>
+                                                                    </li>
+                                                                <% } %>
+                                                            </ul>
+                                                        </div>
+                                                   
+                                                     <% if (!match.winner) { %> 
+                                                        <div class="aggregate noWin" >
+                                                    <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
+                                                       <div class="aggregate win" >
+                                                    <% } else { %>
+                                                        <div class="aggregate loss" >
+                                                    <% } %>
+                                                            <div class="teamHeader">
+                                                                <%var winScore = Math.round(agg.bottomWinScore * 10000)/10000 %>
+                                                                <%var lossScore = Math.round(agg.bottomLossScore * 10000)/10000 %>
+                                                                <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong></h5>
+                                                                <h6 style="display: inline-block; float: right;">(
+                                                                    <% if (!match.winner) { %> 
+                                                                        +<%=winScore%> or <%=lossScore%>
+                                                                    <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
+                                                                       +<%=winScore%>
+                                                                    <% } else { %>
+                                                                       <%=lossScore%>
+                                                                    <% } %>
+                                                                )</h6>
+                                                            </div>
+                                                            <ul>
+                                                                <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
+                                                                    <li>
+                                                                        <%= agg.bottomTeamPickers[k].firstName %>
+                                                                        <% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0 ) { %>
+                                                                            <em>- <%= agg.bottomTeamPickers[k].comment %></em>
+                                                                        <% } %>
+                                                                    </li>
+                                                                <% } %>
+                                                            </ul>
+                                                    </div>
+                                                    
+                                                <% } %>
+                                                
+                                            </div>
+                                        <% } %> 
+                                        <!--end looping through quarterNumMatches-->
                                     </div>
-                                    
-                                    
-                                </div>
-                                <!--end oneRound-->
-                                
-                                
+                                    <!--end oneRound-->
+                                <% } %>
+                                <!--end looping through rounds-->
+                            
+                            
                                 <!--champion-->
                                 <div class="oneRound">
                                     <div class="match">
                                         <div class="team">
                                             <div class="teamTitle">
                                                 <% if(tournament.champion) { %>
+                                                    <img class="championshipImage" src="<%= tournament.champion.image %>">
                                                     <span class="seed"><%=tournament.champion.seed%></span>
-                                                    <span class="teamName"><%= tournament.champion.name%></span>
+                                                    <span class="teamName"><%= tournament.champion.name%>&nbsp</span>
                                                 <% } else { %>
                                                     &nbsp
                                                 <% } %>

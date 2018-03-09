@@ -10,7 +10,9 @@ var express             = require("express"),
     Comment             = require("./models/comment"),
     seedDB              = require("./seeds"),
     scrape              = require("./scrape"),
+    scrapeTeams         = require("./scrapeTeams"),
     Trophy              = require("./models/trophy"),
+    TeamImage           = require("./models/teamImage"),
     TournamentStanding  = require("./models/tournamentStanding"),
     Tournament          = require("./models/tournament"),
     User                = require("./models/user"),
@@ -40,6 +42,8 @@ app.use(flash());
 app.locals.moment = require('moment');
 
 seedDB();
+
+// scrapeTeams();
 
 
 // PASSPORT CONFIGURATION

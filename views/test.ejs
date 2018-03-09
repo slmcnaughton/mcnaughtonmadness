@@ -1,0 +1,19 @@
+<% include ./partials/header %>
+
+<table style="text-align: center;">
+    <thead>
+        <tr>
+            <th>Team</th>
+            <th>Image</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% for (var i = 0; i < teamImages.length; i++) { %>
+            <tr>
+                <td><%= teamImages[i].name %></td>
+                <td><img src="<%= teamImages[i].image %>" width="100px"></td>
+            </tr>
+        <% } %>
+    </tbody>
+</table>
+<% include ./partials/footer %>

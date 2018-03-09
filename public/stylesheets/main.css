@@ -232,6 +232,27 @@ td {
 
 
 /*===========================================*/
+/*Tournament Group Standings Table Styles*/
+/*===========================================*/
+
+/*Giants Orange: #FC5D23*/
+/*Chrome Yellow: #FFA705*/
+/*Wageningen Green: #1FA52F*/
+/*Dark Cerulean: #004284*/
+/*Smoky Black: #0C0C0C*/
+#tournamentStandings{
+    text-align: center;
+    table-layout: fixed;
+}
+
+#tournamentStandings th{
+    background-color: #FFA705;
+    color: #101010;
+    vertical-align: middle;
+}
+
+
+/*===========================================*/
 /*Rules Page and Rules Table Styles*/
 /*===========================================*/
 
@@ -947,10 +968,20 @@ body {
     justify-content: flex-start;
     padding: 0 .25em;
     border: 1px solid #ccc;
-    font-size: 1em;
+    font-size: .8em;
     line-height: 2em;
-    background: #fff
+    background: #f5f5f5;
+    border-radius: 6px;
 }
+
+.teamTitle img{
+    margin-top: 1px;
+    height: 18px; 
+    width: 18px; 
+    margin-right: 2px;
+    margin-left: -1px;
+}
+
 
 /*bracketClub line 7993*/
 /*teamTitle = DQvkH*/
@@ -1018,6 +1049,21 @@ body {
 /*teamTitle = DQvkH*/
 /*teamName = "_3SRIZ"*/
 @media screen and (min-width: 992px) {
+    .teamTitle .championshipImage{
+        height: 50px; 
+        width: 50px; 
+        margin-top: 3px;
+    }
+    
+    .championshipSide .teamTitle img{
+        margin-left: 2px;
+        margin-right: 2px;
+}
+    
+    .rightSide .teamTitle img{
+        margin-left: 2px;
+        margin-right: -1px;
+    }
     .rightSide {
         text-align:right
     }

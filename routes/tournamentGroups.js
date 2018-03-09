@@ -82,6 +82,7 @@ router.get("/:groupName", function(req, res){
     var groupName = req.params.groupName;
     TournamentGroup.findOne({groupName: groupName})
         .populate({path: "userTournaments", populate: "user"})
+        .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
         .exec(function(err, foundTournamentGroup){
         if (err || !foundTournamentGroup){
             req.flash("error", "Tournament Group not found");

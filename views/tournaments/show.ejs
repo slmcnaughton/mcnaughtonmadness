@@ -18,11 +18,13 @@
         <% if(match.topTeam === null) { %>
             <h5>Team TBD</h5>
         <% } else { %>
+            <img src="<%= match.topTeam.image %>" width="100px">
             <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>
         <% } %>
          <% if(match.bottomTeam === null) { %>
             <h5>Team TBD</h5>
         <% } else { %>
+            <img src="<%= match.bottomTeam.image %>" width="100px">
             <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>
         <% } %>
 
