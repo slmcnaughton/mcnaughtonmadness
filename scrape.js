@@ -56,8 +56,8 @@ function scrape() {
                             async.forEach(parsedResults, function(result, next){
                                 
                                 
-                                if (!match.winner && (match.topTeam.name === result.team1 || match.topTeam.name === result.team2 
-                                    || match.bottomTeam.name === result.team1 || match.bottomTeam.name === result.team2)) {
+                                if (!match.winner && (match.topTeam.name === result.team1 && match.bottomTeam.name === result.team2 
+                                                    || match.topTeam.name === result.team2 && match.bottomTeam.name === result.team1 )) {
                                     var winningTeam;
                                     if(result.winner === match.topTeam.name)
                                         winningTeam = match.topTeam;
