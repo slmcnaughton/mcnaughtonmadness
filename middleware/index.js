@@ -12,6 +12,7 @@ var UserTournament = require("../models/userTournament");
 var UserRound = require("../models/userRound");
 var UserMatchPrediction = require("../models/userMatchPrediction");
 var UserMatchAggregate = require("../models/userMatchAggregate");
+var BonusAggregate = require("../models/bonusAggregate");
 
 
 
@@ -137,6 +138,14 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
                                 });
                             round.matches[0].winner = winner;
                             round.matches[0].save();
+                            if(round.matches[0].winner.id === round.matches[0].topTeam.id) {
+                                round.matches[0].bottomTeam.lost++;
+                                round.matches[0].bottomTeam.save();
+                            }
+                            else {
+                                round.matches[0].topTeam.lost++;
+                                round.matches[0].topTeam.save();
+                            }
                             foundTournament.champion = winner;
                             foundTournament.save();
                             callback();
@@ -166,6 +175,14 @@ middlewareObj.updateTournamentRound = function(req, res, next) {
                                     if(err) console.log(err);
                                     round.matches[i].winner = winner;
                                     
+                                    if(round.matches[i].winner.id === round.matches[i].topTeam.id) {
+                                        round.matches[i].bottomTeam.lost++;
+                                        round.matches[i].bottomTeam.save();
+                                    }
+                                    else {
+                                        round.matches[i].topTeam.lost++;
+                                        round.matches[i].topTeam.save();
+                                    }
                                     round.matches[i].save();
                                     
                                     var nextMatchIndex = Math.floor(i / 2);
@@ -496,14 +513,14 @@ middlewareObj.userRoundCreation = function(req, res, next) {
                                     comment = req.body[match.matchNumber][1];
                                 }
                                 var newUserMatchPrediction = {
-                                     score: 0,
-                                     numRound: newUserRound.round.numRound,
-                                     winner: winner,
-                                     match: {
-                                         id: match.id,
-                                         matchNumber: match.matchNumber
-                                     },
-                                     comment: comment
+                                    score: 0,
+                                    numRound: newUserRound.round.numRound,
+                                    winner: winner,
+                                    match: {
+                                        id: match.id,
+                                        matchNumber: match.matchNumber
+                                    },
+                                    comment: comment
                                 };
                                 UserMatchPrediction.create(newUserMatchPrediction, function(err, newUserMatchPrediction){
                                     if(err) console.log(err);
@@ -545,21 +562,33 @@ middlewareObj.userRoundCreation = function(req, res, next) {
     //      groupName -> March Madness 2012
     //      id -> 5a8b0a650e17ab1749702c4b
     //      numRound -> 1
+    //res.locals.newUserRound.userMatchPrediction
+    //      score: 0,
+    //      numRound: newUserRound.round.numRound,
+    //      winner: winner, (type: team)...(req.body[match.matchNumber][0])
+    //      match: {
+    //          id: match.id,
+    //          matchNumber: match.matchNumber
+    //      },
+    //      comment: comment    (req.body[match.matchNumber][1])
+                
 middlewareObj.updateUserMatchAggregates = function(req, res, next) {
+    
     TournamentGroup.findOne({groupName: req.params.groupName}).exec(function(err, foundTournamentGroup) {
         if(err) console.log(err);
         else {
             async.forEachSeries(res.locals.newUserRound.userMatchPredictions, function(userPrediction, next){
+            
                 Match.findOne({_id : userPrediction.match.id}).populate("topTeam").populate("bottomTeam").exec(function(err, userPredictionMatch) {
                     if(err) console.log(err);
                     else {
-                        //Try to find a userMatchAggregate whose matchReference is the same as this userMatchPrediction's matchReference
-                        UserMatchAggregate.findOne({matchReference : userPrediction.match.id, tournamentGroup : foundTournamentGroup.id}).exec(function(err, foundUserMatchAggregate) {
-                            if(err) console.log(err);
-                            else {
-                                if (req.params.numRound < 7) {
+                        //Find or create a userMatchAggregate whose matchReference is the same as this userMatchPrediction's matchReference
+                        if (req.params.numRound < 7) {
+                            UserMatchAggregate.findOne({matchReference : userPrediction.match.id, tournamentGroup : foundTournamentGroup.id}).exec(function(err, foundUserMatchAggregate) {
+                                if(err) console.log(err);
+                                else {
                                     async.series([
-                                         // if none exist, create a userMatchAggregate for the userMatchPrediction:
+                                        // if none exist, create a userMatchAggregate for the userMatchPrediction:
                                         function(callback) {
                                             if (!foundUserMatchAggregate) {
                                                 var ts = userPredictionMatch.topTeam.seed;   //ts = topseed
@@ -611,10 +640,71 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                         }
                                     });
                                 }
-                                else next();
-                            } 
-                        });
+                                
+                            });
+                        }
+                        // Find or create a final four bonusAggregate whose matchReference is the same as this userMatchPrediction's matchReference
+                        else if(Number(req.params.numRound) === 7 || Number(req.params.numRound) === 8) {
+                            Team.findById(userPrediction.winner, function(err, foundTeam) {
+                                if(err) console.log(err);
+                                else {
+                                    BonusAggregate.findOne({"team.id" : foundTeam.id, matchReference : userPrediction.match.id, tournamentGroup : foundTournamentGroup.id}).exec(function(err, foundBonusAggregate) {
+                                        if(err) console.log(err);
+                                        else {
+                                            async.series([
+                                                // if none exist, create a foundBonusAggregate for the userMatchPrediction:
+                                                function(callback) {
+                                                    if (!foundBonusAggregate) {
+                                                        var team = {
+                                                            id: foundTeam.id,
+                                                            name: foundTeam.name,
+                                                            image: foundTeam.image,
+                                                        };
+                                                    
+                                                        var newBonusAggregate = {
+                                                            matchNumber: userPredictionMatch.matchNumber,
+                                                            matchReference: userPredictionMatch.id,
+                                                            tournamentGroup: foundTournamentGroup.id,
+                                                            team: team,
+                                                            teamPickers: [],
+                                                        };
+                                                        BonusAggregate.create(newBonusAggregate, function(err, newBonusAggregate){
+                                                            if(err) console.log(err);
+                                                            else {
+                                                                foundBonusAggregate = newBonusAggregate;
+                                                                foundTournamentGroup.bonusAggregates.push(foundBonusAggregate);
+                                                                callback();
+                                                            }
+                                                        });
+                                                    }
+                                                    else callback();
+                                                }, function(callback) {
+                                                    //  Assign name and comments to teamPickers array
+                                                    var packedPrediction = {
+                                                        id: userPrediction._id,
+                                                        firstName: res.locals.userFirstName,
+                                                        comment: userPrediction.comment
+                                                    };
+                                                    foundBonusAggregate.teamPickers.push(packedPrediction);
+                                                    
+                                                    callback();
+                                                }
+                                            ], function(err) {
+                                                if(err) console.log(err);
+                                                else {
+                                                    foundBonusAggregate.save();
+                                                    next();
+                                                }
+                                            });
+                                        }
+                                        
+                                    });
+                                                                
+                                }
+                            });
+                        }
                     }
+                    
                 });
             }, function(err) {
                 if(err) console.log(err);

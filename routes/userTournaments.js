@@ -74,7 +74,7 @@ router.post("/", middleware.isLoggedIn, function(req, res){
 
 //SHOW - shows more information about a particular userTournament
 router.get("/:username", middleware.isLoggedIn, function(req, res){
-    UserTournament.findOne({"user.username" : req.params.username})
+    UserTournament.findOne({"user.username" : req.params.username, "tournamentGroup.groupName": req.params.groupName})
             .populate({path: "userRounds", populate: {path: "round.id"}})
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "winner"}}})
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "match.id"}}})

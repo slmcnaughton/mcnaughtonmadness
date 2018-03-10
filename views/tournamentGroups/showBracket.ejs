@@ -8,7 +8,9 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
         
     	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-    	
+    	<link href='https://fonts.googleapis.com/css?family=Holtwood+One+SC' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
+        
     	<script
           src="https://code.jquery.com/jquery-2.2.4.min.js"
           integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
@@ -24,8 +26,14 @@
 
 <% var tournament = tournamentGroup.tournamentReference.id %>
 
-                    
 <main id="tournament">
+    
+    <div class="jumbotron hero">
+        <p class="intro" id="intro">McNaughton</p>
+        <h1 id="headline">Madness</h1>
+        <p class="year"><span class="icomoon icon-bracketLeft"></span><%=tournamentGroup.tournamentReference.year%><span class="icomoon icon-bracketRight"></span></p>
+        <p><%=tournamentGroup.groupName%></p>
+    </div>
     <div class="container-fluid" style="padding-bottom: 50px; min-height: 300px">
         <div class="row">
             <div class="col-xs-12 bracket"> 
@@ -95,7 +103,7 @@
                                                         </div>
                                                         <!--end match-->
                                                         
-                                                        <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "display: none;">
+                                                        <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "width: 500px; display: none;">
                                                             <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
                                                             <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
                                                                 <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
@@ -315,6 +323,7 @@
                                                 <% } %>
                                                 
                                             </div>
+                                            <!--end aggregateBox-->
                                         <% } %> 
                                         <!--end looping through quarterNumMatches-->
                                     </div>
@@ -356,15 +365,126 @@
     </div> 
     <!--end container-fluid-->
     
+    <% if (bonAgg[4].length < 7) { %>
+        <div class="championPicks" style="margin-top: -200px">
+    <% } else { %>
+        <div class="championPicks" >
+    <% } %>
+        
+            <div class="bonusAggregate champAggregate">
+                <h3 class="bonusRegion">Champion Picks</h3>
+                <% if(bonAgg[4].length > 16) { %>
+                    <div class="xlarge-grid">
+                <% } else if(bonAgg[4].length > 9) { %>
+                    <div class="large-grid">
+                <% } else { %>
+                    <div class="grid">
+                <% } %>
+                        <% for (var j = 0; j < bonAgg[4].length; j++) { %>
+                            <% if (bonAgg[4][j].team.id.lost > 0) { %>
+                                <div class="grid-item lost">
+                                    <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>').html());">
+                                </div>
+                            <% } else { %>
+                                <div class="grid-item">
+                                    <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>').html());">
+                                </div>
+                            <% } %>  
+                            
+                            <!--bonus aggregate popup-->
+                            <% var match = bonAgg[4][j].matchReference %>
+                            <div class="aggregateBox" id="bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>" style= "display: none;">
+                                <% if (!match.winner) { %> 
+                                    <div class="bonAggregate noWin" >
+                                <% } else if (String(match.winner) === String(match.team.id)) { %>
+                                   <div class="bonAggregate win" >
+                                <% } else { %>
+                                    <div class="bonAggregate loss" >
+                                <% } %>
+                                        <div class="teamHeader">
+                                            <h5 style="display: inline-block; "><strong><%=bonAgg[4][j].team.name%></strong></h5>
+                                        </div>
+                                        <ul>
+                                            <% for (var k = 0; k < bonAgg[4][j].teamPickers.length; k++) { %>
+                                                <li>
+                                                    <%= bonAgg[4][j].teamPickers[k].firstName %>
+                                                    <% if(bonAgg[4][j].teamPickers[k].comment && bonAgg[4][j].teamPickers[k].comment.trim().length > 0 ) { %>
+                                                        <em>- <%= bonAgg[4][j].teamPickers[k].comment %></em>
+                                                    <% } %>
+                                                </li>
+                                            <% } %>
+                                        </ul>
+                                    </div>
+                            </div>
+                            <!--end bonus aggregate popup-->
+                        <% } %>
+                    </div>
+            </div>
+            
+        </div>
+    
+    <div class="spacer" style="display: block; height: <%=Math.floor(Math.sqrt(bonAgg[4].length)-2)*50%>px;"><br></div>
+    <div class="bonusPicks">
+        <% for(var i = 0; i < bonAgg.length - 1; i++) { %>
+            <div class="bonusAggregate">
+                <h3 class="bonusRegion"><%=tournament.regions[i]%> Picks</h3>
+                <div class="grid">
+
+                    <% for (var j = 0; j < bonAgg[i].length; j++) { %>
+                        <% if (bonAgg[i][j].team.id.lost > 0) { %>
+                            <div class="grid-item lost">
+                                <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>').html());">
+                            </div>
+                        <% } else { %>
+                            <div class="grid-item">
+                                <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>').html());">
+                            </div>
+                        <% } %>   
+
+                        <!--bonus aggregate popup - make sure onmouseover is set to the div/image you want to cause this popup-->
+                        <% var match = bonAgg[i][j].matchReference %>
+                        <div class="aggregateBox" id="bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>" style= "display: none;">
+                            <% if (!match.winner) { %> 
+                                <div class="bonAggregate noWin" >
+                            <% } else if (String(match.winner) === String(match.team.id)) { %>
+                               <div class="bonAggregate win" >
+                            <% } else { %>
+                                <div class="bonAggregate loss" >
+                            <% } %>
+                                    <div class="teamHeader">
+                                        <h5 style="display: inline-block; "><strong><%=bonAgg[i][j].team.name%></strong></h5>
+                                    </div>
+                                    <ul>
+                                        <% for (var k = 0; k < bonAgg[i][j].teamPickers.length; k++) { %>
+                                            <li>
+                                                <%= bonAgg[i][j].teamPickers[k].firstName %>
+                                                <% if(bonAgg[i][j].teamPickers[k].comment && bonAgg[i][j].teamPickers[k].comment.trim().length > 0 ) { %>
+                                                    <em>- <%= bonAgg[i][j].teamPickers[k].comment %></em>
+                                                <% } %>
+                                            </li>
+                                        <% } %>
+                                    </ul>
+                                </div>
+                        </div>
+                        <!--end bonus aggregate popup-->
+
+
+
+                    <% } %>
+                
+                </div>
+                
+                
+            </div>
+            
+            
+        <% } %>
+    </div>
+   
+
 </main>
 <!--end tournament-->
 
-<script>
-
-
-
-
-</script>
 
 
 

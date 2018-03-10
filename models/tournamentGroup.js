@@ -20,6 +20,12 @@ var tournamentGroupSchema = new mongoose.Schema({
             ref: "UserMatchAggregate"
         }
     ],
+    bonusAggregates: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "BonusAggregate"
+        }
+    ],
     tournamentReference: {
         id: {
             type: mongoose.Schema.Types.ObjectId,

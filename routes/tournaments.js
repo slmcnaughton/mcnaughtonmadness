@@ -123,7 +123,8 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                     name: teamName,
                                                     seed: order[i % order.length],
                                                     firstMatchNum: Math.floor(i / 2) + 1,
-                                                    image: image
+                                                    image: image,
+                                                    lost: 0
                                                 };
                                                 Team.create(team, function(err, newTeam){
                                                     if(err) console.log(err);
@@ -133,7 +134,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                         next();
                                                     }
                                                 });
-                                            })
+                                            });
                                         }, function(err) {
                                             if (err) console.log(err);
                                             else callback();
@@ -228,7 +229,6 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                 var job = { start: startTime, end: endTime, rule: '* */10 * * * *' };
                                                 var j = schedule.scheduleJob(job, function(){
                                                     scrape();
-                                                    // console.log("time for teeeeeaaaaa");
                                                 });
                                                 Scrape.create( job, function(err, createdJob) {
                                                     if(err) console.log(err);

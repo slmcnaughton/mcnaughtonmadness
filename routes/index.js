@@ -37,6 +37,8 @@ router.get("/test", function(req, res) {
         // foundTeamImages.forEach(function(foundTeamImage) {
         //     console.log(foundTeamImage.name + " " + foundTeamImage.image);
         // });
+        
+        
         res.render("test", {teamImages: foundTeamImages});
     });
     

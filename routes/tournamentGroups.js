@@ -41,18 +41,16 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
         else {
             var newTournamentGroup = {
                 groupName: req.body.groupName,
-                // commissioner: {
-                //     name: "Seth"
-                // },
                 commissioner: {
                     id: req.user._id,
-                    name: req.user.firstName //+ " " + req.user.lastName.substring(0,1) + "."
+                    name: req.user.firstName
                 },
                 tournamentReference: {
                     id: foundTournament.id,
                     year: foundTournament.year
                 },
                 userMatchAggregates: [],
+                bonusAggregates: [],
                 currentRound: 1
             };
             TournamentGroup.create(newTournamentGroup, function(err, newlyCreated) {
@@ -102,13 +100,33 @@ router.get("/:groupName/bracket", function(req, res){
         .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: {path: "matches", populate: { path: "topTeam"} } }})
         .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: {path: "matches", populate: { path: "bottomTeam"} } }})
         .populate({path: "userMatchAggregates", populate: "topTeamPickers"})
+        .populate({path: "bonusAggregates", populate: "teamPickers"})
+        .populate({path: "bonusAggregates", populate: {path: "team.id", populate: "seed"} })
         .populate({path: "userTournaments", populate: "user"})
         .exec(function(err, foundTournamentGroup){
         if (err || !foundTournamentGroup){
             req.flash("error", "Tournament Group not found");
             return res.redirect("/tournamentGroups");
         } else {
-            res.render("tournamentGroups/showBracket", {tournamentGroup: foundTournamentGroup, page: "tournamentGroups"});
+            foundTournamentGroup.bonusAggregates.sort(compareBonusAggregates);
+            
+            if(foundTournamentGroup.bonusAggregates.length > 0) {
+ 
+                var bonusAggregates = [ [], [], [], [], [] ];
+                
+                for (var i = 0; i < foundTournamentGroup.bonusAggregates.length; i++) {
+                    var agg = foundTournamentGroup.bonusAggregates[i];
+                    if (agg.matchNumber !== 63 )
+                        bonusAggregates[agg.matchNumber - 57].push(agg);
+                    else
+                        bonusAggregates[4].push(agg);
+                }
+            }
+
+            res.render("tournamentGroups/showBracket", {
+                tournamentGroup: foundTournamentGroup, 
+                bonAgg : bonusAggregates,
+                page: "tournamentGroups"});
         }
     });
 });
@@ -164,6 +182,20 @@ router.delete("/:id", middleware.checkTournamentGroupOwnership, function(req, re
    });
 });
 
+
+function compareBonusAggregates(a,b) {
+    if (a.matchNumber < b.matchNumber)
+        return -1;
+    else if (a.matchNumber > b.matchNumber)
+        return 1;
+    else {
+        if(a.team.id.seed < b.team.id.seed)
+            return -1;
+        else if (a.team.id.seed > b.team.id.seed)
+            return 1;
+    }
+    return 0;
+}
 
 
 function compare(a,b) {

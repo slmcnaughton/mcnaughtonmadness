@@ -101,7 +101,8 @@ nhpup = {
         // When the mouse is too far on the right, put window to the left
         var xtreme = $jq(document).scrollLeft() + win.width() - this.pup.width() - this.minMargin;
         if(x > xtreme) {
-            x -= this.pup.width() + 2 * this.minMargin + 27;    //Seth fix: +27 pushes the box further to the left after flip
+            
+            x -= this.pup.width() + 2 * this.minMargin - 10;    //Seth fix: -10 pushes the box further to the left after flip
         }
         x = this.max(x, 0);
 
