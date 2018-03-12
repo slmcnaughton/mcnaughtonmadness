@@ -28,8 +28,6 @@ var userRoundSchema = new mongoose.Schema({
             ref: "UserMatchPrediction"
         }
     ],
-    submissionDeadline: { type: Date },  //moment js... , default: Date.now
-    
 });
 
 module.exports = mongoose.model("UserRound", userRoundSchema);

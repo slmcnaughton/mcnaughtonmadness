@@ -35,11 +35,11 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    // var year = 2018;
+    var year = 2018;
     var regions = ["East", "West", "Midwest", "South"];
-    var year = Math.floor((Math.random()*100+2000));
-    var startDay = moment.tz([2018, 02, 15], "America/New_York");
-    // var startDay = moment.tz([2018, 02, 7], "America/New_York");
+    // var year = Math.floor((Math.random()*100+2000));
+    // var startDay = moment.tz([2018, 02, 15], "America/New_York");
+    var startDay = moment.tz([2018, 02, 11], "America/New_York");
     
     //[year, month, day, hour, minute, second, millisecond]
     // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
@@ -77,20 +77,26 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                     function(callback){
                         
                         
+                        
                         Round.create(
                         {
                             numRound: 1,
                             matches: [],
-                            startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
-                            // startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 10, 9], "America/New_York"),
+                            // startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
+                            startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 21, 16], "America/New_York"),
+
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
                                 
                                 //Add round 1 scrape listener
-                                var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
-                                var endTime = new moment(startTime).add(37, 'h').toDate();
-                                var job = { start: startTime, end: endTime, rule: '0 */10 * * * *' };
+                                // var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
+                                // var endTime = new moment(startTime).add(37, 'h').toDate();
+                                var startTime = new moment(createdRound.startTime);
+                                var endTime = new moment(startTime).add(1, 'm');
+                                // var job = { start: startTime, end: endTime, rule: '0 */10 * * * *' };
+                                
+                                var job = { start: startTime, end: endTime, rule: '*/10 * * * * *' };
                                 var j = schedule.scheduleJob(job, function(){
                                     scrape();
                                 });
@@ -98,6 +104,10 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                     if(err) console.log(err);
                                     createdTournament.scrapes.push(createdJob);
                                 });
+                                
+                                console.log("Round 1: ");
+                                console.log("StartTime: " + startTime.format('LLLL'));
+                                console.log("EndTime: " + endTime.format('LLLL'));
                                 
                                 
                                 
@@ -199,7 +209,8 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                         var startTime;
                                                             // year         month           day      hour  min
                                         if(i == 0)
-                                            startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
+                                            // startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
+                                            startTime = moment(startDay).add({hours: 20, minutes: 19}, "America/New_York");
                                         else if (i == 1)
                                             startTime = moment(startDay).add({days: 7, hours: 19, minutes: 9}, "America/New_York");
                                         else if (i == 2)
@@ -208,6 +219,8 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                             startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9}, "America/New_York");
                                         else if (i == 4)
                                             startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20}, "America/New_York");
+                                            
+                                        
                                         Round.create(
                                         {
                                             numRound: i+2,  //i = 0 should be round 2
@@ -218,15 +231,27 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                             else {
                                                 
                                                 //Add round scrape listeners
-                                                var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
+                                                 // var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
+                                                // var startTime = new moment(createdRound.startTime).add(1,'h');
+                                                var startTime = new moment(createdRound.startTime);
+                                                
+                                                
                                                 var endTime;
                                                 if(i < 3) {
-                                                    endTime = new moment(startTime).add(36, 'h').toDate();
+                                                    // endTime = new moment(startTime).add(36, 'h').toDate();
+                                                    endTime = new moment(startTime).add(36, 'h');
                                                 }
                                                 else {
-                                                    endTime = new moment(startTime).add(6, 'h').toDate();
+                                                    // endTime = new moment(startTime).add(6, 'h').toDate();
+                                                    endTime = new moment(startTime).add(6, 'h');
                                                 }
-                                                var job = { start: startTime, end: endTime, rule: '* */10 * * * *' };
+                                                
+                                                console.log("Round " + createdRound.numRound + ":");
+                                                console.log("StartTime: " + startTime.format('LLLL'));
+                                                console.log("EndTime: " + endTime.format('LLLL'));
+                                                
+                                                // var job = { start: startTime, end: endTime, rule: '* */10 * * * *' };
+                                                var job = { start: startTime, end: endTime, rule: '*/20 * * * * *' };
                                                 var j = schedule.scheduleJob(job, function(){
                                                     scrape();
                                                 });
@@ -399,75 +424,167 @@ var teamNames = [
         // "Duke",
         // "Troy",
         
+        // "Gonzaga",
+        // "South Dakota State",
+        // "Northwestern",
+        // "Vanderbilt",
+        // "Notre Dame",
+        // "Princeton",
+        // "West Virginia",
+        // "Bucknell",
+        // "Maryland",
+        // "Xavier",
+        // "Florida State",
+        // "Florida Gulf Coast",
+        // "Saint Mary's",
+        // "VCU",
+        // "Arizona",
+        // "North Dakota",
         
-        "Stony Brook",
-        "Vermont",
-        "Wake Forest",
-        "Syracuse",
-        "Hartford",
-        "UMBC",
-        "Miss. Val.",
-        "Ark.-PB",
-        "Brigham Young",
-        "Gonzaga",
-        "South Dakota",
-        "S. Dak. St.",
-        "Alabama State",
-        "Texas Southern",
-        "Sacramento State",
-        "Portland State",
+        
+        // ----------3/10/matches--------------
+        // "UC Irvine",
+        // "Santa Barbara",
+        // "UMBC",
+        // "Vermont",
+        // "Cornell",
+        // "Harvard",
+        // "Alabama",
+        // "Kentucky",
+        // "N.C. Central",
+        // "Hampton",
+        // "Saint Joseph's",
+        // "Rhode Island",
+        // "Georgia Southern",
+        // "Georgia State",
+        // "Yale",
+        // "Pennsylvania",
+        
+        // "Davidson",
+        // "St. Bonaventure",
+        // "Houston",
+        // "Wichita State",
+        // "San Diego State",
+        // "New Mexico",
+        // "West Virginia",
+        // "Kansas",
+        // "Toledo",
+        // "Buffalo",
+        // "E. Wash.",
+        // "Montana",
+        // "SF Austin",
+        // "SE Louisiana",
+        // "USC",
+        // "Arizona",
+        
+        // ----------end 3/10/matches--------------
         
         
-        "Gonzaga",
-        "South Dakota State",
-        "Northwestern",
-        "Vanderbilt",
-        "Notre Dame",
-        "Princeton",
-        "West Virginia",
-        "Bucknell",
-        "Maryland",
-        "Xavier",
-        "Florida State",
-        "Florida Gulf Coast",
-        "Saint Mary's",
-        "VCU",
-        "Arizona",
-        "North Dakota",
+        // "Kansas",
+        // "UC Davis", 
+        // "Miami",
+        // "Michigan State",
+        // "Iowa State",
+        // "Nevada",
+        // "Purdue",
+        // "Vermont",
+        // "Oregon",
+        // "Iona",
+        // "Creighton",
+        // "Rhode Island",
+        // "Michigan",
+        // "Oklahoma State",
+        // "Louisville",
+        // "Jacksonville State",
         
+        // "North Carolina",
+        // "Texas Southern",
+        // "Arkansas",
+        // "Seton Hall",
+        // "Minnesota",
+        // "Middle Tennessee",
+        // "Butler",
+        // "Winthrop",
+        // "Cincinnati",
+        // "Kansas State",
+        // "UCLA",
+        // "Kent State",
+        // "Dayton",
+        // "Wichita State",
+        // "Kentucky",
+        // "Northern Kentucky",
+        
+        
+        //===============3/10 tournament start here - all top seeds must get to the next round =================
+        
+        "UC Irvine",
         "Kansas",
+        "Santa Barbara",
         "UC Davis", 
+        "UMBC",
         "Miami",
-        "Michigan State",
-        "Iowa State",
-        "Nevada",
-        "Purdue",
         "Vermont",
+        "Michigan State",
+        "Cornell",
+        "Iowa State",
+        "Harvard",
+        "Nevada",
+        "Alabama",
+        "Purdue",
+        "Kentucky",
+        "Vermont",
+        
+        "N.C. Central",
         "Oregon",
+        "Hampton",
         "Iona",
+        "Saint Joseph's",
         "Creighton",
         "Rhode Island",
-        "Michigan",
         "Oklahoma State",
+        "Georgia Southern",
+        "Michigan",
+        "Georgia State",
+        "Rhode Island",
+        "Yale",
         "Louisville",
+        "Pennsylvania",
         "Jacksonville State",
         
+        
+        "Davidson",
         "North Carolina",
+        "St. Bonaventure",
         "Texas Southern",
+        "Houston",
         "Arkansas",
-        "Seton Hall",
-        "Minnesota",
-        "Middle Tennessee",
-        "Butler",
-        "Winthrop",
-        "Cincinnati",
-        "Kansas State",
-        "UCLA",
-        "Kent State",
-        "Dayton",
         "Wichita State",
-        "Kentucky",
-        "Northern Kentucky"
+        "Seton Hall",
+        "San Diego State",
+        "Minnesota",
+        "New Mexico",
+        "Middle Tennessee",
+        "West Virginia",
+        "Butler",
+        "Kansas",
+        "Winthrop",
+        
+        "Toledo",
+        "Cincinnati",
+        "Buffalo",
+        "Kansas State",
+        "E. Wash.",
+         "UCLA",
+        "Montana",
+        "Kent State",
+        "SF Austin",
+        "Dayton",
+        "SE Louisiana",
+         "Wichita State",
+        "USC",
+         "Kentucky",
+        "Arizona",
+        "Northern Kentucky",
     ];
 
 

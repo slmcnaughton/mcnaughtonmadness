@@ -86,6 +86,7 @@ router.get("/:groupName", function(req, res){
             req.flash("error", "Tournament Group not found");
             return res.redirect("/tournamentGroups");
         } else {
+            foundTournamentGroup.userTournaments.sort(compareUserTournaments);
             res.render("tournamentGroups/show", {tournamentGroup: foundTournamentGroup, page: "tournamentGroups"});
         }
     });
@@ -181,6 +182,15 @@ router.delete("/:id", middleware.checkTournamentGroupOwnership, function(req, re
       }
    });
 });
+
+function compareUserTournaments(a,b) {
+    if (a.score > b.score)
+        return -1;
+    else if (a.score < b.score)
+        return 1;
+    else 
+        return 0;
+}
 
 
 function compareBonusAggregates(a,b) {

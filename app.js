@@ -83,6 +83,7 @@ app.listen(process.env.PORT, process.env.IP, function(){
     Tournament.find({year: new Date().getFullYear()}).populate("scrapes").exec(function(err, foundTournaments) {
         if(err) console.log(err);
         else {
+            
             for (var i = 0; i < foundTournaments.length; i++) {
                 for(var j = 0; j < foundTournaments[i].scrapes.length; j++) {
                     var job = {
@@ -91,8 +92,7 @@ app.listen(process.env.PORT, process.env.IP, function(){
                         rule: foundTournaments[i].scrapes[j].rule
                     };
                     schedule.scheduleJob(job, function() {
-                        console.log(scrape());
-                        // console.log("test schedule job");
+                        scrape();
                     });
                 }
             }

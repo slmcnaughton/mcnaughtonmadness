@@ -97,16 +97,19 @@
                         <td><a href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= participant.user.username %>">
                             <%=participant.user.firstName%></td>
                         
-                        <% var roundIndex = 0 %>
+                        
                         <!--Loop through all 8 potential rounds-->
                         <% for(var j = 1; j < 9; j++) { %>
-                            
-                            <% if(roundIndex < participant.userRounds.length && participant.userRounds[roundIndex].round.numRound === j) { %>
-                                <% var score = participant.userRounds[roundIndex].roundScore %>
-                                <% var rounded = Math.round(score*Math.pow(10,3))/Math.pow(10,3) %>
-                                <td><%= rounded %></td>
-                                <% roundIndex++ %>
-                            <% } else { %>
+                            <% var found = false %>
+                            <% for(var k = 0; k < participant.userRounds.length; k++) { %>
+                                <% if(participant.userRounds[k].round.numRound === j) { %>
+                                    <% var score = participant.userRounds[k].roundScore %>
+                                    <% var rounded = Math.round(score*Math.pow(10,3))/Math.pow(10,3) %>
+                                    <td><%= rounded %></td>
+                                    <% found = true %>
+                                <% } %>
+                            <% } %>
+                            <% if(found === false ) { %>
                                 <td>0</td>
                             <% } %>
                            
