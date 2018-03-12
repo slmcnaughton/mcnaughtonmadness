@@ -80,7 +80,7 @@ router.get("/:username", middleware.isLoggedIn, function(req, res){
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "match.id"}}})
         .exec(function(err, foundUserTournament){
          if (err || !foundUserTournament){
-            req.flash("error", "User tournament not found");
+            req.flash("error", "User Tournament not found");
             return res.redirect("/tournamentGroups");
         } else {
             foundUserTournament.userRounds.sort(compare);

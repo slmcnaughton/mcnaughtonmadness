@@ -502,7 +502,7 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
     UserTournament.findOne({"user.username": req.params.username, "tournamentGroup.groupName" : req.params.groupName}).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
         if(err) {
             console.log(err);
-            req.flash("error", "UserTournament not found");
+            req.flash("error", "User Tournament not found");
             res.redirect("back");
         }
         else {
@@ -518,11 +518,14 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
                     res.redirect("back");
                 }
                 else {
+                    console.log(moment().format('LLLL'));
+                    console.log(moment(foundRound.startTime).format('LLLL'));
+                    console.log(moment().isBefore(foundRound.startTime));
                     if (moment().isBefore( moment(foundRound.startTime) ) ) {
                         next();
                     } else {
                         req.flash("error", "Too late! Tipoff for the round has already started.");
-                        res.redirect("/tournamentGroups/" + req.params.groupName + "/userTournaments/" + req.params.id);
+                        res.redirect("/tournamentGroups/" + req.params.groupName);
                     }
                 }
             });

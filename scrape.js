@@ -14,9 +14,8 @@ var UserMatchAggregate = require("./models/userMatchAggregate");
 
 // request('https://www.cbssports.com/college-basketball/scoreboard', function (error, response, html) {
 function scrape() {
-    console.log("scraping....scraping...scraping...");
-    // request('https://www.cbssports.com/college-basketball/scoreboard', function (error, response, html) {
-    request('https://www.cbssports.com/college-basketball/scoreboard/all/20180310/', function (error, response, html) {
+    // console.log("scraping....scraping...scraping...");
+    request('https://www.cbssports.com/college-basketball/scoreboard', function (error, response, html) {
         if (!error && response.statusCode == 200) {
             var $ = cheerio.load(html);
             var parsedResults = [];

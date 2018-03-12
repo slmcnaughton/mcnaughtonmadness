@@ -38,8 +38,9 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
     var year = 2018;
     var regions = ["East", "West", "Midwest", "South"];
     // var year = Math.floor((Math.random()*100+2000));
-    // var startDay = moment.tz([2018, 02, 15], "America/New_York");
-    var startDay = moment.tz([2018, 02, 11], "America/New_York");
+    
+    //march month is actually 2
+    var startDay = moment.tz([2018, 02, 15], "America/New_York");
     
     //[year, month, day, hour, minute, second, millisecond]
     // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
@@ -82,35 +83,33 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                         {
                             numRound: 1,
                             matches: [],
-                            // startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
-                            startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 21, 16], "America/New_York"),
+                            startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
+                            // startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 4, 31], "America/New_York"),
 
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
                                 
-                                //Add round 1 scrape listener
-                                // var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
-                                // var endTime = new moment(startTime).add(37, 'h').toDate();
-                                var startTime = new moment(createdRound.startTime);
-                                var endTime = new moment(startTime).add(1, 'm');
-                                // var job = { start: startTime, end: endTime, rule: '0 */10 * * * *' };
-                                
-                                var job = { start: startTime, end: endTime, rule: '*/10 * * * * *' };
-                                var j = schedule.scheduleJob(job, function(){
-                                    scrape();
-                                });
-                                Scrape.create( job, function(err, createdJob) {
-                                    if(err) console.log(err);
-                                    createdTournament.scrapes.push(createdJob);
-                                });
-                                
-                                console.log("Round 1: ");
-                                console.log("StartTime: " + startTime.format('LLLL'));
-                                console.log("EndTime: " + endTime.format('LLLL'));
-                                
-                                
-                                
+                                //Add two days of round 1 scrape listener
+                                // console.log("Round 1 begins at " + createdRound.startTime.format('LLLL'));
+                                for(var i = 0; i < 2; i++) {
+                                    var startTime = new moment(createdRound.startTime).add({'d': i, 'h' : 1, 'm': 30});
+                                    var endTime = new moment(startTime).add(12, 'h');
+                                    
+                                    var job = { start: startTime, end: endTime, rule: '0 */5 * * * *' };
+                                    var j = schedule.scheduleJob(job, function(){
+                                        scrape();
+                                    });
+                                    Scrape.create( job, function(err, createdJob) {
+                                        if(err) console.log(err);
+                                        createdTournament.scrapes.push(createdJob);
+                                    });
+                                    
+                                    // console.log("Round 1." + i);
+                                    // console.log("Scrape Start: " + startTime.format('LLLL'));
+                                    // console.log("Scrape End: " + endTime.format('LLLL'));
+                                }
+                               
                                 var teams = [];
                                 async.series([
                                     
@@ -209,8 +208,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                         var startTime;
                                                             // year         month           day      hour  min
                                         if(i == 0)
-                                            // startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
-                                            startTime = moment(startDay).add({hours: 20, minutes: 19}, "America/New_York");
+                                            startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
                                         else if (i == 1)
                                             startTime = moment(startDay).add({days: 7, hours: 19, minutes: 9}, "America/New_York");
                                         else if (i == 2)
@@ -231,37 +229,59 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                             else {
                                                 
                                                 //Add round scrape listeners
-                                                 // var startTime = new moment(createdRound.startTime).add(1, 'h').toDate();
-                                                // var startTime = new moment(createdRound.startTime).add(1,'h');
-                                                var startTime = new moment(createdRound.startTime);
+                                                async.series([
+                                                    function(callback) {
+                                                        // console.log("Round " + createdRound.numRound + " begins at " + createdRound.startTime.format('LLLL'));
+                                                        for(var j = 0; j < 2; j++) {
+                                                            var startTime;
+                                                            if(i === 2 && j === 1)
+                                                                startTime = new moment(createdRound.startTime).add({'h': 21, 'm': 30});
+                                                            else 
+                                                                startTime = new moment(createdRound.startTime).add({'d': j, 'h' : 1, 'm': 30});
+                                                                
+                                                            var endTime;
+                                                            if(i === 0 ) {
+                                                                endTime = new moment(startTime).add(12, 'h');
+                                                            }
+                                                            else if (i < 3 ) {
+                                                                endTime = new moment(startTime).add(5, 'h');
+                                                            }
+                                                            
+                                                            //2 final four matchups
+                                                            else if (i === 3) {
+                                                                endTime = new moment(startTime).add(5, 'h');
+                                                                j++;
+                                                            }
+                                                            //championship match
+                                                            else {
+                                                                endTime = new moment(startTime).add(2, 'h');
+                                                                j++;
+                                                            }
+        
+                                                            // console.log("Round " + createdRound.numRound + "." + j);
+                                                            // console.log("ScrapeStart: " + startTime.format('LLLL'));
+                                                            // console.log("ScrapeStop: " + endTime.format('LLLL'));
+                                                            
+                                                            var job = { start: startTime, end: endTime, rule: '0 */5 * * * *' };
+                                                            
+                                                            var k = schedule.scheduleJob(job, function(){
+                                                                scrape();
+                                                            });
+                                                            Scrape.create( job, function(err, createdJob) {
+                                                                if(err) console.log(err);
+                                                                createdTournament.scrapes.push(createdJob);
+                                                            });
+                                                        }
+                                                        callback();
+                                                    }
                                                 
-                                                
-                                                var endTime;
-                                                if(i < 3) {
-                                                    // endTime = new moment(startTime).add(36, 'h').toDate();
-                                                    endTime = new moment(startTime).add(36, 'h');
-                                                }
-                                                else {
-                                                    // endTime = new moment(startTime).add(6, 'h').toDate();
-                                                    endTime = new moment(startTime).add(6, 'h');
-                                                }
-                                                
-                                                console.log("Round " + createdRound.numRound + ":");
-                                                console.log("StartTime: " + startTime.format('LLLL'));
-                                                console.log("EndTime: " + endTime.format('LLLL'));
-                                                
-                                                // var job = { start: startTime, end: endTime, rule: '* */10 * * * *' };
-                                                var job = { start: startTime, end: endTime, rule: '*/20 * * * * *' };
-                                                var j = schedule.scheduleJob(job, function(){
-                                                    scrape();
-                                                });
-                                                Scrape.create( job, function(err, createdJob) {
+                                                ], function(err) {
                                                     if(err) console.log(err);
-                                                    createdTournament.scrapes.push(createdJob);
+                                                    else {
+                                                        createdTournament.rounds.addToSet(createdRound);
+                                                        next();
+                                                    }
                                                 });
-                                                
-                                                createdTournament.rounds.addToSet(createdRound);
-                                                next();
                                             }
                                         });
                                     },
