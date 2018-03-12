@@ -2,12 +2,34 @@ var mongoose = require("mongoose");
 
 var tournamentGroupSchema = new mongoose.Schema({
     
+    year: Number,
     groupName: 
         {
             type: String,
-            // unique: true
         },
+    commissioner: {
+        id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        },
+        name: String
+    },
+    publicGroup: Boolean,
+    secretCode: String,
     currentRound: Number,
+    comments: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Comment"
+        }
+    ],
+    tournamentReference: {
+        id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Tournament"
+        },
+        year: Number
+    },
     userTournaments: [
         {
             type: mongoose.Schema.Types.ObjectId,
@@ -26,20 +48,8 @@ var tournamentGroupSchema = new mongoose.Schema({
             ref: "BonusAggregate"
         }
     ],
-    tournamentReference: {
-        id: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Tournament"
-        },
-        year: Number
-    },
-    commissioner: {
-        id: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
-        },
-        name: String
-    },
+    
+   
 });
 
 

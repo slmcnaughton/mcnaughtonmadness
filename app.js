@@ -68,7 +68,7 @@ app.use(function(req, res, next){
 
 app.use("/", indexRoutes);
 app.use("/campgrounds", campgroundRoutes);  //all campgroundRoutes should start with "/campgrounds"
-app.use("/campgrounds/:id/comments", commentRoutes);
+app.use("/tournamentGroups/:groupName/comments", commentRoutes);
 app.use("/tournamentStandings", tournamentStandingsRoutes);
 app.use("/tournaments", tournamentRoutes);
 app.use("/tournaments/:year/rounds", roundRoutes);

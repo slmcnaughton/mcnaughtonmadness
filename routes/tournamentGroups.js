@@ -51,7 +51,8 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                 },
                 userMatchAggregates: [],
                 bonusAggregates: [],
-                currentRound: 1
+                currentRound: 1,
+                comments: []
             };
             TournamentGroup.create(newTournamentGroup, function(err, newlyCreated) {
                 if(err) {
@@ -81,6 +82,7 @@ router.get("/:groupName", function(req, res){
     TournamentGroup.findOne({groupName: groupName})
         .populate({path: "userTournaments", populate: "user"})
         .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
+        .populate("comments")
         .exec(function(err, foundTournamentGroup){
         if (err || !foundTournamentGroup){
             req.flash("error", "Tournament Group not found");

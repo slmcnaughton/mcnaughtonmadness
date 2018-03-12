@@ -518,9 +518,6 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
                     res.redirect("back");
                 }
                 else {
-                    console.log(moment().format('LLLL'));
-                    console.log(moment(foundRound.startTime).format('LLLL'));
-                    console.log(moment().isBefore(foundRound.startTime));
                     if (moment().isBefore( moment(foundRound.startTime) ) ) {
                         next();
                     } else {

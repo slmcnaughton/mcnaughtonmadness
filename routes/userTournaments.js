@@ -12,12 +12,24 @@ var Team = require("../models/team");
 //New - show form to create new userTournament 
 router.get("/new", middleware.isLoggedIn, function(req, res){
     var groupName = req.params.groupName;
-    // TournamentGroup.findById(req.params.id, function(err, foundTournamentGroup){
     TournamentGroup.findOne({groupName: groupName}).exec(function(err, foundTournamentGroup){
         if(err){
             console.log(err);
         } else {
-             res.render("userTournaments/new", {tournamentGroup: foundTournamentGroup, page: "tournamentGroups"});
+            UserTournament.findOne({"user.id": req.user._id, "tournamentGroup.groupName" : req.params.groupName}).exec(function(err, foundUserTournament){
+                if(err) {
+                    req.flash("error", "Error creating User Tournament");
+                    return res.redirect("/tournamentGroups");
+                }
+                else if (!foundUserTournament) {
+                    res.render("userTournaments/new", {tournamentGroup: foundTournamentGroup, page: "tournamentGroups"});
+                }
+                else {
+                    req.flash("error", "You've already created picks for this tournament!");
+                    return res.redirect("/tournamentGroups/" + req.params.groupName);
+                }
+            });
+            
         }
         
     });
@@ -33,38 +45,52 @@ router.post("/", middleware.isLoggedIn, function(req, res){
             console.log(err);
             res.redirect("/tournamentGroups");
         } else {
-            var newUserTournament = {
-                score: 0,
-                tournamentGroup: {
-                    id: foundTournamentGroup.id,
-                    groupName: foundTournamentGroup.groupName
-                },
-                user: {
-                    id: req.user._id,
-                    firstName: req.user.firstName,
-                    lastName: req.user.lastName,
-                    username: req.user.username
-                },
-                tournamentReference: {
-                    id: foundTournamentGroup.tournamentReference.id,
-                    year: foundTournamentGroup.tournamentReference.year
-                },
-                userRounds: []
-            };
-            UserTournament.create(newUserTournament, function(err, userTournament){
-                if(err) console.log(err);
+             UserTournament.findOne({"user.id": req.user._id, "tournamentGroup.groupName" : req.params.groupName}).exec(function(err, foundUserTournament){
+                if(err) {
+                    req.flash("error", "Error creating User Tournament");
+                    return res.redirect("/tournamentGroups");
+                }
+                else if (foundUserTournament) {
+                    req.flash("error", "You've already created picks for this tournament!");
+                    return res.redirect("/tournamentGroups/" + req.params.groupName);
+                }
                 else {
-                    foundTournamentGroup.userTournaments.addToSet(userTournament);
-                    foundTournamentGroup.save();
-                    req.user.tournamentGroups.push({
-                        id: foundTournamentGroup._id, 
-                        groupName: foundTournamentGroup.groupName, 
-                        year: userTournament.tournamentReference.year
+                    var newUserTournament = {
+                        score: 0,
+                        tournamentGroup: {
+                            id: foundTournamentGroup.id,
+                            groupName: foundTournamentGroup.groupName
+                        },
+                        user: {
+                            id: req.user._id,
+                            firstName: req.user.firstName,
+                            lastName: req.user.lastName,
+                            username: req.user.username
+                        },
+                        tournamentReference: {
+                            id: foundTournamentGroup.tournamentReference.id,
+                            year: foundTournamentGroup.tournamentReference.year
+                        },
+                        userRounds: []
+                    };
+                    UserTournament.create(newUserTournament, function(err, userTournament){
+                        if(err) console.log(err);
+                        else {
+                            foundTournamentGroup.userTournaments.addToSet(userTournament);
+                            foundTournamentGroup.save();
+                            req.user.tournamentGroups.push({
+                                id: foundTournamentGroup._id, 
+                                groupName: foundTournamentGroup.groupName, 
+                                year: userTournament.tournamentReference.year
+                            });
+                            req.user.tournamentGroups.sort(compareUserTournaments);
+                            req.user.save();
+                            req.flash('success', 'Entry started!');
+                            res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName + "/userTournaments/" + userTournament.user.username + "/1/edit");
+                        }
                     });
-                    req.user.tournamentGroups.sort(compareUserTournaments);
-                    req.user.save();
-                    req.flash('success', 'Entry started!');
-                    res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName + "/userTournaments/" + userTournament.user.username + "/1/edit");
+        
+                    
                 }
             });
         }

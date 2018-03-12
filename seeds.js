@@ -211,7 +211,7 @@ var data = [
                 score: 9.660892
             },
             {
-                firstName: "Gabby",
+                firstName: "Gabrielle",
                 lastName: "McNaughton",
                 score: 9.660892
             },
@@ -357,7 +357,7 @@ var data = [
                 score: 7.886452
             },
             {
-                firstName: "Gabby",
+                firstName: "Gabrielle",
                 lastName: "McNaughton",
                 score: 2.543526
             },
@@ -383,7 +383,7 @@ var data = [
                 score: 29.021
             },
             {
-                firstName: "Gabby",
+                firstName: "Gabrielle",
                 lastName: "McNaughton",
                 score: 29.021
             },
@@ -538,7 +538,7 @@ var data = [
                 score: 32.840
             },
             {
-                firstName: "Gabby",
+                firstName: "Gabrielle",
                 lastName: "McNaughton",
                 score: 32.840
             },
@@ -643,7 +643,7 @@ var data = [
                 score: 5.1381
             },
             {
-                firstName: "Gabby",
+                firstName: "Gabrielle",
                 lastName: "McNaughton",
                 score: 2.0461
             },
@@ -803,7 +803,7 @@ var data = [
                 score: 21.4310
             },
             {
-                firstName: "Gabby",
+                firstName: "Gabrielle",
                 lastName: "McNaughton",
                 score: 11.8499
             },
@@ -883,7 +883,7 @@ var data = [
                 score: 24.804
             },
             {
-                firstName: "Gabby",
+                firstName: "Gabrielle",
                 lastName: "McNaughton",
                 score: 23.967
             },
