@@ -43,7 +43,7 @@ router.post("/", middleware.isLoggedIn, function(req, res){
                    foundTournamentGroup.save();
                    
                    req.flash("success", "Sucessfully posted comment");
-                   res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName);
+                   res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName + "/messageboard");
                }
             });
         }
@@ -75,7 +75,7 @@ router.put("/:comment_id", middleware.checkCommentOwnership, function(req, res){
       if(err) {
           res.redirect("back");
       } else {
-          res.redirect("/tournamentGroups/" + req.params.groupName);
+          res.redirect("/tournamentGroups/" + req.params.groupName + "/messageboard");
       }
    });
 });
@@ -87,7 +87,7 @@ router.delete("/:comment_id", middleware.checkCommentOwnership, function(req, re
            res.redirect("back");
        } else {
            req.flash("success", "Comment deleted");
-           res.redirect("/tournamentGroups/" + req.params.groupName);
+           res.redirect("/tournamentGroups/" + req.params.groupName + "/messageboard");
        }
    });
 });

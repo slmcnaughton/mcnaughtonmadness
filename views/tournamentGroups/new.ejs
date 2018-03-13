@@ -1,14 +1,19 @@
-<% include ../partials/header %>
+<% include ../partials/jqueryHeader %>
 
-
-<h1 style="text-align: center;">Create a New Tournament</h1>
+<h1 style="text-align: center;">Create a Group</h1>
 
 <div class="row">
     <div >
          <form action="/tournamentGroups" method="POST" id="tournamentGroupForm">
             
             <div class="form-group">
-                <input class="form-control" type="text" name="groupName" placeholder="Group Name">
+                <label for="groupName">Group Name:</label>
+                <input class="form-control" type="text" name="groupName" placeholder="Group Name" autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="groupMotto">Group Motto:</label>
+                <input class="form-control" type="text" name="groupMotto" placeholder="Group Motto">
             </div>
             
             <div class="form-group">
@@ -20,18 +25,62 @@
                 </select>
             </div>
             
+            <div class="form-group">
+                <label for="groupType">Group type:</label>
+                <div>
+                    <input type="radio" name="groupType" id="groupTypePublic" value="true" required>
+                    <label for="groupTypePublic">Public</label>
+                </div>
+                    
+                <div>
+                    <input type="radio" name="groupType" id="groupTypePrivate" value="false">
+                    <label for="groupTypePrivate">Private</label>
+                    
+                    <div class="reveal-if-active">
+                        <label for="secretCode">Secret Code:</label>
+                        <input type="text" id="secretCode" name="secretCode" class="require-if-active" data-require-pair="#groupTypePrivate">
+                    </div>
+                </div>
+            </div>
              
-             <div class="form-group form-header">
+            <div class="form-group form-header">
                 <button class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
             </div>
         </form>
         <a href="/tournamentGroups">Go back</a>
-        
-        
-        
-       
+
     </div>
 </div>
+
+<script>
+    var FormStuff = {
+  
+  init: function() {
+    this.applyConditionalRequired();
+    this.bindUIActions();
+  },
+  
+  bindUIActions: function() {
+    $("input[type='radio'], input[type='checkbox']").on("change", this.applyConditionalRequired);
+  },
+  
+  applyConditionalRequired: function() {
+  	
+    $(".require-if-active").each(function() {
+      var el = $(this);
+      if ($(el.data("require-pair")).is(":checked")) {
+        el.prop("required", true);
+      } else {
+        el.prop("required", false);
+      }
+    });
+    
+  }
+  
+};
+
+FormStuff.init();
+</script>
 
 
 <% include ../partials/footer %>

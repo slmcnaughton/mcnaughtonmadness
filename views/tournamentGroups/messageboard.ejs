@@ -1,0 +1,168 @@
+<!DOCTYPE>
+<html>
+    <head>
+        <!--Make site responsive on mobile/tablet-->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <title>McNaughton Madness</title>
+        
+        
+    	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    	
+        <link href='https://fonts.googleapis.com/css?family=Holtwood+One+SC' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
+        
+        <script
+          src="https://code.jquery.com/jquery-2.2.4.min.js"
+          integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+          crossorigin="anonymous"></script>
+          
+        <!--jQuery CDN-->
+        <!--<script-->
+        <!--    src="https://code.jquery.com/jquery-3.3.1.min.js"-->
+        <!--    integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="-->
+        <!--    crossorigin="anonymous"></script>-->
+
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+        <link rel="stylesheet" href="/stylesheets/main.css">
+        <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+        
+<% include ../partials/navBar %>
+
+
+<div class="container">
+    
+    <div class="jumbotron hero">
+        <p class="intro" id="intro">McNaughton</p>
+        <h1 id="headline">Madness</h1>
+        <p class="year"><span class="icomoon icon-bracketLeft"></span><%=tournamentGroup.tournamentReference.year%><span class="icomoon icon-bracketRight"></span></p>
+        <p><%=tournamentGroup.groupName%></p>
+    </div>
+   
+    <div class="navbar navbar-inverse navbar-fixed-left">
+        <!--<a class="navbar-brand" href="#">Brand</a>-->
+        <ul class="nav navbar-nav">
+            <li><a href="/tournamentGroups/<%= tournamentGroup.groupName%>"><i class="fas fa-table"></i> Standings</a></li>
+            <li><a href="/tournamentGroups/<%= tournamentGroup.groupName%>/bracket"><i class="fas fa-trophy"></i> Group Bracket</a></li>
+            <li><a href="/tournamentGroups/<%= tournamentGroup.groupName%>/messageboard"><i class="fas fa-comments"></i> Message Board</a></li>
+        </ul>
+    </div>
+	
+    <div class="container">
+<!--comments-->
+<!--COMMENT SECTION START-->
+        <div class="well">
+            <!--Setting up the add new comment button that is used for collapsing-->
+            <div class="text-right">
+                <a class="btn btn-success pull-right" role="button" data-toggle="collapse" href="#collapseComment" aria-expanded="false" aria-controls="collapseComment">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add new comment
+                </a>
+            </div>
+
+            <!--Comment section title-->
+            <h4><strong>Comments <span class="glyphicon glyphicon glyphicon-comment" aria-hidden="true"></span></strong></h4>
+
+            <!--Collapse Add a comment form START-->
+            <div class="collapse" id="collapseComment">
+                <div class="well" style="border-left: 5px solid #00C851;">
+                    <% if(!currentUser) { %>
+                    <!--If the user is not logged in, direct him to the login page-->
+                        <h5>You need to login before you can comment. <a href="/login">Click here</a> to go to the login page.</h5>
+                    <% } %>
+                    <% if(currentUser) { %>
+                    <!--If the user is logged in, show the new comment form-->
+                        <h4>Write your comment <span class="glyphicon glyphicon glyphicon-pencil" aria-hidden="true"></span></h4>
+                        <form id="add-comment-form"  action="/tournamentGroups/<%= tournamentGroup.groupName%>/comments" method="POST">
+                            <div class="form-group">
+                                <input class="form-control" type="text" disabled value="<%= currentUser.firstName %>">
+                            </div>
+                            <div class="form-group">
+                                <textarea class="form-control" name="comment[text]" placeholder="Write your comment..." form="add-comment-form" rows="5" cols="70"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-success btn-sm">Comment <span class="glyphicon glyphicon-comment" aria-hidden="true"></span></button>
+                            </div>
+                        </form>
+                    <% } %>
+                </div>
+            </div>
+            <!--Collapse Add a comment form END-->
+
+            <hr>
+
+            <!--Check if there are comments, if there are none say no comments.-->
+            <% if (tournamentGroup.comments.length === 0) { %>
+                <em style="color: grey;">No comments yet.</em>
+            <% } %>
+
+            <!--Display comments by looping through them-->
+            <% tournamentGroup.comments.forEach(function(comment) { %>
+                <div class="row">
+                    <div class="col-md-12">
+                        <strong>
+                            <% if (currentUser && currentUser._id.equals(comment.author.id)) { %>
+                                <!--If the current user owns the comment, change the color of the user icon-->
+                                <span style="color: orange;" class="glyphicon glyphicon-user" aria-hidden="true"></span>
+                            <% } else { %>
+                                <!--Else just display it black-->
+                                <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+                            <% } %>
+                            <!--Print out the author username-->
+                            <%= comment.author.firstName %>
+                        </strong>
+                        <!--Show when the comment was made-->
+                        <span class="pull-right"><%= moment(comment.createdAt).fromNow() %></span>
+                        <!--Printing the comment-->
+                        <p style="white-space: pre-wrap;"><%= comment.text %></p>
+                        <!--If the visitor is logged in and the owner of the comment, show the edit and delete buttons-->
+                        <% if (currentUser && currentUser._id.equals(comment.author.id)) { %>
+                            <!--Edit button used for collapsing the edit comment form-->
+                            <a class="btn btn-xs btn-warning" role="button" data-toggle="collapse" href="#collapseEdit<%= comment._id %>" aria-expanded="false" aria-controls="collapse<%= comment._id %>">
+                                Edit
+                            </a>
+                            <!--Delete comment button-->
+                            <form id="delete-form" action="/tournamentGroups/<%= tournamentGroup.groupName %>/comments/<%= comment._id %>?_method=DELETE" method="POST" style="display: inline;">
+                                <button class="btn btn-xs btn-danger">Delete</button>
+                            </form>
+                            <!--Edit comment form-->
+                            <!--Using comment._id allows us to make and target a unique id for each comment -->
+                            <div class="collapse" id="collapseEdit<%= comment._id %>">
+                                <div class="well" style="border-left: 5px solid #ffbb33; margin-top: 15px;">
+                                    <h4>Edit your comment <span class="glyphicon glyphicon-edit" aria-hidden="true"></span></h4>
+                                    <form id="edit-comment-form" action="/tournamentGroups/<%= tournamentGroup.groupName %>/comments/<%= comment._id %>?_method=PUT" method="POST">
+                                        <div class="form-group">
+                                            <input class="form-control" type="text" disabled value="<%= currentUser.firstName %>">
+                                        </div>
+                                        <div class="form-group">
+                                            <textarea class="form-control" name="comment[text]" placeholder="Your comment text..." form="edit-comment-form" rows="5" cols="70"><%= comment.text %></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <button class="btn btn-warning btn-sm">Edit comment <span class="glyphicon glyphicon-comment" aria-hidden="true"></span></button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        <% } %>
+                        <hr>
+                    </div>
+                </div>
+            <% }) %>
+            <!--For-each comment end-->
+        </div>
+        <!--COMMENT SECTION END-->
+
+
+</div>
+        
+</div>
+        <!--Bootstrap JS CDN-->
+        <script 
+            src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+            crossorigin="anonymous">
+        </script>
+    </body>
+</html>

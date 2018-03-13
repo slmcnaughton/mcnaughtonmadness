@@ -7,6 +7,7 @@ var tournamentGroupSchema = new mongoose.Schema({
         {
             type: String,
         },
+    groupMotto: String,
     commissioner: {
         id: {
             type: mongoose.Schema.Types.ObjectId,

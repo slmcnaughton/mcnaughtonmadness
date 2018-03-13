@@ -17,7 +17,7 @@ var express             = require("express"),
     Tournament          = require("./models/tournament"),
     User                = require("./models/user"),
     schedule            = require('node-schedule'),
-    moment              = require('moment');
+    moment              = require('moment-timezone');
     
 //requiring routes
 var commentRoutes = require("./routes/comments"),
@@ -39,7 +39,7 @@ app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
 app.use(flash());
-app.locals.moment = require('moment');
+app.locals.moment = require('moment-timezone');
 
 seedDB();
 

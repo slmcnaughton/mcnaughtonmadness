@@ -4,6 +4,7 @@ var async = require("async");
 var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
+var UserTournament = require("../models/userTournament");
 
 
 //INDEX - show all Tournament Groups
@@ -45,6 +46,9 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                     id: req.user._id,
                     name: req.user.firstName
                 },
+                groupMotto: req.body.groupMotto,
+                secretCode: req.body.secretCode,
+                publicGroup: req.body.groupType,
                 tournamentReference: {
                     id: foundTournament.id,
                     year: foundTournament.year
@@ -66,6 +70,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                     }
                 }
                 else {
+                    console.log(newlyCreated);
                     res.redirect("/tournamentGroups/" + newlyCreated.groupName);
                 }
             });
@@ -83,13 +88,63 @@ router.get("/:groupName", function(req, res){
         .populate({path: "userTournaments", populate: "user"})
         .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
         .populate("comments")
+        .populate({path: "tournamentReference.id", populate: {path: "rounds"}})
         .exec(function(err, foundTournamentGroup){
         if (err || !foundTournamentGroup){
             req.flash("error", "Tournament Group not found");
             return res.redirect("/tournamentGroups");
         } else {
-            foundTournamentGroup.userTournaments.sort(compareUserTournaments);
-            res.render("tournamentGroups/show", {tournamentGroup: foundTournamentGroup, page: "tournamentGroups"});
+            var isInGroup = false;
+            // var whichIndexMatches = -1;
+            var picksNeeded = true;
+            async.series([
+                
+                function(callback) {
+                    if(res.locals.currentUser) {
+                        async.forEachSeries(res.locals.currentUser.tournamentGroups, function(tournamentGroup, next) {
+                            if(tournamentGroup.id.equals(foundTournamentGroup._id)){
+                                isInGroup = true;
+                                UserTournament.findOne({"user.id" : res.locals.currentUser._id, "tournamentGroup.groupName": foundTournamentGroup.groupName})
+                                    .populate({path: "userRounds", populate: {path: "round.id"}})
+                                    .exec(function(err, foundUserTournament) {
+                                        if(err) console.log(err);
+                                        else if(!foundUserTournament) {
+                                            next();
+                                        } else {
+                                            async.forEachSeries(foundUserTournament.userRounds, function(userRound, next) {
+                                                if (userRound.round.numRound === foundTournamentGroup.currentRound ) {
+                                                    picksNeeded = false;
+                                                    next();
+                                                } else {
+                                                    next();
+                                                }
+                                            }, function(err) {
+                                                if(err) console.log(err);
+                                                else callback();
+                                            });
+                                        }
+                                    });
+                                
+                            } else {
+                                next();
+                            }
+                            
+                        }, function(err) {
+                            if(err) console.log(err);
+                            callback();
+                        });
+                       
+                    } else {
+                        callback();
+                    }
+                }
+            ], function(err) {
+                if (err) console.log(err);
+                else {
+                    foundTournamentGroup.userTournaments.sort(compareUserTournaments);
+                    res.render("tournamentGroups/show", {tournamentGroup: foundTournamentGroup, isInGroup: isInGroup, picksNeeded : picksNeeded, page: "tournamentGroups"});
+                }
+            });
         }
     });
 });
@@ -134,24 +189,45 @@ router.get("/:groupName/bracket", function(req, res){
     });
 });
 
-
 //Note: this must be below the /tournaments/new route
-//SHOW - shows more information about a particular tournament
-router.get("/:year", function(req, res){
-    var year = req.params.year;
-    Tournament.findOne({year: year})
-        .populate({path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }})
-        .populate({path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }})
-        .populate("champion")
-        .exec(function(err, foundTournament){
-         if (err || !foundTournament){
-            req.flash("error", "Tournament not found");
-            return res.redirect("/tournaments");
+//SHOW - shows more information about a particular tournament Group
+router.get("/:groupName/messageboard", function(req, res){
+    var groupName = req.params.groupName;
+    TournamentGroup.findOne({groupName: groupName})
+        .populate({path: "userTournaments", populate: "user"})
+        .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
+        .populate("comments")
+        .populate({path: "tournamentReference.id", populate: {path: "rounds"}})
+        .exec(function(err, foundTournamentGroup){
+        if (err || !foundTournamentGroup){
+            req.flash("error", "Tournament Group not found");
+            return res.redirect("/tournamentGroups");
         } else {
-            res.render("tournaments/show", {tournament: foundTournament});
+            foundTournamentGroup.userTournaments.sort(compareUserTournaments);
+            res.render("tournamentGroups/messageboard", {tournamentGroup: foundTournamentGroup, page: "tournamentGroups"});
         }
     });
 });
+
+
+
+// //Note: this must be below the /tournaments/new route
+// //SHOW - shows more information about a particular tournament
+// router.get("/:year", function(req, res){
+//     var year = req.params.year;
+//     Tournament.findOne({year: year})
+//         .populate({path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }})
+//         .populate({path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }})
+//         .populate("champion")
+//         .exec(function(err, foundTournament){
+//          if (err || !foundTournament){
+//             req.flash("error", "Tournament not found");
+//             return res.redirect("/tournaments");
+//         } else {
+//             res.render("tournaments/show", {tournament: foundTournament});
+//         }
+//     });
+// });
 
 //EDIT Tournament Route
 router.get("/:id/edit", middleware.checkTournamentGroupOwnership, function(req, res){

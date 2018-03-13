@@ -23,6 +23,28 @@
     box-shadow: none;
   
 }
+.groupInformation{
+    border: 2px solid #333;
+    border-radius: 10px;
+    padding: 5px;
+    margin: 0 0 40px;
+}
+.groupDescription h4, .groupDescription h5, .groupDescription h6{
+    margin: 3px;
+    display: inline-block;
+}
+.groupDescription{
+    text-align: justify;
+}
+.groupDescription p {
+    margin-top: 10px;
+    display: block;
+    text-align: left;
+}
+.viewGroupButton{
+    width: 100%;
+    margin: 0 auto;
+}
 
 .column {
     float: left;
@@ -70,12 +92,13 @@
     margin-top: 1em;
 }
 
+
 @media screen and (min-width: 992px) {
     #tournament > .jumbotron.hero {
         position: absolute;
         /*background: none;*/
         padding: 20px 0 20px;
-        margin: 3em -12.5% 0;
+        margin: 5.5em -12.5% 0;
         width: 25%;
         left: 50%;
         z-index: 1;
@@ -1453,4 +1476,113 @@ body {
         font-size: 1.5em;
         margin: 0 auto;
     }
+    
+    
 }
+
+
+
+/*=============================*/
+/*Tournament Group*/
+/*=============================*/
+
+/*Tournament Group Creation - Make Secret Code Pop Up*/
+.reveal-if-active {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    font-size: 16px;
+    -webkit-transform: scale(0.8);
+          transform: scale(0.8);
+    -webkit-transition: 0.5s;
+    transition: 0.5s;
+}
+
+.reveal-if-active label {
+    display: block;
+    margin: 0 0 3px 0;
+}
+
+.reveal-if-active input[type=text] {
+    width: 100%;
+}
+
+input[type="radio"]:checked ~ .reveal-if-active, input[type="checkbox"]:checked ~ .reveal-if-active {
+    opacity: 1;
+    max-height: 100px;
+    padding: 10px 20px;
+    -webkit-transform: scale(1);
+          transform: scale(1);
+    overflow: visible;
+}
+
+form {
+    max-width: 500px;
+    margin: 20px auto;
+}
+form > div {
+  margin: 0 0 20px 0;
+}
+form > div label {
+  font-weight: bold;
+}
+form > div > div {
+  padding: 5px;
+}
+
+
+.standingsInfo{
+    /*float: left;*/
+    /*width: 100%;*/
+}
+
+.joinOrPick form{
+    margin-top: 10px;
+}
+
+.roundStartTimes{
+    /*float: right;*/
+    /*margin-right: 40px;*/
+}
+
+
+.navbar-fixed-left {
+  /*width: 200px;*/
+  float: left;
+  /*position: fixed;*/
+  border-radius: 10px;
+}
+
+.navbar-fixed-left .navbar-nav > li {
+    /* Cancel default li float: left */
+  float: none;  
+  width: 100%;
+}
+
+.navbar-fixed-left + .container {
+  padding-left: 200px;
+}
+
+.navbar-center {
+    position: absolute;
+    width: 400px;
+    margin-top: 10px;
+    left: calc(50% - 200px);
+    border-radius: 10px;
+    z-index: 2;
+}
+
+@media screen and (max-width: 992px) {
+
+    /*still looks really bad...gotta fix*/
+    .navbar-center {
+        margin: 2px 5%;
+        padding: 0 5px;
+        position: relative;
+        width: 96%;
+        margin-top: 10px;
+        border-radius: 10px;
+        z-index: 2;
+    }
+}
+

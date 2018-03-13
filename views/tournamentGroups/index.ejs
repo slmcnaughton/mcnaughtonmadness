@@ -1,35 +1,66 @@
-<% include ../partials/header %>
+<!DOCTYPE>
+<html>
+    <head>
+        <!--Make site responsive on mobile/tablet-->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <title>McNaughton Madness</title>
+        
+        
+    	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    	
+        <link href='https://fonts.googleapis.com/css?family=Holtwood+One+SC' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
+        
+        <script
+          src="https://code.jquery.com/jquery-2.2.4.min.js"
+          integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+          crossorigin="anonymous"></script>
+          
+        <!--jQuery CDN-->
+        <!--<script-->
+        <!--    src="https://code.jquery.com/jquery-3.3.1.min.js"-->
+        <!--    integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="-->
+        <!--    crossorigin="anonymous"></script>-->
 
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 
-<!--=========================================-->
-<!--Change to Tournament Groups-->
-<!--=========================================-->
+        <link rel="stylesheet" href="/stylesheets/main.css">
+        <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+        
+<% include ../partials/navBar %>
 
-<header class="jumbotron">
-    <div class="container">
-        <h1>Welcome to MMM!</h1>
-        <p>View our historical tournaments</p>
-        <p>
-            <!--make this only if admin????-->
-            <a class="btn btn-primary btn-lg" href="/tournamentGroups/new">Add New Tournament Group</a>    
-        </p>
-    </div>
-</header>
+<div class="container"> 
+        <div class="jumbotron hero">
+            <p class="intro" id="intro">McNaughton</p>
+            <h1 id="headline">Madness</h1>
+            <p class="year"><span class="icomoon icon-bracketLeft"></span><%= new Date().getFullYear() %><span class="icomoon icon-bracketRight"></span></p>
+            <p>All Tournament Groups</p>
+        </div>
+
 
 <div class="row itemDisplay">
-    <div class="col-lg-12">
-        <h3>Tournament Groups</h3>
-    </div>
     <% tournamentGroups.forEach(function(tournamentGroup) { %>
     
         <div class="col-md-3 col-sm-6">
-            
-            <h4><%= tournamentGroup.groupName %></h4>
+            <div class="groupInformation">
+                <div class="groupDescription">
+                    <h4><%= tournamentGroup.groupName %></h4>
+                    <% if (tournamentGroup.publicGroup) {%>
+                        <h5><em>Public</em></h5>
+                    <% } else { %>
+                        <h5><em>Private</em></h5>
+                    <% } %>
+                    <h6>Commissioner: <%= tournamentGroup.commissioner.name %></h6>
+                    <p class="motto"><%= tournamentGroup.groupMotto %></p>
+                </div>
                 <p>
-                    <!--Fix link to make it by year, not by id-->
-                    <a href="/tournamentGroups/<%= tournamentGroup.groupName %>" class="btn btn-primary">More Info</a>
+                    <!--Fix link to make it by year as well-->
+                    <a href="/tournamentGroups/<%= tournamentGroup.groupName %>" class="btn btn-primary viewGroupButton">View Group</a>
                 </p>
-            
+            </div>
         </div>    
     
     <% }); %>

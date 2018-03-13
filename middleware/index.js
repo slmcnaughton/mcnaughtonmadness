@@ -256,7 +256,6 @@ middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
                 // b) If UserMatchPrediction doesn't exist (i.e., they forgot to make picks), create the round and subtract the loser score
                 //=============================================
                 UserMatchPrediction.find( {"match.id" : match.matchId}).exec(function(err, foundUserMatchPredictions) {
-                    console.log(foundUserMatchPredictions[0]);
                     if(err) console.log(err);
                     else {
                         // Find all user tournaments who reference this tournament but do not have a userRound.userMatchPrediction.match.id matching this match.matchId
@@ -340,7 +339,6 @@ middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
                 
                             function(callback) {
                                 async.forEachSeries(foundUserMatchPredictions, function(prediction, next){
-                                // console.log(prediction.numRound + " " + typeof(prediction.numRound));
                                 var userPick = String(prediction.winner);
                                
                                 if (prediction.numRound === 7){
@@ -715,7 +713,6 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                     ], function(err) {
                                         if(err) console.log(err);
                                         else {
-                                            // console.log(foundUserMatchAggregate);
                                             foundUserMatchAggregate.save();
                                             next();
                                         }

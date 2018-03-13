@@ -35,9 +35,9 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2018;
+    // var year = 2018;
     var regions = ["East", "West", "Midwest", "South"];
-    // var year = Math.floor((Math.random()*100+2000));
+    var year = Math.floor((Math.random()*100+2000));
     
     //march month is actually 2
     var startDay = moment.tz([2018, 02, 15], "America/New_York");

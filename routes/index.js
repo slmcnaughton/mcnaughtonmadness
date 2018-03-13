@@ -20,15 +20,15 @@ router.get("/home", function(req, res) {
 });
 
 router.get("/rules", function(req, res) {
-    res.render("about/rules", {page: "home"});
+    res.render("about/rules", {page: "about"});
 });
 
 router.get("/history", function(req, res) {
-    res.render("about/history", {page: "home"});
+    res.render("about/history", {page: "about"});
 });
 
 router.get("/website", function(req, res) {
-    res.render("about/website", {page: "home"});
+    res.render("about/website", {page: "about"});
 });
 
 
