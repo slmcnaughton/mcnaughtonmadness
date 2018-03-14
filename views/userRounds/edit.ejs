@@ -9,80 +9,99 @@
     <% } else {%>
         Champion Pick:
     <% } %>
-        </h1>
+</h1>
+
+
+
 
 <!--=======================================================-->
 <!--UPDATE FORM ACTION AND LOCATION-->
 <!--=======================================================-->
-
-<form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
-    <% for(var j = 0; j < tournament.rounds[numRound - 1].matches.length; j++) { %>
-        <% var match = tournament.rounds[numRound - 1].matches[j]; %>
-        
-        <% if (!match.winner) { %>
-        
-            <div class="form-group match">
-                <% var matchNum = match.matchNumber %>
-                <% var idMaker = tournament.year + "m" + match.matchNumber %>
+<!--<div class="container">-->
+    <div class="row">
+        <form class="teamPicker" action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
+            
+            <% for(var j = 0; j < tournament.rounds[numRound - 1].matches.length; j++) { %>
+                <% var quarterNumMatches = tournament.rounds[numRound-1].matches.length / 4 %>
                 
-                <label for="<%=idMaker%>">
-                    <div class="team">
-                        <% if(match.topTeam === null) { %>
-                            <h5>Team TBD</h5>
-                        <% } else { %>
-                            <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>
-                        <% } %>
-                    </div>
-                </label>
-                 <input class="form-control" type="radio" id=idMaker name="<%=matchNum%>" value="<%= match.topTeam._id %>">
-                 <label>
-                    <div class="team">
-                        <% if(match.bottomTeam === null) { %>
-                        <h5>Team TBD</h5>
-                        <% } else { %>
-                            <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>
-                        <% } %>
-                    </div>
-                </label> 
-                 <input class="form-control" type="radio" id=idMaker name="<%=matchNum%>" value="<%= match.bottomTeam._id %>">
-                <div class="form-group">
-                    <input class="form-control" type="text" name="<%=matchNum%>" placeholder="Optional comment">
-                </div>
+                <% if(j % quarterNumMatches === 0 ) { %>
+                    <div class="regionPicker col-xs-12 col-sm-6 col-md-3 ">
+                        <h2 class="regionLabel"><%=tournament.regions[Math.floor(j / quarterNumMatches)]%></h2>
+                <% } %>
+                    
+                    <% var match = tournament.rounds[numRound - 1].matches[j]; %>
+                
+                    <% if (!match.winner) { %>
+                    
+                        <div class="form-group matchPicker">
+                            <% var matchNum = match.matchNumber %>
+                            <% var idMaker = tournament.year + "m" + match.matchNumber %>
+                            
+                            <label for="<%=idMaker%>top" style="display: block">
+                                <div class="team" >
+                                    <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam._id %>" required>
+                                    <div class="teamTitle">
+                                        <% if(match.topTeam !== null) { %>
+                                            <img class="pickerImage" src="<%= match.topTeam.image %>">
+                                            <span class="seed"><%=match.topTeam.seed%></span>
+                                            <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
+                                        <% } else { %>
+                                            &nbsp
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </label>
 
+                            <label for="<%=idMaker%>bottom" style="display: block">
+                                <div class="team">
+                                    <input class="radio" type="radio" id="<%=idMaker%>bottom" name="<%=matchNum%>" value="<%= match.bottomTeam._id %>">
+                                    <div class="teamTitle">
+                                        <% if(match.bottomTeam !== null) { %>
+                                            <img class="pickerImage"  src="<%= match.bottomTeam.image %>">
+                                            <span class="seed"><%=match.bottomTeam.seed%></span>
+                                            <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
+                                        <% } else { %>
+                                            &nbsp
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </label> 
+                            
+                            <div class="form-group">
+                                <input class="form-control" type="text" name="<%=matchNum%>" placeholder="Optional comment">
+                            </div>
+            
+                        </div>
+                    <% } %>    
+                
+               
+               <% if(j % quarterNumMatches ===  quarterNumMatches - 1) { %>
+                    </div>
+                <% } %>
+               
+               
+            <% } %>
+            <div class="form-group">
+                <button class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
             </div>
-        <% } %>    
-    <% } %>
-    <div class="form-group">
-        <button class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
+        </form>
     </div>
-</form>
-
-
-    
 <!--</div>-->
 
-<!--<script>-->
-<!--    var teamList = document.querySelectorAll(".team");-->
-<!--    var matchList = document.querySelectorAll(".match");-->
-    
-<!--    for (var i = 0; i < teamList.length; i++)-->
-<!--    {-->
-<!--        teamList[i].addEventListener("click", function() {-->
-<!--            this.classList.toggle("bg-success");-->
-<!--        });-->
-<!--    }-->
-    
-<!--    for (var i = 0; i < matchList.length; i++)-->
-<!--    {-->
-<!--        matchList[i].addEventListener("click", function() {-->
-<!--            this.classList.toggle("bg-info");-->
-<!--        });-->
-<!--    }-->
 
+<!--<% if(match.topTeam === null) { %>-->
+<!--    <h5>Team TBD</h5>-->
+<!--<% } else { %>-->
+<!--    <img src="<%= match.topTeam.image %>">-->
+<!--    <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>-->
+<!--<% } %>-->
 
-<!--</script>-->
-
-<!--<div>-->
+<!-- <% if(match.bottomTeam === null) { %>-->
+<!--<h5>Team TBD</h5>-->
+<!--<% } else { %>-->
+<!--    <img src="<%= match.bottomTeam.image %>">-->
+<!--    <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>-->
+<!--<% } %>-->
 
 
 <% include ../partials/footer %>

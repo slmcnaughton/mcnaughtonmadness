@@ -78,6 +78,29 @@
 
 
 
+form.teamPicker{
+    max-width: 100%;
+    font-size: 1.3em;
+}
+
+
+.teamTitle .pickerImage {
+    margin-top: 1px;
+    height: 30px; 
+    width: 30px; 
+    margin-right: 2px;
+    margin-left: -1px;
+}
+
+
+
+input[type=radio],
+.radio {
+  float: left;
+}
+
+
+
 /*===========================================*/
 /*                HOME PAGE                  */
 /*===========================================*/

@@ -1,8 +1,10 @@
 <% include ../partials/header %>
 
+<a href="/tournamentGroups/<%= userTournament.tournamentGroup.groupName%>">Return to Group Page</a>
+
 <h4><%=userTournament.user.firstName%>'s Picks</h4>
 <h4>Cumulative Score: <%=userTournament.score%></h4>
-<h4><%=userTournament.userRounds.length%></h4>
+
 
 
 <% for(var i = 0; i < userTournament.userRounds.length; i++) { %>

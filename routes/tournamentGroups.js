@@ -70,7 +70,6 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                     }
                 }
                 else {
-                    console.log(newlyCreated);
                     res.redirect("/tournamentGroups/" + newlyCreated.groupName);
                 }
             });

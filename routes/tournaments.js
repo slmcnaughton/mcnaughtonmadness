@@ -368,42 +368,42 @@ router.get("/:year", function(req, res){
             req.flash("error", "Tournament not found");
             return res.redirect("/tournaments");
         } else {
-            res.render("tournaments/show", {tournament: foundTournament});
+            res.render("tournaments/show", {tournament: foundTournament, page: "tournaments"});
         }
     });
 });
 
-//EDIT Tournament Route
-router.get("/:id/edit", middleware.checkTournamentGroupOwnership, function(req, res){
-    Campground.findById(req.params.id, function(err, foundCampground){
-        res.render("campgrounds/edit", {campground: foundCampground});
-    });
-});
+// //EDIT Tournament Route
+// router.get("/:id/edit", middleware.checkTournamentGroupOwnership, function(req, res){
+//     Campground.findById(req.params.id, function(err, foundCampground){
+//         res.render("campgrounds/edit", {campground: foundCampground});
+//     });
+// });
 
-// UPDATE Tournament Route
-router.put("/:id", middleware.checkTournamentGroupOwnership, function(req, res) {
-   //find and update the correct campground
-   // Campground.findByIdAndUpdate(id, newData, callback)
-   Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, updatedCampground){
-       if(err){
-           res.redirect("/campgrounds");
-       } else {
-            res.redirect("/campgrounds/" + req.params.id);     
-       }
-   });
-});
+// // UPDATE Tournament Route
+// router.put("/:id", middleware.checkTournamentGroupOwnership, function(req, res) {
+//   //find and update the correct campground
+//   // Campground.findByIdAndUpdate(id, newData, callback)
+//   Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, updatedCampground){
+//       if(err){
+//           res.redirect("/campgrounds");
+//       } else {
+//             res.redirect("/campgrounds/" + req.params.id);     
+//       }
+//   });
+// });
 
-//DESTROY Tournament Route
-router.delete("/:id", middleware.checkTournamentGroupOwnership, function(req, res){
-   Campground.findByIdAndRemove(req.params.id, function(err){
-      if(err){
-          res.redirect("/campgrounds");
-      } else {
-          req.flash("success", "Campground deleted");
-          res.redirect("/campgrounds");
-      }
-   });
-});
+// //DESTROY Tournament Route
+// router.delete("/:id", middleware.checkTournamentGroupOwnership, function(req, res){
+//   Campground.findByIdAndRemove(req.params.id, function(err){
+//       if(err){
+//           res.redirect("/campgrounds");
+//       } else {
+//           req.flash("success", "Campground deleted");
+//           res.redirect("/campgrounds");
+//       }
+//   });
+// });
 
 
 //order tournament rounds lowest to highest
