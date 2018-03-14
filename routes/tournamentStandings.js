@@ -7,8 +7,9 @@ router.get("/", function(req, res) {
     //get all tournamentStandings from db
     TournamentStanding.find({}, function(err, allTournaments) {
         if(err) {
-            console.log(err)
+            console.log(err);
         } else {
+            // allTournaments.sort(compare);
             res.render("tournamentStandings/index", {tournaments: allTournaments, page: "about"});
         }
     });
@@ -28,5 +29,13 @@ router.get("/:id", function(req, res){
         }
     });
 });
+
+function compare(a,b) {
+    if (a.year > b.year)
+        return -1;
+    else if (a.year < b.year)
+        return 1;
+    return 0;
+}
 
 module.exports = router;

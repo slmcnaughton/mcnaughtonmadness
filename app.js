@@ -31,8 +31,9 @@ var commentRoutes = require("./routes/comments"),
     userRoundRoutes = require("./routes/userRounds");
     
 
-mongoose.connect("mongodb://localhost/mcnaughtonmadness");
-// mongoose.connect(process.env.DATABASEURL);
+// mongoose.connect("mongodb://localhost/mcnaughtonmadness");
+
+mongoose.connect(process.env.DATABASEURL);
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
@@ -41,7 +42,7 @@ app.use(methodOverride("_method"));
 app.use(flash());
 app.locals.moment = require('moment-timezone');
 
-seedDB();
+// seedDB();
 
 // scrapeTeams();
 
