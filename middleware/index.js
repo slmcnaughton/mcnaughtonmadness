@@ -699,7 +699,7 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                             // If userMatchPrediction picks the topTeam…assign name and comments to topTeamPickerArray
                                             // Otherwise assign name and comments to BottomPickerArray
                                             var packedPrediction = {
-                                                id: userPrediction._id,
+                                                id: res.locals.currentUser._id,
                                                 firstName: res.locals.userFirstName,
                                                 comment: userPrediction.comment
                                             };
