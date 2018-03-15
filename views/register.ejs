@@ -1,9 +1,9 @@
-<% include ./partials/header %>
+<% include ./partials/jqueryHeader %>
 
 <div class="row">
     <h1 style="text-align: center">Sign Up</h1>
     <div class="login-form">
-        <form action="/register" method="POST">
+        <form id="registrationForm" action="/register" method="POST">
             <div class="form-group">
                 <input class="form-control" type="text" name="username" placeholder="username">
             </div>
@@ -27,4 +27,36 @@
     </div>
 </div>
 
-<% include ./partials/footer %>
+<script>
+    $(document).ready(function(){
+        $("#registrationForm").validate({
+            rules: {
+                 username: {
+                    required: {
+                        depends:function(){
+                            $(this).val($.trim($(this).val()));
+                            return true;
+                        }
+                    }
+                },
+                email: {required: true, email: true}
+            }
+        });
+    });
+</script>
+
+        </div>
+        
+        <footer>
+            
+            <p>&nbsp</p>
+        </footer>
+      
+
+        <!--Bootstrap JS CDN-->
+        <script 
+            src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+            crossorigin="anonymous"></script>
+    </body>
+</html>

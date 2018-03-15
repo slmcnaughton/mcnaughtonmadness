@@ -558,13 +558,17 @@ ALL BRACKET CSS BEGINS HERE
     box-sizing: border-box;
 }
 
+
 body {
+    min-height:100%;
+    height:auto !important;
+      height:100%;
     font-family: Helvetica Neue,Helvetica,Arial,sans-serif;
     font-size: 1.4em;
     line-height: 1.42857143;
     color: #333;
     background-color: #fff;
-    margin: 0 0 100px 0;
+    margin: 0;
     display: block;
 }
 
@@ -1428,7 +1432,7 @@ body {
 }
 
 /*the bonusPicks are only useful for hovering, so we won't show on phone/tablet layouts*/
-.bonusPicks{
+.bonusPicks, .championPicks{
     display: none;
 }
 
@@ -1501,6 +1505,10 @@ body {
         margin: 0 auto;
     }
     
+    footer.bracket {
+        margin-top: 200px;
+    }
+
     
 }
 
@@ -1609,4 +1617,11 @@ form > div > div {
         z-index: 2;
     }
 }
+
+footer {
+    margin-top: 100px;
+    height: 150px;
+    background-color: #fff;
+}
+
 

@@ -58,11 +58,16 @@ router.get("/register", function(req, res){
 //handle sign up logic
 router.post("/register", function(req, res){
     // var newUser = new User( {username: req.body.username} );
+    
+    console.log(typeof(req.body.username));
+    var username = req.body.username;
+    var firstName = req.body.firstName;
+    var lastName = req.body.lastName;
     var newUser = new User( 
         {
-            username: req.body.username,
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
+            username: username + "this",
+            firstName: firstName,
+            lastName: lastName,
             image: req.body.image,
             email: req.body.email
         });
@@ -72,7 +77,6 @@ router.post("/register", function(req, res){
             req.flash("error", err.message);
             return res.redirect("/register");
         }
-        
         addPastTrophies(user);
         //once the user is registered, log them in
         passport.authenticate("local")(req, res, function(){

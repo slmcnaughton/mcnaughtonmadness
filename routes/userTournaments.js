@@ -106,6 +106,8 @@ router.get("/:username", middleware.isLoggedIn, function(req, res){
             .populate({path: "userRounds", populate: {path: "round.id"}})
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "winner"}}})
             .populate({path: "userRounds", populate: {path: "userMatchPredictions", populate: {path: "match.id"}}})
+            .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: {path: "matches", populate:{path: "topTeam"}}}})
+            .populate({path: "tournamentReference.id", populate: {path: "rounds", populate: {path: "matches", populate:{path: "bottomTeam"}}}})
         .exec(function(err, foundUserTournament){
          if (err || !foundUserTournament){
             req.flash("error", "User Tournament not found");
