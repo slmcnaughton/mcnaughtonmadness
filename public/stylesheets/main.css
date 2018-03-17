@@ -1422,6 +1422,7 @@ body {
     background-color: rgba(225, 50, 50, 0.75);
 }
 
+
 .noWin {
     background-color: rgba(225, 225, 50, 0.75);
 }
@@ -1477,6 +1478,12 @@ body {
         display: grid;
         grid-template-columns: 60px 60px 60px;
         width: 180px;
+        margin: 0 auto;
+    }
+    .gridIndividual {
+        display: grid;
+        grid-template-columns: 60px;
+        width: 60px;
         margin: 0 auto;
     }
     
@@ -1587,6 +1594,7 @@ form > div > div {
 
 .navbar-fixed-left .navbar-nav > li {
     /* Cancel default li float: left */
+
   float: none;  
   width: 100%;
 }
@@ -1597,9 +1605,9 @@ form > div > div {
 
 .navbar-center {
     position: absolute;
-    width: 400px;
+    width: 420px;
     margin-top: 10px;
-    left: calc(50% - 200px);
+    left: calc(50% - 210px);
     border-radius: 10px;
     z-index: 2;
 }

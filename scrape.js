@@ -134,29 +134,40 @@ function scrape() {
 var advanceWinners =  function(matchUpdates) {
     var nextRoundIndex = matchUpdates[0].tournament.currentRound;
     var nextRound = matchUpdates[0].tournament.rounds[nextRoundIndex];
-    // console.log("here");
     async.forEachOf(matchUpdates, function(matchUpdate, i) {
-    // for (var i = 0; i < matchUpdates.length; i++) {
-        Match.findByIdAndUpdate(matchUpdate.matchId, {winner: matchUpdate.winningTeam}, function(err, updatedMatch) {
+        // Match.findByIdAndUpdate(matchUpdate.matchId, {winner: matchUpdate.winningTeam}, function(err, updatedMatch) {
+        Match.findById(matchUpdate.matchId).populate("topTeam").populate("bottomTeam").exec(function(err, updatedMatch) {
             if(err || !updatedMatch)
                 console.log(err);
             else {
+                updatedMatch.winner = matchUpdate.winningTeam;
+                if(updatedMatch.winner.id === updatedMatch.topTeam.id) {
+                    updatedMatch.bottomTeam.lost++;
+                    // console.log( updatedMatch.topTeam.name + " beat " +  updatedMatch.bottomTeam.name);
+                    updatedMatch.bottomTeam.save();
+                }
+                else {
+                    updatedMatch.topTeam.lost++;
+                    // console.log( updatedMatch.bottomTeam.name + " beat " +  updatedMatch.topTeam.name);
+                    updatedMatch.topTeam.save();
+                }
                 updatedMatch.save();
+                // console.log(updatedMatch.winner);
+                var currIndex = Number(matchUpdates[i].roundMatchIndex);
+                var nextMatchIndex = Math.floor(currIndex / 2);
+                var nextRoundMatch = nextRound.matches[nextMatchIndex];
+                //decide whether to advance the winning team to the topTeam or bottomTeam of the next round
+                if (currIndex % 2 === 0) {
+                    // console.log(matchUpdates[i].winningTeam.name + " moved on" );
+                    nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
+                }
+                else {
+                    // console.log(matchUpdates[i].winningTeam.name + " moved on" );
+                    nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
+                }
+                nextRound.matches[nextMatchIndex].save();
             }
         });
-        
-        var currIndex = matchUpdates[i].roundMatchIndex;
-        var nextMatchIndex = Math.floor(currIndex / 2);
-        var nextRoundMatch = nextRound.matches[nextMatchIndex];
-        if (currIndex % 2 === 0) {
-            // console.log(matchUpdates[i].winningTeam.name + " moved on" );
-            nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
-        }
-        else {
-            // console.log(matchUpdates[i].winningTeam.name + " moved on" );
-            nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
-        }
-        nextRound.matches[nextMatchIndex].save();
     });
     
 };
@@ -393,7 +404,7 @@ var isRoundComplete = function (updatedMatches, next) {
      TournamentGroup.findOne( {"tournamentReference.id" : updatedMatches[0].tournament.id})
     .populate({path: "tournamentReference.id", populate: { path: "rounds", populate: {path: "matches"  }}})
     .exec(function(err, foundTournamentGroup) {
-        if(err) console.log(err);
+        if(err || !foundTournamentGroup) console.log(err);
         else {
             var currRound = foundTournamentGroup.currentRound;
             var numUnfinished = 0;

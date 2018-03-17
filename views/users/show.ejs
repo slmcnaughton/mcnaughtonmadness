@@ -3,6 +3,20 @@
 <div class="row">
     <div class="col-md-4">
         <h1><%= user.firstName + " " + user.lastName%></h1>
+        
+        <% if(user.tournamentGroups.length === 0) { %>
+            <% if (isUser) { %>
+                <h4>You have not joined any groups yet.</h4>
+                <a href="/tournamentGroups/"> Go join one now!</a>
+            <% } else { %>
+                <h4><%= user.firstName %> has not joined any groups yet.</h4>
+            <% } %>
+        <% } else { %>
+            <% for (var i = 0; i < user.tournamentGroups.length; i++) { %>
+                <a href="/tournamentGroups/<%= user.tournamentGroups[i].groupName%>"><i class="fas fa-table"></i> <%= user.tournamentGroups[i].groupName%></a>
+            <% } %>
+        <% } %>
+        
     </div>
     <div class="col-md-8">
         <h3><%= user.firstName %>'s Trophies</h3>

@@ -24,9 +24,11 @@
             <% for(var j = 0; j < tournament.rounds[numRound - 1].matches.length; j++) { %>
                 <% var quarterNumMatches = tournament.rounds[numRound-1].matches.length / 4 %>
                 
-                <% if(j % quarterNumMatches === 0 ) { %>
+                <% if(numRound < 5 && j % quarterNumMatches === 0 ) { %>
                     <div class="regionPicker col-xs-12 col-sm-6 col-md-3 ">
                         <h2 class="regionLabel"><%=tournament.regions[Math.floor(j / quarterNumMatches)]%></h2>
+                <% } else if (numRound === 5 || numRound === 6) { %>
+                    <div class="regionPicker col-xs-12 col-sm-6 col-md-3 ">
                 <% } %>
                     
                     <% var match = tournament.rounds[numRound - 1].matches[j]; %>
@@ -75,7 +77,9 @@
                     <% } %>    
                 
                
-               <% if(j % quarterNumMatches ===  quarterNumMatches - 1) { %>
+               <% if(numRound < 5 && j % quarterNumMatches ===  quarterNumMatches - 1) { %>
+                    </div>
+                <% } else if (numRound === 5 || numRound === 6) { %>
                     </div>
                 <% } %>
                
@@ -87,21 +91,6 @@
         </form>
     </div>
 <!--</div>-->
-
-
-<!--<% if(match.topTeam === null) { %>-->
-<!--    <h5>Team TBD</h5>-->
-<!--<% } else { %>-->
-<!--    <img src="<%= match.topTeam.image %>">-->
-<!--    <h5><%=match.topTeam.seed%>) <%=match.topTeam.name%></h5>-->
-<!--<% } %>-->
-
-<!-- <% if(match.bottomTeam === null) { %>-->
-<!--<h5>Team TBD</h5>-->
-<!--<% } else { %>-->
-<!--    <img src="<%= match.bottomTeam.image %>">-->
-<!--    <h5><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></h5>-->
-<!--<% } %>-->
 
 
 <% include ../partials/footer %>

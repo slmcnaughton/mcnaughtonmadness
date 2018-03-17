@@ -1,46 +1,21 @@
 <% include ../partials/header %>
 
-<a href="/tournamentGroups/<%= userTournament.tournamentGroup.groupName%>">Return to Group Page</a>
-
-<h4><%=userTournament.user.firstName%>'s Picks</h4>
-<h4>Cumulative Score: <%=userTournament.score%></h4>
-
 <% var tournament = userTournament.tournamentReference.id %>
-
-<% for(var i = 0; i < userTournament.userRounds.length; i++) { %>
-    <% var numRound = Number(userTournament.userRounds[i].round.numRound) %>
-    <h2>
-    <% if (numRound < 7) { %>
-        Round <%=numRound%>:
-    <% } else if (numRound === 7) { %>
-        Final Four:
-    <% } else { %>
-        Champion:
-    <% } %>
-    <%=userTournament.userRounds[i].roundScore%></h2>
-    <% for(var j = 0; j < userTournament.userRounds[i].userMatchPredictions.length; j++) { %>
-        <% var userMatch = userTournament.userRounds[i].userMatchPredictions[j] %>
-        <h5>
-            <%= userMatch.numRound %> - 
-        <% if (userMatch.winner) { %>
-            <strong><%=userMatch.winner.name%></strong>
-        <% } %>
-           (<%=userMatch.score%>)
-        <% if (userMatch.comment) { %>
-            <em>- <%= userMatch.comment %></em>
-        <% } %>
-        </h5>
-       
-    <% } %>
-<% } %>
-
-
+</div>
 <main id="tournament">
+    <div class="navbar navbar-inverse navbar-center nav-justified">
+        <ul class="nav navbar-nav">
+            <li><a href="/tournamentGroups/<%= userTournament.tournamentGroup.groupName%>"><i class="fas fa-table"></i> Group</a></li>
+            <li><a href="/tournamentGroups/<%= userTournament.tournamentGroup.groupName%>/bracket"><i class="fas fa-trophy"></i> Group Bracket</a></li>
+            <li><a href="/users/<%= userTournament.user.username%>"><i class="fas fa-user"></i> <%= userTournament.user.firstName%>'s Profile</a></li>
+        </ul>
+    </div>
+    
     <div class="jumbotron hero">
         <p class="intro" id="intro">McNaughton</p>
         <h1 id="headline">Madness</h1>
         <p class="year"><span class="icomoon icon-bracketLeft"></span><%=tournament.year%><span class="icomoon icon-bracketRight"></span></p>
-        
+        <p><%=userTournament.user.firstName%> <%=userTournament.user.lastName%></p>
     </div>
     
     <div class="container-fluid tournamentContents" style="padding-bottom: 50px; min-height: 300px">
@@ -69,32 +44,89 @@
                                             <% for(var i = 0; i < tournament.rounds.length-1; i++) { %>
                                                 <div class="oneRound">
                                                     <!--number of matches vary per round: we only want 1/4 of all matches in the round in this quadrant-->
-                                                    <% var quarterNumMatches = tournament.rounds[i].matches.length / 4 %>
-                                                    <% for(var j = 0; j < quarterNumMatches; j++) { %>
-                                                        <% if (i !== 0) { %>
-                                                            
-                                                            <div class="team">
-                                                                <div class="teamTitle">
+                                                    
+                                                    <% if (i !== 0) { %>
+                                                        <% var quarterNumMatches = tournament.rounds[i].matches.length / 4 %>
+                                                        <% for(var j = 0; j < quarterNumMatches; j++) { %>
+                                                            <div class="match">
+                                                                <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
+                                                                    
                                                                     <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
-                                                                        <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[Math.floor(quadNum * quarterNumMatches) + j] %>
-                                                                
-                                                                        <% if(userMatch.winner) { %>
-                                                                            <img src="<%= userMatch.winner.image %>">
-                                                                            <span class="seed"><%=userMatch.winner.seed%></span>
-                                                                            <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
-                                                                         <% } else { %>
-                                                                            &nbsp
-                                                                        <% } %>
+                                                                        <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[Math.floor((quadNum * quarterNumMatches + j)) * 2] %>
+                                                                        <div class="team">
+                                                                            <% if (userMatch.score > 0) { %>   
+                                                                                <div class="teamTitle win">
+                                                                            <% } else if (userMatch.score < 0) { %>
+                                                                                <div class = "teamTitle loss">
+                                                                            <% } else { %>
+                                                                                <div class = "teamTitle noWin">
+                                                                            <% } %>
+                                                                                
+                                                                            
+                                                                                    <% if(userMatch.winner) { %>
+                                                                                        <img src="<%= userMatch.winner.image %>">
+                                                                                        <span class="seed"><%=userMatch.winner.seed%></span>
+                                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                                     <% } else { %>
+                                                                                        &nbsp
+                                                                                    <% } %>
+                                                                                </div>
+                                                                                <!--end team title-->
+                                                                            </div>
                                                                     <% } else { %>
-                                                            
-                                                                        &nbsp
+                                                                        <div class="team">
+                                                                            <div class="teamTitle">
+                                                                                &nbsp
+                                                                            </div>
+                                                                            <!--end team title-->
+                                                                        </div>
                                                                     <% } %>
-                                                                </div>
-                                                                <!--end team title-->
+                                                                        
+                                                                 <% } %>
+                                                                <!--end top team-->
+                                                                
+                                                                <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 1) { %>
+                                                                    <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
+                                                                                
+                                                                        <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[Math.floor(quadNum * quarterNumMatches + j)*2 + 1] %>
+                                                                            
+                                                                        <div class="team">
+                                                                            <% if (userMatch.score > 0) { %>   
+                                                                                <div class="teamTitle win">
+                                                                            <% } else if (userMatch.score < 0) { %>
+                                                                                <div class = "teamTitle loss">
+                                                                            <% } else { %>
+                                                                                <div class = "teamTitle noWin">
+                                                                            <% } %>
+                                                                            
+                                                                                    <% if(userMatch.winner) { %>
+                                                                                        <img src="<%= userMatch.winner.image %>">
+                                                                                        <span class="seed"><%=userMatch.winner.seed%></span>
+                                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                                     <% } else { %>
+                                                                                        &nbsp
+                                                                                    <% } %>
+                                                                            </div>
+                                                                            <!--end team title-->
+                                                                        </div>
+                                                                        <!--end team-->
+                                                                    <% } else { %>
+                                                                        <div class="team">
+                                                                            <div class="teamTitle">
+                                                                                &nbsp
+                                                                            </div>
+                                                                            <!--end team title-->
+                                                                        </div>
+                                                                    <% } %>
+                                                                        
+                                                                <% } %>
                                                             </div>
-                                                            <!--end top team-->
-                                                            
-                                                        <% } else { %>
+                                                        <% } %>
+                                                        <!--end looping through quarterNumMatches-->
+                                                   
+                                                    <% } else { %>
+                                                        <% var quarterNumMatches = tournament.rounds[i].matches.length / 4 %>
+                                                        <% for(var j = 0; j < quarterNumMatches; j++) { %>
                                                             <% var match = tournament.rounds[i].matches[Math.floor(quadNum * quarterNumMatches) + j] %>
                                                             <div class="match">
                                                                 <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
@@ -132,10 +164,8 @@
                                                             </div>
                                                             <!--end match-->
                                                         <% } %>
-                                                        
-                                                        
+                                                        <!--end looping through quarterNumMatches-->
                                                     <% } %> 
-                                                    <!--end looping through quarterNumMatches-->
                                                 </div>
                                                 <!--end oneRound-->
                                             <% } %>
@@ -168,37 +198,75 @@
                                 <% for(var i = 4; i < tournament.rounds.length; i++) { %>
                                     <div class="oneRound">
                                         <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
-                                            <% var match = tournament.rounds[i].matches[j] %>
-                                            <div class="match" id="match<%= match.matchNumber%>" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
+                                            <div class="match">
                                                 <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
-                                                    <div class="team">
-                                                        <div class="teamTitle">
-                                                            <% if(match.topTeam !== null) { %>
-                                                                <img src="<%= match.topTeam.image %>">
-                                                                <span class="seed"><%=match.topTeam.seed%></span>
-                                                                <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
-                                                             <% } else { %>
-                                                                &nbsp
-                                                            <% } %>
-                                                        </div>
-                                                        <!--end team title-->
-                                                    </div>
-                                                    <!--end top team-->
-                                                <% } %>
-
-                                                    <div class="team">
-                                                        <div class="teamTitle">
-                                                            <% if(match.bottomTeam !== null) { %>
-                                                                <img src="<%= match.bottomTeam.image %>">
-                                                                <span class="seed"><%=match.bottomTeam.seed%></span>
-                                                                <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
+                                                    <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
+                                                       <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[j*2] %>
+                                                        <div class="team">
+                                                            <% if (userMatch.score > 0) { %>   
+                                                                <div class="teamTitle win">
+                                                            <% } else if (userMatch.score < 0) { %>
+                                                                <div class = "teamTitle loss">
                                                             <% } else { %>
-                                                                &nbsp
+                                                                <div class = "teamTitle noWin">
                                                             <% } %>
+                                                        
+                                                                    <% if(userMatch.winner) { %>
+                                                                        <img src="<%= userMatch.winner.image %>">
+                                                                        <span class="seed"><%=userMatch.winner.seed%></span>
+                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                     <% } else { %>
+                                                                        &nbsp
+                                                                    <% } %>
+                                                                
+                                                                </div>
+                                                                <!--end team title-->
                                                         </div>
-                                                        <!--end team title-->
+                                                        <!--end top team-->
+                                                    <% } else { %>
+                                                        <div class="team">
+                                                            <div class="teamTitle">
+                                                                &nbsp
+                                                            </div>
+                                                            <!--end team title-->
+                                                        </div>
+                                                    <% } %>
+                                                        
+                                                <% } %>
+                                                <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
+                                                                
+                                                    <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[j*2 + 1] %>
+                                                    <div class="team">
+                                                        <% if (userMatch.score > 0) { %>   
+                                                            <div class="teamTitle win">
+                                                        <% } else if (userMatch.score < 0) { %>
+                                                            <div class = "teamTitle loss">
+                                                        <% } else { %>
+                                                            <div class = "teamTitle noWin">
+                                                        <% } %>
+                                                    
+                                                                <% if(userMatch.winner) { %>
+                                                               
+                                                                    <img src="<%= userMatch.winner.image %>">
+                                                                    <span class="seed"><%=userMatch.winner.seed%></span>
+                                                                    <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                 <% } else { %>
+                                                                    &nbsp
+                                                                <% } %>
+                                                                
+                                                            </div>
+                                                            <!--end team title-->
                                                     </div>
                                                     <!--end bottom team-->
+                                                <% } else { %>
+                                                    <div class="team">
+                                                        <div class="teamTitle">
+                                                            &nbsp
+                                                        </div>
+                                                        <!--end team title-->
+                                                    </div>
+                                                <% } %>
+                                                        
                                             </div>
                                             <!--end match-->
      
@@ -213,17 +281,35 @@
                                 <!--champion-->
                                 <div class="oneRound">
                                     <div class="match">
-                                        <div class="team">
-                                            <div class="teamTitle">
-                                                <% if(tournament.champion) { %>
-                                                    <img class="championshipImage" src="<%= tournament.champion.image %>">
-                                                    <span class="seed"><%=tournament.champion.seed%></span>
-                                                    <span class="teamName"><%= tournament.champion.name%>&nbsp</span>
+                                        
+                                        <% if(userTournament.userRounds[5] && userTournament.userRounds[5].round.numRound === 6 && userTournament.userRounds[5].userMatchPredictions.length > 0) { %>
+                                            <% var userMatch = userTournament.userRounds[5].userMatchPredictions[0] %>
+                                            <div class="team">
+                                                <% if (userMatch.score > 0) { %>   
+                                                    <div class="teamTitle win">
+                                                <% } else if (userMatch.score < 0) { %>
+                                                    <div class = "teamTitle loss">
                                                 <% } else { %>
-                                                    &nbsp
+                                                    <div class = "teamTitle noWin">
                                                 <% } %>
+                                                        <% if(userMatch.winner) { %>
+                                                            <img class="championshipImage" src="<%= userMatch.winner.image %>">
+                                                            <span class="seed"><%=userMatch.winner.seed%></span>
+                                                            <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                         <% } else { %>
+                                                            &nbsp
+                                                        <% } %>
+                                                    </div>
                                             </div>
-                                        </div>
+                                        <% } else { %>
+                                            <div class="team">
+                                                <div class="teamTitle">
+                                                    &nbsp
+                                                </div>
+                                                <!--end team title-->
+                                            </div>
+                                        <% } %>
+                                            
                                     </div>
                                     <!--endMatch-->
                                 </div>  
@@ -242,6 +328,61 @@
         <!--end row-->
     </div> 
     <!--end container-fluid-->
+    
+    
+
+    
+    <!--BONUS PICKS-->
+    <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
+        <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 8) { %>
+            <div class="championPicks" style="margin-top: -200px">
+                <div class="champAggregate">
+                    <h3 class="bonusRegion">Champion Pick</h3>
+                    <div class="gridIndividual">
+                        <% var team = userTournament.userRounds[i].userMatchPredictions[0].winner %>
+                        <% if (team.lost > 0) { %>
+                            <div class="grid-item lost">
+                                <img src="<%= team.image %>">
+                            </div>
+                        <% } else { %>
+                            <div class="grid-item">
+                                <img src="<%= team.image %>">
+                            </div>
+                        <% } %>  
+                    </div>
+                </div>
+            </div>
+        <% } %>
+    <% } %>
+    
+    <!--FINAL FOUR PICKS-->
+    <div class="bonusPicks">
+        <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
+            <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 7) { %>
+                <% for (var j = 0; j < tournament.regions.length; j++) { %>
+                    <div class="bonusAggregate">
+                        <h3 class="bonusRegion"><%=tournament.regions[j]%> Pick</h3>
+                        <div class="gridIndividual">
+                            <% var team = userTournament.userRounds[i].userMatchPredictions[j].winner %>
+                            <% if (team.lost > 0) { %>
+                                <div class="grid-item lost">
+                                    <img src="<%= team.image %>">
+                                </div>
+                            <% } else { %>
+                                <div class="grid-item">
+                                    <img src="<%= team.image %>">
+                                </div>
+                            <% } %>
+                         </div>
+                     </div>
+                <% } %>
+                 
+            <% } %>
+        <% } %>    
+    </div>             
+              
+    
+    
 </main>
 <!--end tournament-->
 

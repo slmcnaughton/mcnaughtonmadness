@@ -43,6 +43,7 @@ app.use(flash());
 app.locals.moment = require('moment-timezone');
 
 // seedDB();
+// scrape();
 
 // scrapeTeams();
 

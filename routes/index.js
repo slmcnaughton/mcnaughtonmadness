@@ -57,15 +57,12 @@ router.get("/register", function(req, res){
 
 //handle sign up logic
 router.post("/register", function(req, res){
-    // var newUser = new User( {username: req.body.username} );
-    
-    console.log(typeof(req.body.username));
     var username = req.body.username;
     var firstName = req.body.firstName;
     var lastName = req.body.lastName;
     var newUser = new User( 
         {
-            username: username + "this",
+            username: username,
             firstName: firstName,
             lastName: lastName,
             image: req.body.image,
@@ -142,9 +139,9 @@ router.get("/users/:username", function(req, res) {
         } else {
             foundUser.trophies.sort(compare);
             if (req.user && req.user.username === foundUser.username)
-                res.render("users/show", {user: foundUser, page: "profile"});
+                res.render("users/show", {user: foundUser, isUser: true, page: "profile"});
             else
-                res.render("users/show", {user: foundUser, page: "users"});
+                res.render("users/show", {user: foundUser, isUser: false, page: "users"});
         }
         
     });

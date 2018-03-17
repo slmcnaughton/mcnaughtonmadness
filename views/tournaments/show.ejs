@@ -139,7 +139,7 @@
                                         <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
                                             <% var match = tournament.rounds[i].matches[j] %>
                                             <div class="match" id="match<%= match.matchNumber%>" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
-                                                <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
+                                                <% if (i < tournament.rounds.length - 1 || quadNum % 2 === 0) { %>
                                                     <div class="team">
                                                         <div class="teamTitle">
                                                             <% if(match.topTeam !== null) { %>
