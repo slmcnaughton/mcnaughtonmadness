@@ -161,9 +161,9 @@ router.post('/forgot', function(req, res, next) {
             });
         },
         function(token, done) {
-            User.findOne({ email: req.body.email }, function(err, user) {
+            User.findOne({ email: req.body.email, firstName: req.body.firstName, lastName: req.body.lastName }, function(err, user) {
                 if (err || !user) {
-                    req.flash('error', 'No account with that email address exists.');
+                    req.flash('error', 'No account with that name/email address combination exists.');
                     return res.redirect('/forgot');
                 }
         
@@ -218,14 +218,15 @@ router.post('/reset/:token', function(req, res) {
                     return res.redirect('back');
                 }
                 
-                user.password = req.body.password;
+                
                 user.resetPasswordToken = undefined;
                 user.resetPasswordExpires = undefined;
-                
-                user.save(function(err) {
-                    if (err) console.log(err);
-                    req.logIn(user, function(err) {
-                        done(err, user);
+                user.setPassword(req.body.password, function() {
+                    user.save(function (err) {
+                        req.logIn(user, function(err) {
+                            if (err) console.log(err);
+                            done(err, user);
+                        });
                     });
                 });
             });

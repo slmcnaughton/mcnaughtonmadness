@@ -16,6 +16,8 @@ var express             = require("express"),
     TournamentStanding  = require("./models/tournamentStanding"),
     Tournament          = require("./models/tournament"),
     User                = require("./models/user"),
+    async = require("async"),
+    UserMatchPrediction              = require("./models/userMatchPrediction"),
     schedule            = require('node-schedule'),
     moment              = require('moment-timezone');
     
@@ -33,6 +35,7 @@ var commentRoutes = require("./routes/comments"),
 
 // mongoose.connect("mongodb://localhost/mcnaughtonmadness");
 
+
 mongoose.connect(process.env.DATABASEURL);
 
 app.use(bodyParser.urlencoded({extended: true}));
@@ -41,6 +44,9 @@ app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
 app.use(flash());
 app.locals.moment = require('moment-timezone');
+
+
+
 
 // seedDB();
 // scrape();
