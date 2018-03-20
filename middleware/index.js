@@ -466,7 +466,7 @@ middlewareObj.isRoundComplete = function(req, res, next) {
 
             async.forEachSeries(foundTournamentGroup.tournamentReference.id.rounds[currRound-1].matches, function(match, next){
                 if(!match.winner) {
-                    console.log(match);
+                    // console.log(match);
                     numUnfinished++;
                     next();
                 } else next();

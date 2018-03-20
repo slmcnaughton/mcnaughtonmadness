@@ -6,7 +6,6 @@ var express             = require("express"),
     LocalStrategy       = require("passport-local"),
     methodOverride      = require("method-override"),
     flash               = require("connect-flash"),
-    Campground          = require("./models/campground"),
     Comment             = require("./models/comment"),
     seedDB              = require("./seeds"),
     scrape              = require("./scrape"),
@@ -14,7 +13,8 @@ var express             = require("express"),
     Trophy              = require("./models/trophy"),
     TeamImage           = require("./models/teamImage"),
     TournamentStanding  = require("./models/tournamentStanding"),
-    Tournament          = require("./models/tournament"),
+    Tournament         = require("./models/tournament"),
+    Match          = require("./models/match"),
     User                = require("./models/user"),
     async = require("async"),
     UserMatchPrediction              = require("./models/userMatchPrediction"),
@@ -35,7 +35,6 @@ var commentRoutes = require("./routes/comments"),
 
 // mongoose.connect("mongodb://localhost/mcnaughtonmadness");
 
-
 mongoose.connect(process.env.DATABASEURL);
 
 app.use(bodyParser.urlencoded({extended: true}));
@@ -46,10 +45,9 @@ app.use(flash());
 app.locals.moment = require('moment-timezone');
 
 
-
-
 // seedDB();
 // scrape();
+
 
 // scrapeTeams();
 
