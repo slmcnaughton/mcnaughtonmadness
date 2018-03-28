@@ -51,7 +51,7 @@ body {
   background-position: 50% 70%;
 }
 .slideshow li:nth-child(2) { 
-  background-image: url(https://pixabay.com/get/eb37b4072ef1003ed1534705fb0938c9bd22ffd41cb311489cf3c679a0/basketball-2258651_1920.jpg);
+  background-image: url("/imgs/basketball-sunset.jpg");
   background-position: 50% 50%;
   animation-delay: 10s; 
 }
@@ -61,7 +61,7 @@ body {
   animation-delay: 20s; 
 }
 .slideshow li:nth-child(4) { 
-  background-image: url(https://cdn.pixabay.com/photo/2013/03/21/15/52/basketball-95607_960_720.jpg);
+  background-image: url("/imgs/basketball-michst.jpg");
   background-position: 50% 60%;
   animation-delay: 30s; 
 }
