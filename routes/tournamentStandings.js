@@ -9,7 +9,7 @@ router.get("/", function(req, res) {
         if(err) {
             console.log(err);
         } else {
-            // allTournaments.sort(compare);
+            allTournaments.sort(compare);
             res.render("tournamentStandings/index", {tournaments: allTournaments, page: "about"});
         }
     });

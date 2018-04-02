@@ -87,6 +87,15 @@ function seedDB() {
     // });
     
     // addTournamentStandings();
+    
+}
+
+function compare(a,b) {
+    if (a.year > b.year)
+        return -1;
+    else if (a.year < b.year)
+        return 1;
+    return 0;
 }
 
 
@@ -480,7 +489,7 @@ var data = [
             {
                 firstName: "Ron",
                 lastName: "McNaughton",
-                score: 76.072
+                score: 129.3377
             },
             {
                 firstName: "Sarah",

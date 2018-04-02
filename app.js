@@ -34,8 +34,9 @@ var commentRoutes = require("./routes/comments"),
     
 
 // mongoose.connect("mongodb://localhost/mcnaughtonmadness");
+mongoose.connect("mongodb://seth:Psalm1195@ds113169.mlab.com:13169/mcnaughton_madness");
 
-mongoose.connect(process.env.DATABASEURL);
+// mongoose.connect(process.env.DATABASEURL);
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
