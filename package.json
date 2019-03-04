@@ -1,6 +1,6 @@
 {
   "name": "mcnaughtonmadness",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Web app to host the annual McNaughton March Madness bracket picks, scores, smack talk, and results",
   "main": "app.js",
   "scripts": {
@@ -10,22 +10,25 @@
   "author": "Seth McNaughton",
   "license": "ISC",
   "dependencies": {
-    "@sendgrid/mail": "^6.2.1",
-    "async": "^2.6.0",
+    "@microsoft/microsoft-graph-client": "^1.4.0",
+    "async": "^2.6.2",
     "body-parser": "^1.18.2",
     "cheerio": "^1.0.0-rc.2",
     "connect-flash": "^0.1.1",
+    "dotenv": "^6.2.0",
     "ejs": "^2.5.7",
-    "express": "^4.16.2",
+    "express": "^4.16.4",
     "express-session": "^1.15.6",
     "method-override": "^2.3.10",
     "moment": "^2.20.1",
     "moment-timezone": "^0.5.14",
-    "mongoose": "^5.0.6",
+    "mongoose": "^5.4.17",
     "node-schedule": "^1.3.0",
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",
     "passport-local-mongoose": "^4.4.0",
-    "request": "^2.83.0"
-  }
+    "request": "^2.88.0",
+    "simple-oauth2": "^2.2.1"
+  },
+  "devDependencies": {}
 }

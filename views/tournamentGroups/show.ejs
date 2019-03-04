@@ -119,7 +119,6 @@
                     <th>Round 6</th>
                     <th>Final Four Bonus</th>
                     <th>Champion Bonus</th>
-
                 </tr>
             </thead>
             <tbody>
@@ -127,7 +126,7 @@
                 <% var rank = 0 %>
                 
                 <% for(var i = 0; i < tournamentGroup.userTournaments.length; i++) { %>
-                
+
                     <% var participant = tournamentGroup.userTournaments[i]; %>
                     <% if (i > 0 && participant.score === tournamentGroup.userTournaments[i-1].score) { %>
                         <% tieCount++ %>
@@ -147,7 +146,6 @@
                         <td><a href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= participant.user.username %>">
                             <%=participant.user.firstName%></td>
                         
-                        
                         <!--Loop through all 8 potential rounds-->
                         <% for(var j = 1; j < 9; j++) { %>
                             <% var found = false %>
@@ -162,9 +160,7 @@
                             <% if(found === false ) { %>
                                 <td>0</td>
                             <% } %>
-                           
                         <% } %>
-                        
                     </tr>
                 <% } %>
             </tbody>

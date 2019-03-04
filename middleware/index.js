@@ -1,5 +1,4 @@
 //all the middleware goes here
-var Campground = require("../models/campground");
 var Comment = require("../models/comment");
 var async = require("async");
 var moment = require('moment-timezone');
@@ -605,7 +604,6 @@ middlewareObj.userRoundCreation = function(req, res, next) {
                                     if(err) console.log(err);
                                     else {
                                         newUserRound.userMatchPredictions.addToSet(newUserMatchPrediction);
-                                        newUserRound.save();
                                         next();
                                     }
                                 });
@@ -614,6 +612,7 @@ middlewareObj.userRoundCreation = function(req, res, next) {
                                 else {
                                     res.locals.newUserRound = newUserRound;
                                     foundUserTournament.userRounds.push(newUserRound);
+                                    newUserRound.save();
                                     foundUserTournament.save();
                                     next();
                                 }

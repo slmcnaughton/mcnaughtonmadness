@@ -1,6 +1,5 @@
 var express = require("express");
 var router = express.Router({mergeParams: true});   //pass {} merges the parameters from the campground.js to this comments.js...allows us to access :id of the campground
-// var Campground = require("../models/campground");
 var Comment = require("../models/comment");
 var TournamentGroup = require("../models/tournamentGroup");
 var middleware = require("../middleware");
@@ -21,7 +20,6 @@ router.get("/new", middleware.isLoggedIn, function(req, res){
 
 //Comments Create
 router.post("/", middleware.isLoggedIn, function(req, res){
-    //lookup campground using ID
      TournamentGroup.findOne({groupName: req.params.groupName}).exec(function(err, foundTournamentGroup){
         if(err){
             req.flash("error", "Something went wrong creating the comment");

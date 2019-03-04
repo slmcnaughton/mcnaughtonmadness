@@ -8,6 +8,7 @@ var TournamentGroup = require("../models/tournamentGroup");
 var Round = require("../models/round");
 var Match = require("../models/match");
 var Team = require("../models/team");
+var emailHelper = require("../middleware/emailHelper");
 
 //New - show form to create new userTournament 
 router.get("/new", middleware.isLoggedIn, function(req, res){
@@ -44,6 +45,10 @@ router.post("/", middleware.isLoggedIn, function(req, res){
             res.redirect("/tournamentGroups");
         } else {
             if(foundTournamentGroup.publicGroup || !foundTournamentGroup.publicGroup && foundTournamentGroup.secretCode === req.body.secretCode) {
+                
+                    console.log("here");
+                    emailHelper.sendRoundSummary(foundTournamentGroup);
+                    console.log("there");
             
                 UserTournament.findOne({"user.id": req.user._id, "tournamentGroup.groupName" : req.params.groupName}).exec(function(err, foundUserTournament){
                     if(err) {

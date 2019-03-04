@@ -15,16 +15,15 @@ router.get("/", function(req, res) {
     });
 });
 
-//Note: this must be below the /campgrounds/new route
-//SHOW - shows more information about a particular campground
+//SHOW - shows more information about a particular Tournament Standing
 router.get("/:id", function(req, res){
-  //find the campground with provided ID, populate the comments array
+  //find the TournamentStanding with provided ID, populate the comments array
     TournamentStanding.findById(req.params.id, function(err, foundTournamentStanding) {
         if(err || !foundTournamentStanding) {
             req.flash("error", "Tournament standings not found");
             res.redirect("back");
         } else {
-            //render the show template with that campground
+            //render the show template with that Tournament Standing
             res.render("tournamentStandings/show", {tournament: foundTournamentStanding, page: "about"});
         }
     });

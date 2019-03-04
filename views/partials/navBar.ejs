@@ -28,7 +28,7 @@
         						<!--<li><a href="/website">Website Creation</a></li>-->
         					</ul>
         				</li>
-        				<li class="<%= typeof page !== 'undefined' && page === 'tournaments' ? 'active' : '' %>"><a href="/tournaments/2018">Current Bracket</a></li>
+        				<li class="<%= typeof page !== 'undefined' && page === 'tournaments' ? 'active' : '' %>"><a href="/tournaments/2019">Current Bracket</a></li>
         				<li class="dropdown <%= typeof page !== 'undefined' && page === 'tournamentGroups' ? 'active' : '' %>">
         				  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Groups <b class="caret"></b></a> 
         					<ul class="dropdown-menu">
@@ -69,7 +69,7 @@
             </div>
           
         </nav>
-        <!--used for flash messages-->
+        <!--used for Connect-flash messages-->
         <div class="container">
             <% if(error && error.length > 0) { %>
                 <div class="alert alert-danger" role="alert">

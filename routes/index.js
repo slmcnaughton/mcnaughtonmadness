@@ -8,27 +8,29 @@ var TournamentStanding = require("../models/tournamentStanding");
 var Trophy = require("../models/trophy");
 var crypto = require('crypto');
 var TeamImage = require('../models/teamImage');
-const sgMail = require('@sendgrid/mail');
+var authHelper = require('../helpers/auth');
+var graph = require('@microsoft/microsoft-graph-client');
+
 
 //Root Route
 router.get("/", function(req, res) {
-   res.render("landing");
+    res.render("landing");
 });
 
 router.get("/home", function(req, res) {
-    res.render("about/home", {page: "home"});
+    res.render("about/home", { page: "home" });
 });
 
 router.get("/rules", function(req, res) {
-    res.render("about/rules", {page: "about"});
+    res.render("about/rules", { page: "about" });
 });
 
 router.get("/history", function(req, res) {
-    res.render("about/history", {page: "about"});
+    res.render("about/history", { page: "about" });
 });
 
 router.get("/website", function(req, res) {
-    res.render("about/website", {page: "about"});
+    res.render("about/website", { page: "about" });
 });
 
 
@@ -37,11 +39,11 @@ router.get("/test", function(req, res) {
         // foundTeamImages.forEach(function(foundTeamImage) {
         //     console.log(foundTeamImage.name + " " + foundTeamImage.image);
         // });
-        
-        
-        res.render("test", {teamImages: foundTeamImages});
+
+
+        res.render("test", { teamImages: foundTeamImages });
     });
-    
+
 })
 
 
@@ -50,33 +52,32 @@ router.get("/test", function(req, res) {
 //=============
 
 //show register form
-router.get("/register", function(req, res){
-    
-   res.render("register", {page: "register"}); 
+router.get("/register", function(req, res) {
+
+    res.render("register", { page: "register" });
 });
 
 //handle sign up logic
-router.post("/register", function(req, res){
+router.post("/register", function(req, res) {
     var username = req.body.username;
     var firstName = req.body.firstName;
     var lastName = req.body.lastName;
-    var newUser = new User( 
-        {
-            username: username,
-            firstName: firstName,
-            lastName: lastName,
-            image: req.body.image,
-            email: req.body.email
-        });
-   
-    User.register(newUser, req.body.password, function(err, user){
-        if(err){
+    var newUser = new User({
+        username: username,
+        firstName: firstName,
+        lastName: lastName,
+        image: req.body.image,
+        email: req.body.email
+    });
+
+    User.register(newUser, req.body.password, function(err, user) {
+        if (err) {
             req.flash("error", err.message);
             return res.redirect("/register");
         }
         addPastTrophies(user);
         //once the user is registered, log them in
-        passport.authenticate("local")(req, res, function(){
+        passport.authenticate("local")(req, res, function() {
             req.flash("success", "Welcome to McNaughton Madness, " + user.firstName + "!");
             res.redirect("/users/" + user.username);
         });
@@ -84,32 +85,33 @@ router.post("/register", function(req, res){
 });
 
 //show login form
-router.get("/login", function(req, res){
-   res.render("login", {page: "login"}); 
+router.get("/login", function(req, res) {
+    res.render("login", { page: "login" });
 });
 
 
 //handle login logic
 //use passport.authenticate middleware to login 
-   //from the line in app.js: passport.use(new LocalStrategy(User.authenticate())); 
-router.post("/login", 
+//from the line in app.js: passport.use(new LocalStrategy(User.authenticate())); 
+router.post("/login",
     passport.authenticate("local", {
         successReturnToOrRedirect: "/profile",
         failureRedirect: "/login",
         failureFlash: true,
         successFlash: "Welcome back to McNaughton Madness!",
-    }), function(req, res) {
+    }),
+    function(req, res) {
         delete req.session.returnTo;
-});
+    });
 
 //Used with login post route to send user directly to their profile page upon login
 router.get('/profile', middleware.isLoggedIn, function(req, res) {
-    res.redirect ("/users/" + req.user.username);   // get the user out of session and pass to template
+    res.redirect("/users/" + req.user.username); // get the user out of session and pass to template
 });
 
 
 //logout route
-router.get("/logout", function(req, res){
+router.get("/logout", function(req, res) {
     req.logout();
     req.flash("success", "Logged you out!");
     res.redirect("/login");
@@ -119,36 +121,38 @@ router.get("/logout", function(req, res){
 router.get("/users", function(req, res) {
     //get all users from db
     User.find({}, function(err, allUsers) {
-        if(err) {
+        if (err) {
             console.log(err);
-        } else {
-            res.render("users/index", {users: allUsers, page: "users"});
+        }
+        else {
+            res.render("users/index", { users: allUsers, page: "users" });
         }
     });
 });
 
 
 router.get("/users/:username", function(req, res) {
-    
+
     var username = req.params.username;
-    
-    User.findOne( {username: username}).populate("trophies").exec(function(err, foundUser){
-        if (err || !foundUser){
+
+    User.findOne({ username: username }).populate("trophies").exec(function(err, foundUser) {
+        if (err || !foundUser) {
             req.flash("error", "User not found");
             return res.redirect("/users");
-        } else {
+        }
+        else {
             foundUser.trophies.sort(compare);
             if (req.user && req.user.username === foundUser.username)
-                res.render("users/show", {user: foundUser, isUser: true, page: "profile"});
+                res.render("users/show", { user: foundUser, isUser: true, page: "profile" });
             else
-                res.render("users/show", {user: foundUser, isUser: false, page: "users"});
+                res.render("users/show", { user: foundUser, isUser: false, page: "users" });
         }
-        
+
     });
 });
 
 router.get('/forgot', function(req, res) {
-    res.render('forgot', { user: req.user, page: "login"});
+    res.render('forgot', { user: req.user, page: "login" });
 });
 
 // http://sahatyalkabov.com/how-to-implement-password-reset-in-nodejs/
@@ -166,31 +170,48 @@ router.post('/forgot', function(req, res, next) {
                     req.flash('error', 'No account with that name/email address combination exists.');
                     return res.redirect('/forgot');
                 }
-        
+
                 user.resetPasswordToken = token;
                 user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-        
+
                 user.save(function(err) {
                     done(err, token, user);
                 });
             });
         },
-        function(token, user, done) {
-            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-                var mailOptions = {
-                to: user.email,
-                from: 'no-reply@mcnaughtonmadness.com',
-                subject: 'McNaughton Madness Password Reset',
-                text: 'Hello ' + user.firstName + ',\n\n' + 'You are receiving this because you have requested the reset of the password for your McNaughton Madness account.\n\n' +
-                  'Please click the following link, or paste this into your browser to complete the process:\n\n' +
-                  'http://' + req.headers.host + '/reset/' + token + '\n\n' +
-                  'If you did not request this, please ignore this email and your password will remain unchanged.\n'
+        async function(token, user) {
+            const accessToken = await authHelper.getAccessToken();
+
+            const mail = {
+                subject: "McNaughton Madness Password Reset",
+                toRecipients: [{
+                    emailAddress: {
+                        address: user.email
+                    }
+                }],
+                body: {
+                    content: 'Hello ' + user.firstName + ',\n\n' + 'You are receiving this because you have requested the reset of the password for your McNaughton Madness account.\n\n' +
+                        'Please click the following link, or paste this into your browser to complete the process:\n\n' +
+                        'http://' + req.headers.host + '/reset/' + token + '\n\n' +
+                        'If you did not request this, please ignore this email and your password will remain unchanged.\n',
+                    contentType: "text"
+                }
             };
-            sgMail.send(mailOptions, function(err) {
-                req.flash('info', 'An e-mail has been sent to ' + user.email + ' with further instructions (you may need to check your spam folder!)');
-                done(err, 'done');
+
+            const client = graph.Client.init({
+                authProvider: (done) => {
+                    done(null, accessToken);
+                }
             });
+
+            client.api(`/users/5aa3050e-9eeb-43d3-894d-138d7f541245/sendMail`).post({ message: mail }, (err, res) => {
+                if (err) console.log(err);
+                if (res) console.log(res);
+                
+            });
+            req.flash('info', 'An e-mail has been sent to ' + user.email + ' with further instructions');
         }
+
     ], function(err) {
         if (err) return next(err);
         res.redirect('/forgot');
@@ -205,7 +226,7 @@ router.get('/reset/:token', function(req, res) {
             req.flash('error', 'Password reset token is invalid or has expired.');
             return res.redirect('/forgot');
         }
-        res.render('reset', {user: req.user, token: req.params.token, page: "login"});
+        res.render('reset', { user: req.user, token: req.params.token, page: "login" });
     });
 });
 
@@ -217,12 +238,13 @@ router.post('/reset/:token', function(req, res) {
                     req.flash('error', 'Password reset token is invalid or has expired.');
                     return res.redirect('back');
                 }
-                
-                
+
+
                 user.resetPasswordToken = undefined;
                 user.resetPasswordExpires = undefined;
                 user.setPassword(req.body.password, function() {
-                    user.save(function (err) {
+                    user.save(function(err) {
+                        if (err) console.log(err);
                         req.logIn(user, function(err) {
                             if (err) console.log(err);
                             done(err, user);
@@ -231,20 +253,53 @@ router.post('/reset/:token', function(req, res) {
                 });
             });
         },
-        function(user, done) {
-            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-            var mailOptions = {
-                to: user.email,
-                from: 'no-reply@mcnaughtonmadness.com',
-                subject: 'Your password has been changed',
-                text: 'Hello ' + user.firstName + ',\n\n' +
-                'This is a confirmation that the password for your McNaughton Madness account ' + user.email + ' has just been changed.\n'
+        // function(user, done) {
+        //     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        //     var mailOptions = {
+        //         to: user.email,
+        //         from: 'no-reply@mcnaughtonmadness.com',
+        //         subject: 'Your password has been changed',
+        //         text: 'Hello ' + user.firstName + ',\n\n' +
+        //             'This is a confirmation that the password for your McNaughton Madness account ' + user.email + ' has just been changed.\n'
+        //     };
+        //     sgMail.send(mailOptions, function(err) {
+        //         req.flash('success', 'Success! Your password has been changed.');
+        //         done(err);
+        //     });
+        // }
+        
+        
+        async function(user, done) {
+            const accessToken = await authHelper.getAccessToken();
+
+            const mail = {
+                subject: "Your password has been changed",
+                toRecipients: [{
+                    emailAddress: {
+                        address: user.email
+                    }
+                }],
+                body: {
+                    content: 'Hello ' + user.firstName + ',\n\n' +
+                    'This is a confirmation that the password for your McNaughton Madness account ' + user.email + ' has just been changed.\n',
+                    contentType: "text"
+                }
             };
-            sgMail.send(mailOptions, function(err) {
-                req.flash('success', 'Success! Your password has been changed.');
-                done(err);
+
+            const client = graph.Client.init({
+                authProvider: (done) => {
+                    done(null, accessToken);
+                }
             });
+
+            client.api(`/users/5aa3050e-9eeb-43d3-894d-138d7f541245/sendMail`).post({ message: mail }, (err, res) => {
+                if (err) console.log(err);
+                
+            });
+            req.flash('success', 'Success! Your password has been changed.');
+
         }
+        
     ], function(err) {
         if (err) console.log(err);
         res.redirect("/users/" + req.user.username);
@@ -254,7 +309,7 @@ router.post('/reset/:token', function(req, res) {
 
 
 //order trophies from newest year
-function compare(a,b) {
+function compare(a, b) {
     if (a.year > b.year)
         return -1;
     else if (a.year < b.year)
@@ -262,50 +317,52 @@ function compare(a,b) {
     return 0;
 }
 
-var addPastTrophies = function(user){
+var addPastTrophies = function(user) {
     //find tournaments the user has participated in
-    TournamentStanding.find({"standings.firstName" : user.firstName, "standings.lastName" : user.lastName}).exec(function(err, tournamentYears) {
+    TournamentStanding.find({ "standings.firstName": user.firstName, "standings.lastName": user.lastName }).exec(function(err, tournamentYears) {
         if (err) {
             console.log(err);
-        } else {
+        }
+        else {
             //for each tournament year, add the correct trophy
             async.forEachSeries(tournamentYears, function(tournamentYear, callback) {
-                var year = tournamentYear.year; 
+                var year = tournamentYear.year;
                 var totalPlayers = tournamentYear.standings.length;
                 var rank = 1;
                 var score;
-                
+
                 //find the user's score for this year
-                tournamentYear.standings.forEach(function(entry){
-                    if(entry.firstName === user.firstName && entry.lastName === user.lastName){
+                tournamentYear.standings.forEach(function(entry) {
+                    if (entry.firstName === user.firstName && entry.lastName === user.lastName) {
                         score = entry.score;
                     }
                 });
                 //calculate the user's rank by counting how many players scored higher
-                tournamentYear.standings.forEach(function(entry){
-                    if(entry.score > score){
+                tournamentYear.standings.forEach(function(entry) {
+                    if (entry.score > score) {
                         rank++;
                     }
                 });
-               
+
                 var newTrophy = {
-                        year: year,
-                        userRank: rank,
-                        totalPlayers: totalPlayers,
-                        score: score  
-                    };
-                Trophy.create(newTrophy, function(err, trophy){
-                    if(err){
+                    year: year,
+                    userRank: rank,
+                    totalPlayers: totalPlayers,
+                    score: score
+                };
+                Trophy.create(newTrophy, function(err, trophy) {
+                    if (err) {
                         console.log(err);
-                    } else {
+                    }
+                    else {
                         user.trophies.addToSet(trophy._id);
                         user.save(callback);
                     }
                 });
-            }, function(err){
-                if(err) {
+            }, function(err) {
+                if (err) {
                     console.log(err);
-                } 
+                }
             }); //end of async.forEachSeries
         }
     }); //end of TournamentStanding.find()

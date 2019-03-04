@@ -1,6 +1,6 @@
 var express = require("express");
 var router = express.Router();
-var async = require("async");
+var asyncNpm = require("async");
 var moment = require('moment-timezone');
 var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
@@ -35,12 +35,12 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2018;
+    var year = 2019;
     var regions = ["South", "West", "East", "Midwest"];
     // var year = Math.floor((Math.random()*100+2000));
     
     //march month is actually 2
-    var startDay = moment.tz([2018, 02, 15], "America/New_York");
+    var startDay = moment.tz([2019, 02, 21], "America/New_York");
     
     //[year, month, day, hour, minute, second, millisecond]
     // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
@@ -73,12 +73,9 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                 //      1) Steps 1 & 2: Create Round 1, Matches, and Teams
                 //      2) Steps 3 & 4: Create remaining (5) rounds and matches
                 // Afterwards: Save Tournament to database
-                async.parallel([
-                    //PART 1)
+                asyncNpm.parallel([
+                    //PART 1) 
                     function(callback){
-                        
-                        
-                        
                         Round.create(
                         {
                             numRound: 1,
@@ -89,14 +86,13 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
-                                
                                 //Add two days of round 1 scrape listener
                                 // console.log("Round 1 begins at " + createdRound.startTime.format('LLLL'));
                                 for(var i = 0; i < 2; i++) {
                                     var startTime = new moment(createdRound.startTime).add({'d': i, 'h' : 1, 'm': 30});
                                     var endTime = new moment(startTime).add(12, 'h');
                                     
-                                    var job = { start: startTime, end: endTime, rule: '0 */5 * * * *' };
+                                    var job = { start: startTime, end: endTime, rule: '0 */1 * * * *' };
                                     var j = schedule.scheduleJob(job, function(){
                                         scrape();
                                     });
@@ -111,7 +107,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                 }
                                
                                 var teams = [];
-                                async.series([
+                                asyncNpm.series([
                                     
                                     //==========================================================
                                     // 1) Use array of teamNames and order of seeds to create array of teams
@@ -119,7 +115,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                     function(callback) {
                                         var i = 0;
                                         
-                                        async.forEachSeries(teamNames, function(teamName, next){
+                                        asyncNpm.forEachSeries(teamNames, function(teamName, next){
                                             
                                             TeamImage.findOne({name: teamName}).exec(function(err, foundTeamImage) {
                                                 if(err) console.log(err);
@@ -154,7 +150,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                     //==========================================================
                                     function(callback) {
                                         var i = 1;
-                                        async.forEachSeries(teams, function(team, next){
+                                        asyncNpm.eachSeries(teams, function(team, next){
                                             if (i % 2 === 1) {
                                                 var matchNumber =  Math.floor((i-1)/2) + 1;
                                                 Match.create({
@@ -167,7 +163,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                     else {
                                                         createdRound.matches.addToSet(newMatch);
                                                         
-                                                        createdRound.save();
+                                                        // createdRound.save();
                                                         i++;
                                                         next();
                                                     }
@@ -176,6 +172,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                             else {
                                                 var location = Math.floor((i-1)/2);
                                                 createdRound.matches[location].bottomTeam = team;
+                                                
                                                 createdRound.matches[location].save();
                                                 i++;
                                                 next();
@@ -185,25 +182,26 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                             if (err) console.log(err);
                                             else {
                                                 createdTournament.rounds.push(createdRound);
+                                                createdRound.save();
                                                 callback();
                                             }
                                         });
                                     },
                                 ],  function(err) { 
                                     if(err) console.log(err);
-                                    else callback();
+                                    callback();
                                     });
                                 }
                             });
                     },
                     //PART 2)
                     function(callback) {
-                         async.series([
+                         asyncNpm.series([
                             //==========================================================
                             // 3) Create remaining rounds
                             //==========================================================
                              function(callback) {
-                                async.timesSeries(numRounds-1, 
+                                asyncNpm.timesSeries(numRounds-1, 
                                     function(i, next){
                                         var startTime;
                                                             // year         month           day      hour  min
@@ -229,7 +227,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                             else {
                                                 
                                                 //Add round scrape listeners
-                                                async.series([
+                                                asyncNpm.series([
                                                     function(callback) {
                                                         // console.log("Round " + createdRound.numRound + " begins at " + createdRound.startTime.format('LLLL'));
                                                         for(var j = 0; j < 2; j++) {
@@ -295,12 +293,12 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                             // 4) Create remaining matches with correct matchNumbers and nextMatch references...no teams yet
                             //==========================================================
                             function(callback) {
-                                async.forEachSeries(createdTournament.rounds, 
+                                asyncNpm.forEachSeries(createdTournament.rounds, 
                                     function(round, next){
                                         if (round.numRound !== 1) {
                                             var matchNumStart = Math.pow(2, numRounds)-Math.pow(2, numRounds + 1 - round.numRound) + 1; //1, 33, 49, 57, 61, 63
                                             var matchesThisRound = Math.pow(2, numRounds - round.numRound);
-                                            async.timesSeries(matchesThisRound, 
+                                            asyncNpm.timesSeries(matchesThisRound, 
                                                 function(j, next){
                                                     Match.create(
                                                     {

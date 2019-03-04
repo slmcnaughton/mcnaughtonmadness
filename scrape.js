@@ -1,7 +1,7 @@
 var request = require('request');
 var cheerio = require('cheerio');
 var async = require("async");
-// var middleware = require("./middleware");
+var emailHelper = require("./middleware/emailHelper");
 var Tournament = require("./models/tournament");
 var TournamentGroup = require("./models/tournamentGroup");
 var UserRound = require("./models/userRound");
@@ -11,7 +11,7 @@ var UserMatchPrediction = require("./models/userMatchPrediction");
 var UserMatchAggregate = require("./models/userMatchAggregate");
 
 function filter(teamName) {
-    return teamName.replace("State", "St.").replace("North", "N.").replace("South", "S.").replace("Dakota", "Dak.");
+    return teamName.replace("State", "St.").replace("North", "N.").replace("South", "S.").replace("Dakota", "Dak.").replace("Saint", "St.");
 }
 
 // Inspiration from https://www.digitalocean.com/community/tutorials/how-to-use-node-js-request-and-cheerio-to-set-up-simple-web-scraping
@@ -46,8 +46,6 @@ function scrape() {
             });
             
             
-           
-            
             var matchUpdates = [];
             
            Tournament.findOne({year: new Date().getFullYear() })
@@ -57,7 +55,7 @@ function scrape() {
                     if(err) {
                         console.log(err);
                     } else if (!foundTournament) {
-                        console.log("bummer");
+                        console.log("no tournament found");
                     } else {
                         var round = foundTournament.rounds[foundTournament.currentRound - 1];
                         var roundMatchIndex = 0;
@@ -69,9 +67,6 @@ function scrape() {
                                 var resultTeam1 = filter(result.team1);
                                 var resultTeam2 = filter(result.team2);
                                 
-                                
-                                // if (!match.winner && (match.topTeam.name.replace("State", "St.").replace("North", "N.") === result.team1.replace("State", "St.").replace("North", "N.") && match.bottomTeam.name.replace("State", "St.").replace("North", "N.") === result.team2.replace("State", "St.").replace("North", "N.") 
-                                //                     || match.topTeam.name.replace("State", "St.") === result.team2.replace("State", "St.") && match.bottomTeam.name.replace("State", "St.") === result.team1.replace("State", "St.") )) {
                                 if (!match.winner && (matchTop === resultTeam1 && matchBottom === resultTeam2
                                                     || matchTop === resultTeam2 && matchBottom === resultTeam1)) {
                                     var winningTeam;
@@ -152,17 +147,22 @@ var advanceWinners =  function(matchUpdates) {
                     updatedMatch.topTeam.save();
                 }
                 updatedMatch.save();
-                var currIndex = Number(matchUpdates[i].roundMatchIndex);
-                var nextMatchIndex = Math.floor(currIndex / 2);
-                var nextRoundMatch = nextRound.matches[nextMatchIndex];
-                //decide whether to advance the winning team to the topTeam or bottomTeam of the next round
-                if (currIndex % 2 === 0) {
-                    nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
+                
+                //if not the championship game, advance winners
+                if(nextRoundIndex < 6) {
+                    var currIndex = Number(matchUpdates[i].roundMatchIndex);
+                    var nextMatchIndex = Math.floor(currIndex / 2);
+                    var nextRoundMatch = nextRound.matches[nextMatchIndex];
+                    //decide whether to advance the winning team to the topTeam or bottomTeam of the next round
+                    if (currIndex % 2 === 0) {
+                        nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
+                    }
+                    else {
+                        nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
+                    }
+                    nextRound.matches[nextMatchIndex].save();
                 }
-                else {
-                    nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
-                }
-                nextRound.matches[nextMatchIndex].save();
+               
             }
         });
     });
@@ -419,7 +419,7 @@ var isRoundComplete = function (updatedMatches, next) {
                     foundTournament.currentRound++;
                     foundTournament.save();
                     
-                    //find all tournamentGroups, update their currentRounds
+                    //find all tournamentGroups, update their currentRounds, and send out email
                     TournamentGroup.find({"tournamentReference.id" : updatedMatches[0].tournament.id}).exec(function(err, foundTournamentGroup) {
                         if(err || !foundTournamentGroup){
                             console.log(err);
@@ -428,6 +428,7 @@ var isRoundComplete = function (updatedMatches, next) {
                             async.forEachSeries( foundTournamentGroup, function(group, next){
                                 group.currentRound++;
                                 group.save();
+                                // emailHelper.sendRoundSummary(foundTournamentGroup);
                                 next();
                             }, function(err) {
                                 if(err) {

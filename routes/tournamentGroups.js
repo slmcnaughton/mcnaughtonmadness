@@ -6,7 +6,6 @@ var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
 
-
 //INDEX - show all Tournament Groups
 router.get("/", function(req, res) {
     //get all tournaments from db

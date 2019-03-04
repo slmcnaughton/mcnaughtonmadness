@@ -21,9 +21,11 @@ var express             = require("express"),
     schedule            = require('node-schedule'),
     moment              = require('moment-timezone');
     
+    require('dotenv').config();
+    mongoose.set('useCreateIndex', true);
+    
 //requiring routes
 var commentRoutes = require("./routes/comments"),
-    campgroundRoutes = require("./routes/campgrounds"),
     indexRoutes       = require("./routes/index"),
     tournamentStandingsRoutes = require("./routes/tournamentStandings"),
     tournamentRoutes = require("./routes/tournaments"),
@@ -33,17 +35,17 @@ var commentRoutes = require("./routes/comments"),
     userRoundRoutes = require("./routes/userRounds");
     
 
-// mongoose.connect("mongodb://localhost/mcnaughtonmadness");
-mongoose.connect("mongodb://seth:Psalm1195@ds113169.mlab.com:13169/mcnaughton_madness");
-
-// mongoose.connect(process.env.DATABASEURL);
+// mongoose.connect(process.env.DATABASEURL, { useNewUrlParser: true });
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
-app.use(flash());
 app.locals.moment = require('moment-timezone');
+
+
+
+
 
 
 // seedDB();
@@ -65,6 +67,7 @@ passport.use(new LocalStrategy(User.authenticate()));   //comes with PLC, so we 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+app.use(flash());
 app.use(function(req, res, next){
     res.locals.currentUser = req.user;
     res.locals.error = req.flash("error");
@@ -74,7 +77,6 @@ app.use(function(req, res, next){
 });
 
 app.use("/", indexRoutes);
-app.use("/campgrounds", campgroundRoutes);  //all campgroundRoutes should start with "/campgrounds"
 app.use("/tournamentGroups/:groupName/comments", commentRoutes);
 app.use("/tournamentStandings", tournamentStandingsRoutes);
 app.use("/tournaments", tournamentRoutes);

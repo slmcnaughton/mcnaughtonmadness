@@ -1,6 +1,5 @@
 var mongoose   = require("mongoose");
 var TournamentStanding = require("./models/tournamentStanding");
-var Campground = require("./models/campground");
 var User = require("./models/user");
 var Trophy = require("./models/trophy");
 var Tournament = require("./models/tournament");
@@ -14,63 +13,64 @@ var Round = require("./models/round");
 var Match = require("./models/match");
 var Team = require("./models/team");
 var TeamImage = require("./models/teamImage");
+var async = require("async");
 
 function seedDB() {
-    // TournamentGroup.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all tournament groups");
-    // });
-    // UserTournament.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all userTournaments");
-    // });
-    // UserRound.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all user rounds");
-    // });
-    // UserMatchPrediction.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all user match predictions");
-    // });
-    // UserMatchAggregate.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all user match aggregates");
-    // });
-    // BonusAggregate.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all bonus match aggregates");
-    // });
-    // Team.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all teams");
-    // });
-    // Match.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all matches");
-    // });
-    // Round.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all rounds");
-    // });
-    // Tournament.remove({}, function(err){
-    //     if(err) console.log(err);
-    //     else console.log("removed all matches");
-    // });
-    // User.remove({}, function(err){
-    //   if (err) {
-    //       console.log("oops");
-    //   } else {
-    //       console.log("removed all users");
-    //   }
-    // });
-    // TeamImage.remove({}, function(err){
+    TournamentGroup.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all tournament groups");
+    });
+    UserTournament.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all userTournaments");
+    });
+    UserRound.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all user rounds");
+    });
+    UserMatchPrediction.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all user match predictions");
+    });
+    UserMatchAggregate.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all user match aggregates");
+    });
+    BonusAggregate.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all bonus match aggregates");
+    });
+    Team.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all teams");
+    });
+    Match.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all matches");
+    });
+    Round.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all rounds");
+    });
+    Tournament.deleteMany({}, function(err){
+        if(err) console.log(err);
+        else console.log("removed all matches");
+    });
+    User.deleteMany({}, function(err){
+      if (err) {
+          console.log("oops");
+      } else {
+          console.log("removed all users");
+      }
+    });
+    // TeamImage.deleteMany({}, function(err){
     //   if (err) {
     //       console.log("oops");
     //   } else {
     //       console.log("removed all team images");
     //   }
     // });
-    // Trophy.remove({}, function(err){
+    // Trophy.deleteMany({}, function(err){
     //   if (err) {
     //       console.log("oops");
     //   } else {
@@ -78,16 +78,9 @@ function seedDB() {
     //   }
     // });
 
-    // Campground.remove({}, function(err){
-    //   if (err) {
-    //       console.log("oops");
-    //   } else {
-    //       console.log("removed all campgrounds");
-    //   }
-    // });
-    
     // addTournamentStandings();
     
+    // addTrophies();
 }
 
 function compare(a,b) {
@@ -98,9 +91,80 @@ function compare(a,b) {
     return 0;
 }
 
+var addTrophies = function(){
+    Trophy.deleteMany({}, function(err) {
+        if(err) {
+            console.log(err);
+        } else {
+            console.log("removed all trophies, added new ones!");
+            User.find({}, function(err, foundUsers){
+                if(err) console.log(err);
+                else {
+                    async.forEachSeries(foundUsers, function(user, callback) {
+                        // console.log(user);
+                        addPastTrophies(user);
+                        callback();
+                    });
+                }
+            });
+
+        }
+    });
+    
+}
+
+var addPastTrophies = function(user){
+    //find tournaments the user has participated in
+    TournamentStanding.find({"standings.firstName" : user.firstName, "standings.lastName" : user.lastName}).exec(function(err, tournamentYears) {
+        if (err) {
+            console.log(err);
+        } else {
+            //for each tournament year, add the correct trophy
+            async.forEachSeries(tournamentYears, function(tournamentYear, callback) {
+                var year = tournamentYear.year; 
+                var totalPlayers = tournamentYear.standings.length;
+                var rank = 1;
+                var score;
+                
+                //find the user's score for this year
+                tournamentYear.standings.forEach(function(entry){
+                    if(entry.firstName === user.firstName && entry.lastName === user.lastName){
+                        score = entry.score;
+                    }
+                });
+                //calculate the user's rank by counting how many players scored higher
+                tournamentYear.standings.forEach(function(entry){
+                    if(entry.score > score){
+                        rank++;
+                    }
+                });
+               
+                var newTrophy = {
+                        year: year,
+                        userRank: rank,
+                        totalPlayers: totalPlayers,
+                        score: score  
+                    };
+                Trophy.create(newTrophy, function(err, trophy){
+                    if(err){
+                        console.log(err);
+                    } else {
+                        user.trophies.addToSet(trophy._id);
+                        user.save(callback);
+                    }
+                });
+            }, function(err){
+                if(err) {
+                    console.log(err);
+                } 
+            }); //end of async.forEachSeries
+        }
+    }); //end of TournamentStanding.find()
+};
+
 
 var addTournamentStandings = function (){
-    TournamentStanding.remove({}, function(err){
+    TournamentStanding.deleteMany({}, function(err){
         if(err){
             console.log(err);
         }else{
