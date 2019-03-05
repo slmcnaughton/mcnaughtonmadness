@@ -20,9 +20,13 @@ async function getAccessToken()
       scope: 'https://graph.microsoft.com/.default'
     };
     try {
+      console.log(tokenConfig);
       const result = await oauth2.clientCredentials.getToken(tokenConfig);
+      
+      console.log(result);
 
       const accessToken = await oauth2.accessToken.create(result);
+      
       return  accessToken.token.access_token;
 
     } catch (error) {

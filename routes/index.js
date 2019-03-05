@@ -10,6 +10,7 @@ var crypto = require('crypto');
 var TeamImage = require('../models/teamImage');
 var authHelper = require('../helpers/auth');
 var graph = require('@microsoft/microsoft-graph-client');
+var emailHelper = require("../middleware/emailHelper");
 
 
 //Root Route
@@ -69,12 +70,15 @@ router.post("/register", function(req, res) {
         image: req.body.image,
         email: req.body.email
     });
-
+    
     User.register(newUser, req.body.password, function(err, user) {
         if (err) {
+            console.log(err);
             req.flash("error", err.message);
             return res.redirect("/register");
         }
+        
+            
         addPastTrophies(user);
         //once the user is registered, log them in
         passport.authenticate("local")(req, res, function() {
@@ -179,6 +183,9 @@ router.post('/forgot', function(req, res, next) {
                 });
             });
         },
+        // async function (token, user) {
+        //     emailHelper.sendPasswordRecovery(req, token, user);
+        // }
         async function(token, user) {
             const accessToken = await authHelper.getAccessToken();
 
