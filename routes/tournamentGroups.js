@@ -26,10 +26,10 @@ router.post("/:groupName/testRoundSummary", function(req, res) {
 });
 
 
-//INDEX - show all Tournament Groups
+//INDEX - show all current Tournament Groups 
 router.get("/", function(req, res) {
     //get all tournaments from db
-    TournamentGroup.find({}, function(err, allTournamentGroups) {
+    TournamentGroup.find({year: new Date().getFullYear()}, function(err, allTournamentGroups) {
         if(err) {
             console.log(err);
         } else {
@@ -53,7 +53,7 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
-    Tournament.findOne({year: req.body.tournamentYear}).exec(function (err, foundTournament){
+    Tournament.findOne({year: new Date().getFullYear()}).exec(function (err, foundTournament){
         if(err) {
             console.log(err);
             res.redirect("back");
