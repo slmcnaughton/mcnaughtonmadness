@@ -12,86 +12,545 @@ var UserRound = require("../models/userRound");
 var UserMatchPrediction = require("../models/userMatchPrediction");
 var UserMatchAggregate = require("../models/userMatchAggregate");
 var BonusAggregate = require("../models/bonusAggregate");
+var emailHelper = require("./emailHelper");
 
 
 
 var middlewareObj = {};
 
 middlewareObj.checkTournamentGroupOwnership = function(req, res, next) {
-    if(req.isAuthenticated()){
-        TournamentGroup.findOne({groupName: req.params.groupName}).exec(function(err,foundTournamentGroup) {
-            if(err || !foundTournamentGroup) {
+    if (req.isAuthenticated()) {
+        TournamentGroup.findOne({ groupName: req.params.groupName }).exec(function(err, foundTournamentGroup) {
+            if (err || !foundTournamentGroup) {
                 req.flash("error", "Tournament Group not found");
                 res.redirect("back");
-            } else {
+            }
+            else {
                 //does user own the tournament group?
-                if(foundTournamentGroup.commissioner.id.equals(req.user.id)){
+                if (foundTournamentGroup.commissioner.id.equals(req.user.id)) {
                     next();
-                } else {
+                }
+                else {
                     req.flash("error", "You don't have permission to do that");
                     res.redirect("back");
                 }
             }
         });
-    } else {
+    }
+    else {
         req.flash("error", "You need to be logged in to do that");
         res.redirect("back");
     }
 };
 
 middlewareObj.checkUserTournamentOwnership = function(req, res, next) {
-    if(req.isAuthenticated()){
-       UserTournament.findOne({"user.username": req.params.username, "tournamentGroup.groupName" : req.params.groupName}).exec(function(err, foundUserTournament){
-            if(err || !foundUserTournament) {
+    if (req.isAuthenticated()) {
+        UserTournament.findOne({ "user.username": req.params.username, "tournamentGroup.groupName": req.params.groupName }).exec(function(err, foundUserTournament) {
+            if (err || !foundUserTournament) {
                 req.flash("error", "User Tournament not found");
                 res.redirect("back");
-            } else {
+            }
+            else {
                 //does user own the User Tournament?
-                if(foundUserTournament.user.id.equals(req.user.id)){
+                if (foundUserTournament.user.id.equals(req.user.id)) {
                     next();
-                } else {
+                }
+                else {
                     req.flash("error", "You don't have permission to do that");
                     res.redirect("back");
                 }
             }
-       });
-    } else {
+        });
+    }
+    else {
         req.flash("error", "You need to be logged in to do that");
         res.redirect("back");
     }
 };
 
 middlewareObj.checkCommentOwnership = function(req, res, next) {
-    if(req.isAuthenticated()){
-        Comment.findById(req.params.comment_id, function(err, foundComment){
-            if(err || !foundComment) {
+    if (req.isAuthenticated()) {
+        Comment.findById(req.params.comment_id, function(err, foundComment) {
+            if (err || !foundComment) {
                 req.flash("error", "Comment not found");
                 res.redirect("back");
-            } else {
+            }
+            else {
                 //does user own the comment?
-                if(foundComment.author.id.equals(req.user.id)){
+                if (foundComment.author.id.equals(req.user.id)) {
                     next();
-                } else {
+                }
+                else {
                     req.flash("error", "You don't have permission to do that");
                     res.redirect("back");
                 }
             }
-       });
-    } else {
+        });
+    }
+    else {
         req.flash("error", "You need to be logged in to do that");
         res.redirect("back");
     }
 };
 
-middlewareObj.isLoggedIn = function(req, res, next){
+middlewareObj.isLoggedIn = function(req, res, next) {
     //Middleware: determines whether user is logged in
-    if(req.isAuthenticated()){
+    if (req.isAuthenticated()) {
         return next();
     }
     req.session.returnTo = req.originalUrl;
     req.flash("error", "You need to be logged in to do that");
     res.redirect("/login");
 };
+
+
+//==========================================================
+// NEW LOGIC
+//==========================================================
+
+middlewareObj.updateResults = function(req, res, next) {
+    console.log("==========================");
+    console.log(req.body);
+    console.log("==========================");
+
+    Tournament.findOne({ year: req.params.year })
+        .populate({ path: "rounds", populate: { path: "matches", populate: { path: "topTeam" } } })
+        .populate({ path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } } })
+        .exec(function(err, foundTournament) {
+            if (err) {
+                console.log(err);
+                res.redirect("back");
+            }
+            else {
+                var round = foundTournament.rounds[foundTournament.currentRound - 1];
+                var roundFirstMatch = round.matches[0].matchNumber;
+
+                var matchUpdates = [];
+
+                var roundMatchIndex = 0;
+                async.forEachSeries(round.matches, function(match, next) {
+                    // console.log("AAAAAAAAA) " + roundMatchIndex);
+                    var bodyIndex = roundFirstMatch + roundMatchIndex;
+
+                    if (req.body[bodyIndex]) {
+                    
+                        Team.findById(req.body[bodyIndex]).exec(function(err, winner) {
+                            if(err) console.log(err);
+                            var tempMatch = {
+                                roundMatchIndex: roundMatchIndex,
+                                tournament: foundTournament,
+                                matchNumber: bodyIndex,
+                                matchId: round.matches[roundMatchIndex].id,
+                                winningTeam: winner,
+                            };
+                            matchUpdates.push(tempMatch);
+                            roundMatchIndex++;
+                            next();
+                        });
+                    }
+                    else {
+                        roundMatchIndex++;
+                        next(); 
+                    }
+                    
+                }, function(err) {
+                    if (err) console.log(err);
+                    console.log("-------------------0----------------------");
+                    if (matchUpdates.length > 0) {
+                        async.series([
+                            function(callback) {
+                                advanceWinners(matchUpdates, callback);
+                            },
+                            function(callback) {
+                                scoreUserMatchPredictions(matchUpdates, callback);
+                                // callback();
+                            },
+                            function(callback) {
+                                updateTournamentGroupScores(matchUpdates, callback);
+                                // callback();
+                            },
+                            function(callback) {
+                                isRoundComplete(matchUpdates, callback);
+                            },
+                        ], function(err) {
+                            if (err) console.log(err);
+                            console.log("===========8===========")
+                            next();
+                        });
+                    }
+                });
+            }
+        });
+};
+
+// Req. Params:
+// roundMatchIndex: roundMatchIndex,
+// tournament: foundTournament,
+// matchNumber: match.matchNumber,
+// matchId: match.id,
+// winningTeam: winningTeam
+var advanceWinners = function(matchUpdates, done) {
+    console.log("================1 - Match Updates ===============");
+    var nextRoundIndex = matchUpdates[0].tournament.currentRound;
+    var nextRound = matchUpdates[0].tournament.rounds[nextRoundIndex];
+    async.forEachOfSeries(matchUpdates, function(matchUpdate, i, next) {
+        console.log("i is " + i);
+        Match.findById(matchUpdate.matchId).populate("topTeam").populate("bottomTeam").exec(function(err, updatedMatch) {
+            if (err || !updatedMatch)
+                console.log(err);
+            else {
+                async.series([
+                    function(callback) {
+                        updatedMatch.winner = matchUpdate.winningTeam;
+                        if (updatedMatch.winner.id === updatedMatch.topTeam.id) {
+                            updatedMatch.bottomTeam.lost++;
+                            updatedMatch.bottomTeam.save();
+                        }
+                        else {
+                            updatedMatch.topTeam.lost++;
+                            updatedMatch.topTeam.save();
+                        }
+                        updatedMatch.save();
+                        callback();
+                    },
+                    function(callback) {
+                        //if not the championship game, advance winners
+                        if (nextRoundIndex < 6) {
+                            var currIndex = Number(matchUpdates[i].roundMatchIndex);
+                            var nextMatchIndex = Math.floor(currIndex / 2);
+                            var nextRoundMatch = nextRound.matches[nextMatchIndex];
+                            //decide whether to advance the winning team to the topTeam or bottomTeam of the next round
+                            if (currIndex % 2 === 0) {
+                                nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
+                            }
+                            else {
+                                nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
+                            }
+                            nextRound.matches[nextMatchIndex].save().then(callback());
+                            
+                        }
+                        //this is the championship game
+                        else {
+                            matchUpdates[0].tournament.champion = matchUpdates[i].winningTeam;
+                            callback();
+                        }
+                    }
+                
+                ], function(err) {
+                    if (err) console.log(err);
+                    next();
+                });
+            }
+        });
+    }, function(err) {
+        if(err) console.log(err);
+        else {
+            if (nextRound)  //nonchampionship rounds have a defined next round
+                nextRound.save().then(done());
+            else {
+                matchUpdates[0].tournament.save().then(done());
+            }
+        }
+    });
+
+};
+
+
+
+
+
+// Req. Params:
+// roundMatchIndex: roundMatchIndex,
+// tournament: foundTournament,
+// matchNumber: match.matchNumber,
+// matchId: match.id,
+// winningTeam: winningTeam
+var scoreUserMatchPredictions = function(updatedMatches, next) {
+    console.log("================2===============");
+    async.forEachSeries(updatedMatches, function(match, next) {
+        //find the match, get the seeds, calculate winning/losing score
+        Match.findById(match.matchId).populate("topTeam").populate("bottomTeam").exec(function(err, foundMatch) {
+            if (err) console.log(err);
+            else {
+                // console.log(match);
+
+                var ts = foundMatch.topTeam.seed; //ts = topseed
+                var bs = foundMatch.bottomTeam.seed; //bs = bottomseed
+                var winner = match.winningTeam;
+                var winningScore = 0;
+                var losingScore = 0;
+                // console.log(winner);
+                if (winner.equals(foundMatch.topTeam._id)) {
+                    winningScore = ts / bs;
+                    losingScore = (ts < bs) ? -1 : -bs / ts;
+                }
+                else {
+                    winningScore = bs / ts;
+                    losingScore = (bs < ts) ? -1 : -ts / bs;
+                }
+                winningScore *= match.tournament.currentRound;
+                losingScore *= match.tournament.currentRound;
+
+                //=============================================
+                // a) Find all userMatchPredictions and update their score attribute
+                // b) If UserMatchPrediction doesn't exist (i.e., they forgot to make picks), create the round and subtract the loser score
+                //=============================================
+                UserMatchPrediction.find({ "match.id": match.matchId }).exec(function(err, foundUserMatchPredictions) {
+                    if (err) console.log(err);
+                    else {
+                        // Find all user tournaments who reference this tournament but do not have a userRound.userMatchPrediction.match.id matching this match.matchId
+                        async.parallel([
+                            function(callback) {
+                                // Map the docs into an array of just the _ids
+                                var userMPids = foundUserMatchPredictions.map(function(doc) { return doc._id; });
+                                //find the user rounds that reference user match prediction ids (and are in the current round to avoid bonus round picks interfering with rounds 4 and 6
+                                UserRound.find({ "userMatchPredictions": { $in: userMPids }, "round.numRound": match.tournament.currentRound }).exec(function(err, foundUserRound) {
+                                    if (err) console.log(err);
+                                    else {
+                                        var userRids = foundUserRound.map(function(doc) { return doc._id; });
+                                        //find all tournaments that don't have a user round in the list of rounds that match the prediction
+                                        //  a) these may not have the particular round at all (we need to create the round)
+                                        //  b) they may have the round, but no pick (i.e., we created the round for them with no picks and just need to subtract the score)
+                                        UserTournament.find({ "tournamentReference.id": updatedMatches[0].tournament, "userRounds": { $nin: userRids } })
+                                            .populate("userRounds").exec(function(err, foundUserTournaments) {
+                                                if (err) console.log(err);
+                                                else {
+                                                    //found userTournaments holds all tournaments without a round, or a round with a reference to the updated match
+                                                    async.forEachSeries(foundUserTournaments, function(foundUserTournament, next) {
+                                                        if (err) console.log(err);
+                                                        else {
+                                                            //does this user tournament have the user round to reference?
+                                                            var foundRound = -1; //index
+                                                            async.series([
+                                                                function(callback) {
+                                                                    for (var j = 0; j < foundUserTournament.userRounds.length; j++) {
+                                                                        if (foundUserTournament.userRounds[j].round.numRound === Number(match.tournament.currentRound)) {
+                                                                            foundRound = j;
+                                                                        }
+                                                                    }
+                                                                    callback();
+                                                                },
+                                                                function(callback) {
+                                                                    //we've looped through, and a userRound referencing the current round does not exist...create the round
+                                                                    if (foundRound === -1) {
+                                                                        var newUserRound = {
+                                                                            roundScore: losingScore,
+                                                                            user: {
+                                                                                id: foundUserTournament.user.id,
+                                                                                name: foundUserTournament.user.firstName
+                                                                            },
+                                                                            round: {
+                                                                                id: match.tournament.rounds[match.tournament.currentRound - 1],
+                                                                                numRound: match.tournament.currentRound
+                                                                            }
+                                                                        };
+                                                                        UserRound.create(newUserRound, function(err, newUserRound) {
+                                                                            if (err) console.log(err);
+                                                                            foundUserTournament.userRounds.push(newUserRound);
+                                                                            callback();
+                                                                        });
+                                                                    }
+                                                                    //we found a userRound without a reference to the actual match
+                                                                    else {
+                                                                        foundUserTournament.userRounds[foundRound].roundScore += losingScore;
+                                                                        foundUserTournament.userRounds[foundRound].save();
+                                                                        callback();
+                                                                    }
+                                                                }
+                                                            ], function(err) {
+                                                                if (err) console.log(err);
+                                                                else {
+                                                                    foundUserTournament.save();
+                                                                    next();
+                                                                }
+                                                            });
+                                                        }
+                                                    }, function(err) {
+                                                        if (err) console.log(err);
+                                                        else callback();
+                                                    });
+                                                    //end of async.forEachSeries(foundUserTournaments)
+                                                }
+                                            });
+                                    }
+                                });
+
+                            },
+
+                            function(callback) {
+                                async.forEachSeries(foundUserMatchPredictions, function(prediction, next) {
+
+                                    if (prediction.numRound === 7) {
+                                        prediction.score = (prediction.winner.equals(winner._id)) ? 5 : 0;
+                                    }
+                                    else if (prediction.numRound === 8) {
+                                        prediction.score = (prediction.winner.equals(winner._id)) ? 10 : 0;
+                                    }
+                                    else {
+                                        prediction.score = (prediction.winner.equals(winner._id)) ? winningScore : losingScore;
+                                    }
+                                    prediction.save();
+                                    next();
+                                }, function(err) {
+                                    if (err) console.log(err);
+                                    callback();
+                                });
+                            }
+                        ], function(err) {
+                            if (err) console.log(err);
+                            else next();
+                        });
+                    }
+                });
+            }
+        }); //end of Match.findById
+    }, function(err) {
+        if (err) console.log(err);
+        else next();
+    });
+};
+
+
+// Req. Params:
+// roundMatchIndex: roundMatchIndex,
+// tournament: foundTournament,
+// matchNumber: match.matchNumber,
+// matchId: match.id,
+// winningTeam: winningTeam
+var updateTournamentGroupScores = function(updatedMatches, next) {
+    console.log("================3===============");
+    TournamentGroup.find({ "tournamentReference.id": updatedMatches[0].tournament.id })
+        .populate({ path: "userTournaments", populate: { path: "userRounds", populate: { path: "userMatchPredictions" } } })
+        .exec(function(err, foundTournamentGroups) {
+            if (err) console.log(err);
+            else {
+                async.forEachSeries(foundTournamentGroups, function(group, next) {
+                    async.forEachSeries(group.userTournaments, function(userTournament, next) {
+                        userTournament.score = 0;
+                        async.forEachSeries(userTournament.userRounds, function(userRound, next) {
+                            async.series([
+                                function(callback) {
+                                    //if rounds is the current round, or if the round matches a bonus round
+                                    if ((userRound.round.numRound === group.currentRound && userRound.userMatchPredictions.length > 0) || (userRound.round.numRound === 7 && group.currentRound === 4) ||
+                                        (userRound.round.numRound === 8 && group.currentRound === 6)) {
+                                        userRound.roundScore = 0;
+                                        async.forEachSeries(userRound.userMatchPredictions, function(userPrediction, next) {
+                                            if (userPrediction) {
+                                                userRound.roundScore += userPrediction.score;
+                                            }
+                                            next();
+                                        }, function(err) {
+                                            if (err) console.log(err);
+                                            else {
+                                                userRound.save();
+                                                callback();
+                                            }
+                                        });
+                                    }
+                                    else {
+                                        callback();
+                                    }
+                                },
+                                function(callback) {
+                                    userTournament.score += userRound.roundScore;
+                                    callback();
+                                }
+                            ], function(err) {
+                                if (err) console.log(err);
+                                else {
+                                    next();
+                                }
+                            });
+                        }, function(err) {
+                            if (err) console.log(err);
+                            else {
+                                userTournament.save();
+                                next();
+                            }
+                        });
+                    }, function(err) {
+                        if (err) console.log(err);
+                        else next();
+                    });
+                }, function(err) {
+                    if (err) console.log(err);
+                    else {
+                        next();
+                    }
+                });
+            }
+        });
+
+};
+
+// Req. Params:
+// roundMatchIndex: roundMatchIndex,
+// tournament: foundTournament,
+// matchNumber: match.matchNumber,
+// matchId: match.id,
+// winningTeam: winningTeam
+var isRoundComplete = function(updatedMatches, done) {
+    console.log("================4===============");
+    Tournament.findById(updatedMatches[0].tournament.id).populate({ path: "rounds", populate: { path: "matches" } }).exec(function(err, foundTournament) {
+        if (err || !foundTournament) {
+            console.log(err);
+        }
+        else {
+            console.log(foundTournament.rounds[1].matches);
+            var currRound = foundTournament.currentRound;
+            var numUnfinished = 0;
+
+            async.forEachSeries(foundTournament.rounds[currRound - 1].matches, function(match, next) {
+                if (!match.winner) {
+                    numUnfinished++;
+                    next();
+                }
+                else next();
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                }
+                else if (numUnfinished === 0) {
+                    foundTournament.currentRound++;
+                    foundTournament.save();
+
+                    //find all tournamentGroups, update their currentRounds, and send out email
+                    TournamentGroup.find({ "tournamentReference.id": updatedMatches[0].tournament.id })
+                        .populate({path: "userTournaments", populate: "user"})
+                        .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
+                        .exec(function(err, foundTournamentGroup) {
+                        if (err || !foundTournamentGroup) {
+                            console.log(err);
+                        }
+                        else {
+                            async.forEachSeries(foundTournamentGroup, function(group, next) {
+                                group.currentRound++;
+                                group.save();
+                                emailHelper.sendRoundSummary(group);
+                                next();
+                            }, function(err) {
+                                if (err) console.log(err);
+                                console.log("================6.1===============");
+                                done();
+                                
+                            });
+                        }
+                    });
+                }
+                else{
+                    console.log("================6.2===============");
+                    done();
+                    
+                }
+            });
+        }
+    });
+};
+
+
+//==========================================================
+// End NEW LOGIC
+//==========================================================
 
 
 
@@ -104,387 +563,435 @@ middlewareObj.isLoggedIn = function(req, res, next){
 //  3) updateTournamentGroupScores
 //  4) isRoundComplete
 //=========================================================================
-middlewareObj.updateTournamentRound = function(req, res, next) {
-    res.locals.updatedMatches = [];
-    Tournament.findOne({year: req.params.year})
-        .populate({path: "rounds", populate: { path: "matches", populate:{ path: "topTeam" } }})
-        .populate({path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } }})
-        .exec(function (err, foundTournament){
-        if(err) {
-          res.redirect("back");
-        }
-        else {
-            res.locals.tournamentId = foundTournament;
-            res.locals.updatedRound = foundTournament.rounds[req.params.numRound-1];
-            var round = foundTournament.rounds[req.params.numRound-1];
-            var roundFirstMatch = round.matches[0].matchNumber;
- 
-       
-        async.series([
-            //===========================================================
-            // Handle championship game
-            //===========================================================
-            function(callback) {
-                if (round.numRound === foundTournament.rounds.length)
-                {
-                    //roundFirstMatch will be match number 63 for a 64 team tournament
-                    Team.findById(req.body[roundFirstMatch]).exec(function(err, winner) {
-                        if(err) console.log(err);
-                        else{
-                            res.locals.updatedMatches.push(
-                                {
-                                    matchId: round.matches[0].id, 
-                                    winner: req.body[63]
-                                });
-                            round.matches[0].winner = winner;
-                            round.matches[0].save();
-                            if(round.matches[0].winner.id === round.matches[0].topTeam.id) {
-                                round.matches[0].bottomTeam.lost++;
-                                round.matches[0].bottomTeam.save();
-                            }
-                            else {
-                                round.matches[0].topTeam.lost++;
-                                round.matches[0].topTeam.save();
-                            }
-                            foundTournament.champion = winner;
-                            foundTournament.save();
-                            callback();
-                        }
-                    });
-                } else{
-                    //===========================================================
-                    // Find the correct match and move the winner along
-                    //===========================================================
-                    var nextRound = foundTournament.rounds[req.params.numRound];
-                    var numMatches = round.matches.length;
-                    
-                    async.times(numMatches, function(i, next){
-                            //need to look for body[matchNumber]
-                            // i is the ith match of the round
-                            var bodyIndex = roundFirstMatch + i;
-                            
-                            if(req.body[bodyIndex]) {
-                                
-                                res.locals.updatedMatches.push(
-                                    {
-                                        matchId: round.matches[i].id, 
-                                        winner: req.body[bodyIndex]
-                                    });
-                                
-                                Team.findById(req.body[bodyIndex]).exec(function(err, winner) {
-                                    if(err) console.log(err);
-                                    round.matches[i].winner = winner;
-                                    
-                                    if(round.matches[i].winner.id === round.matches[i].topTeam.id) {
-                                        round.matches[i].bottomTeam.lost++;
-                                        round.matches[i].bottomTeam.save();
-                                    }
-                                    else {
-                                        round.matches[i].topTeam.lost++;
-                                        round.matches[i].topTeam.save();
-                                    }
-                                    round.matches[i].save();
-                                    
-                                    var nextMatchIndex = Math.floor(i / 2);
-                                    var nextRoundMatch = nextRound.matches[nextMatchIndex];
-                                    
-                                    if (i % 2 === 0) {
-                                        nextRoundMatch.topTeam = winner;
-                                    }
-                                    else {
-                                        nextRoundMatch.bottomTeam = winner;
-                                    }
-                                    nextRound.matches[nextMatchIndex].save();
-                                });
-                            }
-                            next();
-                            
-                        }, function(err){
-                            if(err) console.log(err);
-                            else {
-                                callback();
-                            }
-                        });
-                    }
-                }
-            ], function(err) {
-                if(err) console.log(err);
-                else {
-                    foundTournament.save();
-                    next();
-                }
-            });
-        }
-      
-    });
-};
-
-//=========================================================================
-// MIDDDLEWARE FOR:
-//                 UPDATE - Round of Tournament (rounds.js route)
-//                  router.put("/:numRound")
-//  1) updateTournamentRound
-//  *2) scoreUserMatchPredictions
-//  3) updateTournamentGroupScores
-//  4) isRoundComplete
-//=========================================================================
-middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
-    var updatedMatches = res.locals.updatedMatches;
-    async.forEachSeries(updatedMatches, function(match, next) {
-        //find the match, get the seeds, calculate winning/losing score
-        Match.findById(match.matchId).populate("topTeam").populate("bottomTeam").exec(function(err, foundMatch) {
-            if(err) console.log(err);
-            else {
-                var ts = foundMatch.topTeam.seed;   //ts = topseed
-                var bs = foundMatch.bottomTeam.seed;    //bs = bottomseed
-                var winner = match.winner;
-                var winningScore = 0;
-                var losingScore = 0;
-                if (winner === String(foundMatch.topTeam._id)) {
-                    winningScore = ts / bs;
-                    losingScore = (ts < bs) ? -1 : -bs / ts ;
-                } else {
-                    winningScore = bs / ts;
-                    losingScore = (bs < ts) ? -1 :  -ts / bs ;
-                }
-                winningScore *= req.params.numRound;
-                losingScore *= req.params.numRound;
-                
-                //=============================================
-                // a) Find all userMatchPredictions and update their score attribute
-                // b) If UserMatchPrediction doesn't exist (i.e., they forgot to make picks), create the round and subtract the loser score
-                //=============================================
-                UserMatchPrediction.find( {"match.id" : match.matchId}).exec(function(err, foundUserMatchPredictions) {
-                    if(err) console.log(err);
-                    else {
-                        // Find all user tournaments who reference this tournament but do not have a userRound.userMatchPrediction.match.id matching this match.matchId
-                        async.parallel([
-                            function(callback) {
-                            // Map the docs into an array of just the _ids
-                            var userMPids = foundUserMatchPredictions.map(function(doc) { return doc._id; });
-                            //find the user rounds that reference user match prediction ids (and are in the current round to avoid bonus round picks interfering with rounds 4 and 6
-                            UserRound.find( {"userMatchPredictions" : {$in: userMPids}, "round.numRound" : req.params.numRound}).exec(function(err, foundUserRound) {
-                            if(err) console.log(err);
-                            else {
-                                var userRids = foundUserRound.map(function(doc) { return doc._id; });
-                                //find all tournaments that don't have a user round in the list of rounds that match the prediction
-                                //  a) these may not have the particular round at all (we need to create the round)
-                                //  b) they may have the round, but no pick (i.e., we created the round for them with no picks and just need to subtract the score)
-                                UserTournament.find({"tournamentReference.id" : res.locals.tournamentId, "userRounds" : {$nin: userRids} })
-                                    .populate("userRounds").exec(function(err, foundUserTournaments){
-                                        if(err) console.log(err);
-                                        else {
-                                            //found userTournaments holds all tournaments without a round, or a round with a reference to the updated match
-                                            async.forEachSeries(foundUserTournaments, function(foundUserTournament, next) {
-                                                if(err) console.log(err);
-                                                else {
-                                                    //does this user tournament have the user round to reference?
-                                                    var foundRound = -1;    //index
-                                                    async.series([
-                                                        function(callback) {
-                                                            for (var j = 0; j < foundUserTournament.userRounds.length; j++) {
-                                                                if(foundUserTournament.userRounds[j].round.numRound === Number(req.params.numRound) ) {
-                                                                    foundRound = j;
-                                                                }
-                                                            }
-                                                            callback();
-                                                        },
-                                                        function(callback) {
-                                                            //we've looped through, and a userRound referencing the current round does not exist...create the round
-                                                            if(foundRound === -1) {
-                                                                var newUserRound = {
-                                                                    roundScore : losingScore,
-                                                                    user: {
-                                                                        id: foundUserTournament.user.id,
-                                                                        name: foundUserTournament.user.firstName
-                                                                    },
-                                                                    round: {
-                                                                        id: res.locals.updatedRound,
-                                                                        numRound: req.params.numRound
-                                                                    }
-                                                                };
-                                                                UserRound.create(newUserRound, function(err, newUserRound){
-                                                                    if(err) console.log(err);
-                                                                    foundUserTournament.userRounds.push(newUserRound);
-                                                                    callback();
-                                                                });
-                                                            }
-                                                            //we found a userRound without a reference to the actual match
-                                                            else {
-                                                                foundUserTournament.userRounds[foundRound].roundScore += losingScore;
-                                                                foundUserTournament.userRounds[foundRound].save();
-                                                                callback();
-                                                            }
-                                                        }
-                                                    ], function(err){
-                                                        if(err) console.log(err);
-                                                        else{
-                                                            foundUserTournament.save();
-                                                            next();
-                                                        } 
-                                                    });
-                                                }   
-                                            }, function(err){
-                                                if(err) console.log(err);
-                                                else callback();
-                                            });
-                                            //end of async.forEachSeries(foundUserTournaments)
-                                        }
-                                    });
-                                    }
-                                });
-                    
-                            },
-                
-                            function(callback) {
-                                async.forEachSeries(foundUserMatchPredictions, function(prediction, next){
-                                var userPick = String(prediction.winner);
-                               
-                                if (prediction.numRound === 7){
-                                    prediction.score = (userPick === winner) ? 5 : 0;
-                                }
-                                else if (prediction.numRound === 8){
-                                    prediction.score = (userPick === winner) ? 10 : 0;
-                                }
-                                else {
-                                     prediction.score = (userPick === winner) ? winningScore : losingScore;
-                                }
-                                prediction.save();
-                                next();
-                                }, function(err) {
-                                    if(err) console.log(err);
-                                    callback();
-                                });
-                            }
-                        ], function(err) {
-                            if(err) console.log(err);
-                            else next();
-                        });
-                    }
-                });
-            }
-        }); //end of Match.findById
-    }, function(err) {
-        if(err) console.log(err);
-        else next();
-    });
-};
-
-//=========================================================================
-// MIDDDLEWARE FOR:
-//                 UPDATE - Round of Tournament (rounds.js route)
-//                  router.put("/:numRound")
-//  1) updateTournamentRound
-//  2) scoreUserMatchPredictions
-//  *3) updateTournamentGroupScores
-//  4) isRoundComplete
-//=========================================================================
-middlewareObj.updateTournamentGroupScores = function(req, res, next) {
-    TournamentGroup.find( {"tournamentReference.id" : res.locals.tournamentId._id})
-        .populate({path: "userTournaments", populate: {path: "userRounds", populate: {path: "userMatchPredictions"}}})
-        .exec(function(err, foundTournamentGroups) {
-        if(err) console.log(err);
-        else {
-            async.forEachSeries(foundTournamentGroups, function(group, next){
-                async.forEachSeries(group.userTournaments, function(userTournament, next){
-                    userTournament.score = 0;
-                    async.forEachSeries(userTournament.userRounds, function(userRound, next){
-                        async.series([
-                            function(callback){
-                                //if rounds is the current round and has userMatchPredictions, or if the round matches a bonus round
-
-                                 if ( (userRound.round.numRound === group.currentRound && userRound.userMatchPredictions.length > 0) || (userRound.round.numRound === 7 && group.currentRound === 4) 
-                                                                || (userRound.round.numRound === 8 && group.currentRound === 6)) { 
-                                    userRound.roundScore = 0;
-                                    async.forEachSeries(userRound.userMatchPredictions, function(userPrediction, next) {
-                                        if(userPrediction)
-                                        {
-                                            userRound.roundScore += userPrediction.score;
-                                        }
-                                        next();
-                                    }, function(err) {
-                                        if(err) console.log(err);
-                                        else {
-                                            userRound.save();
-                                            callback();
-                                        }
-                                    });
-                                } else {
-                                    callback();
-                                }
-                            },
-                            function(callback) {
-                                userTournament.score += userRound.roundScore;
-                                callback();
-                            }
-                        ], function(err) {
-                            if(err) console.log(err);
-                            else {
-                                next();
-                            }
-                        });
-                    }, function(err) {
-                        if(err) console.log(err);
-                        else {
-                            userTournament.save();
-                            next();
-                        }
-                    });
-                }, function(err) {
-                    if (err) console.log(err);
-                    else next();
-                });
-            }, function(err){
-                if(err) console.log(err);
-                else next();
-            });
-        }
-    });
-    
-};
+// middlewareObj.updateTournamentRound = function(req, res, next) {
+//     res.locals.updatedMatches = [];
+//     Tournament.findOne({ year: req.params.year })
+//         .populate({ path: "rounds", populate: { path: "matches", populate: { path: "topTeam" } } })
+//         .populate({ path: "rounds", populate: { path: "matches", populate: { path: "bottomTeam" } } })
+//         .exec(function(err, foundTournament) {
+//             if (err) {
+//                 res.redirect("back");
+//             }
+//             else {
+//                 res.locals.tournamentId = foundTournament;
+//                 res.locals.updatedRound = foundTournament.rounds[req.params.numRound - 1];
+//                 var round = foundTournament.rounds[req.params.numRound - 1];
+//                 var roundFirstMatch = round.matches[0].matchNumber;
 
 
-//=========================================================================
-// MIDDDLEWARE FOR:
-//                 UPDATE - Round of Tournament (rounds.js route)
-//                  router.put("/:numRound")
-//  1) updateTournamentRound
-//  2) scoreUserMatchPredictions
-//  3) updateTournamentGroupScores
-// *4) isRoundComplete
-//=========================================================================
-middlewareObj.isRoundComplete = function(req, res, next) {
-   TournamentGroup.findOne( {"tournamentReference.id" : res.locals.tournamentId._id})
-    .populate({path: "tournamentReference.id", populate: { path: "rounds", populate: {path: "matches"  }}})
-    .exec(function(err, foundTournamentGroup) {
-        if(err) console.log(err);
-        else {
-            var currRound = foundTournamentGroup.currentRound;
-            // var currRound = 2;
-            var numUnfinished = 0;
+//                 async.series([
+//                     //===========================================================
+//                     // Handle championship game
+//                     //===========================================================
+//                     function(callback) {
+//                         if (round.numRound === foundTournament.rounds.length) {
+//                             //roundFirstMatch will be match number 63 for a 64 team tournament
+//                             Team.findById(req.body[roundFirstMatch]).exec(function(err, winner) {
+//                                 if (err) console.log(err);
+//                                 else {
+//                                     res.locals.updatedMatches.push({
+//                                         matchId: round.matches[0].id,
+//                                         winner: req.body[63]
+//                                     });
+//                                     round.matches[0].winner = winner;
+//                                     round.matches[0].save();
+//                                     if (round.matches[0].winner.id === round.matches[0].topTeam.id) {
+//                                         round.matches[0].bottomTeam.lost++;
+//                                         round.matches[0].bottomTeam.save();
+//                                     }
+//                                     else {
+//                                         round.matches[0].topTeam.lost++;
+//                                         round.matches[0].topTeam.save();
+//                                     }
+//                                     foundTournament.champion = winner;
+//                                     foundTournament.save();
+//                                     callback();
+//                                 }
+//                             });
+//                         }
+//                         else {
+//                             //===========================================================
+//                             // Find the correct match and move the winner along
+//                             //===========================================================
+//                             var nextRound = foundTournament.rounds[req.params.numRound];
+//                             var numMatches = round.matches.length;
 
-            async.forEachSeries(foundTournamentGroup.tournamentReference.id.rounds[currRound-1].matches, function(match, next){
-                if(!match.winner) {
-                    // console.log(match);
-                    numUnfinished++;
-                    next();
-                } else next();
-            }, function(err) {
-                if (err) console.log(err);
-                else if (numUnfinished === 0) {
-                    foundTournamentGroup.tournamentReference.id.currentRound++;
-                    foundTournamentGroup.tournamentReference.id.save();
-                    foundTournamentGroup.currentRound++;
-                    foundTournamentGroup.save();
-                    next();
-                } 
-                else {
-                    next();
-                }
-            });
-        }
-    });
-};
+//                             async.times(numMatches, function(i, next) {
+//                                 //need to look for body[matchNumber]
+//                                 // i is the ith match of the round
+//                                 var bodyIndex = roundFirstMatch + i;
+
+//                                 if (req.body[bodyIndex]) {
+
+//                                     res.locals.updatedMatches.push({
+//                                         matchId: round.matches[i].id,
+//                                         winner: req.body[bodyIndex]
+//                                     });
+
+//                                     Team.findById(req.body[bodyIndex]).exec(function(err, winner) {
+//                                         if (err) console.log(err);
+//                                         round.matches[i].winner = winner;
+
+//                                         if (round.matches[i].winner.id === round.matches[i].topTeam.id) {
+//                                             round.matches[i].bottomTeam.lost++;
+//                                             round.matches[i].bottomTeam.save();
+//                                         }
+//                                         else {
+//                                             round.matches[i].topTeam.lost++;
+//                                             round.matches[i].topTeam.save();
+//                                         }
+//                                         round.matches[i].save();
+
+//                                         var nextMatchIndex = Math.floor(i / 2);
+//                                         var nextRoundMatch = nextRound.matches[nextMatchIndex];
+
+//                                         if (i % 2 === 0) {
+//                                             nextRoundMatch.topTeam = winner;
+//                                         }
+//                                         else {
+//                                             nextRoundMatch.bottomTeam = winner;
+//                                         }
+//                                         // nextRound.matches[nextMatchIndex].save();
+//                                     });
+//                                 }
+//                                 next();
+
+//                             }, function(err) {
+//                                 if (err) console.log(err);
+//                                 else {
+//                                     callback();
+//                                 }
+//                             });
+//                         }
+//                     }
+//                 ], function(err) {
+//                     if (err) console.log(err);
+//                     else {
+//                         foundTournament.save();
+//                         next();
+//                     }
+//                 });
+//             }
+
+//         });
+// };
+
+// //=========================================================================
+// // MIDDDLEWARE FOR:
+// //                 UPDATE - Round of Tournament (rounds.js route)
+// //                  router.put("/:numRound")
+// //  1) updateTournamentRound
+// //  *2) scoreUserMatchPredictions
+// //  3) updateTournamentGroupScores
+// //  4) isRoundComplete
+// //=========================================================================
+// middlewareObj.scoreUserMatchPredictions = function(req, res, next) {
+//     var updatedMatches = res.locals.updatedMatches;
+//     async.forEachSeries(updatedMatches, function(match, next) {
+//         //find the match, get the seeds, calculate winning/losing score
+//         Match.findById(match.matchId).populate("topTeam").populate("bottomTeam").exec(function(err, foundMatch) {
+//             if (err) console.log(err);
+//             else {
+//                 var ts = foundMatch.topTeam.seed; //ts = topseed
+//                 var bs = foundMatch.bottomTeam.seed; //bs = bottomseed
+//                 var winner = match.winner;
+//                 var winningScore = 0;
+//                 var losingScore = 0;
+//                 if (winner === String(foundMatch.topTeam._id)) {
+//                     winningScore = ts / bs;
+//                     losingScore = (ts < bs) ? -1 : -bs / ts;
+//                 }
+//                 else {
+//                     winningScore = bs / ts;
+//                     losingScore = (bs < ts) ? -1 : -ts / bs;
+//                 }
+//                 winningScore *= req.params.numRound;
+//                 losingScore *= req.params.numRound;
+
+//                 //=============================================
+//                 // a) Find all userMatchPredictions and update their score attribute
+//                 // b) If UserMatchPrediction doesn't exist (i.e., they forgot to make picks), create the round and subtract the loser score
+//                 //=============================================
+//                 UserMatchPrediction.find({ "match.id": match.matchId }).exec(function(err, foundUserMatchPredictions) {
+//                     if (err) console.log(err);
+//                     else {
+//                         // Find all user tournaments who reference this tournament but do not have a userRound.userMatchPrediction.match.id matching this match.matchId
+//                         async.parallel([
+//                             function(callback) {
+//                                 // Map the docs into an array of just the _ids
+//                                 var userMPids = foundUserMatchPredictions.map(function(doc) { return doc._id; });
+//                                 //find the user rounds that reference user match prediction ids (and are in the current round to avoid bonus round picks interfering with rounds 4 and 6
+//                                 UserRound.find({ "userMatchPredictions": { $in: userMPids }, "round.numRound": req.params.numRound }).exec(function(err, foundUserRound) {
+//                                     if (err) console.log(err);
+//                                     else {
+//                                         var userRids = foundUserRound.map(function(doc) { return doc._id; });
+//                                         //find all tournaments that don't have a user round in the list of rounds that match the prediction
+//                                         //  a) these may not have the particular round at all (we need to create the round)
+//                                         //  b) they may have the round, but no pick (i.e., we created the round for them with no picks and just need to subtract the score)
+//                                         UserTournament.find({ "tournamentReference.id": res.locals.tournamentId, "userRounds": { $nin: userRids } })
+//                                             .populate("userRounds").exec(function(err, foundUserTournaments) {
+//                                                 if (err) console.log(err);
+//                                                 else {
+//                                                     //found userTournaments holds all tournaments without a round, or a round with a reference to the updated match
+//                                                     async.forEachSeries(foundUserTournaments, function(foundUserTournament, next) {
+//                                                         if (err) console.log(err);
+//                                                         else {
+//                                                             //does this user tournament have the user round to reference?
+//                                                             var foundRound = -1; //index
+//                                                             async.series([
+//                                                                 function(callback) {
+//                                                                     for (var j = 0; j < foundUserTournament.userRounds.length; j++) {
+//                                                                         if (foundUserTournament.userRounds[j].round.numRound === Number(req.params.numRound)) {
+//                                                                             foundRound = j;
+//                                                                         }
+//                                                                     }
+//                                                                     callback();
+//                                                                 },
+//                                                                 function(callback) {
+//                                                                     //we've looped through, and a userRound referencing the current round does not exist...create the round
+//                                                                     if (foundRound === -1) {
+//                                                                         var newUserRound = {
+//                                                                             roundScore: losingScore,
+//                                                                             user: {
+//                                                                                 id: foundUserTournament.user.id,
+//                                                                                 name: foundUserTournament.user.firstName
+//                                                                             },
+//                                                                             round: {
+//                                                                                 id: res.locals.updatedRound,
+//                                                                                 numRound: req.params.numRound
+//                                                                             }
+//                                                                         };
+//                                                                         UserRound.create(newUserRound, function(err, newUserRound) {
+//                                                                             if (err) console.log(err);
+//                                                                             foundUserTournament.userRounds.push(newUserRound);
+//                                                                             callback();
+//                                                                         });
+//                                                                     }
+//                                                                     //we found a userRound without a reference to the actual match
+//                                                                     else {
+//                                                                         foundUserTournament.userRounds[foundRound].roundScore += losingScore;
+//                                                                         foundUserTournament.userRounds[foundRound].save();
+//                                                                         callback();
+//                                                                     }
+//                                                                 }
+//                                                             ], function(err) {
+//                                                                 if (err) console.log(err);
+//                                                                 else {
+//                                                                     foundUserTournament.save();
+//                                                                     next();
+//                                                                 }
+//                                                             });
+//                                                         }
+//                                                     }, function(err) {
+//                                                         if (err) console.log(err);
+//                                                         else callback();
+//                                                     });
+//                                                     //end of async.forEachSeries(foundUserTournaments)
+//                                                 }
+//                                             });
+//                                     }
+//                                 });
+
+//                             },
+
+//                             function(callback) {
+//                                 async.forEachSeries(foundUserMatchPredictions, function(prediction, next) {
+//                                     var userPick = String(prediction.winner);
+
+//                                     if (prediction.numRound === 7) {
+//                                         prediction.score = (userPick === winner) ? 5 : 0;
+//                                     }
+//                                     else if (prediction.numRound === 8) {
+//                                         prediction.score = (userPick === winner) ? 10 : 0;
+//                                     }
+//                                     else {
+//                                         prediction.score = (userPick === winner) ? winningScore : losingScore;
+//                                     }
+//                                     prediction.save();
+//                                     next();
+//                                 }, function(err) {
+//                                     if (err) console.log(err);
+//                                     callback();
+//                                 });
+//                             }
+//                         ], function(err) {
+//                             if (err) console.log(err);
+//                             else next();
+//                         });
+//                     }
+//                 });
+//             }
+//         }); //end of Match.findById
+//     }, function(err) {
+//         if (err) console.log(err);
+//         else next();
+//     });
+// };
+
+// //=========================================================================
+// // MIDDDLEWARE FOR:
+// //                 UPDATE - Round of Tournament (rounds.js route)
+// //                  router.put("/:numRound")
+// //  1) updateTournamentRound
+// //  2) scoreUserMatchPredictions
+// //  *3) updateTournamentGroupScores
+// //  4) isRoundComplete
+// //=========================================================================
+// middlewareObj.updateTournamentGroupScores = function(req, res, next) {
+//     TournamentGroup.find({ "tournamentReference.id": res.locals.tournamentId._id })
+//         .populate({ path: "userTournaments", populate: { path: "userRounds", populate: { path: "userMatchPredictions" } } })
+//         .exec(function(err, foundTournamentGroups) {
+//             if (err) console.log(err);
+//             else {
+//                 async.forEachSeries(foundTournamentGroups, function(group, next) {
+//                     async.forEachSeries(group.userTournaments, function(userTournament, next) {
+//                         userTournament.score = 0;
+//                         async.forEachSeries(userTournament.userRounds, function(userRound, next) {
+//                             async.series([
+//                                 function(callback) {
+//                                     //if rounds is the current round and has userMatchPredictions, or if the round matches a bonus round
+
+//                                     if ((userRound.round.numRound === group.currentRound && userRound.userMatchPredictions.length > 0) || (userRound.round.numRound === 7 && group.currentRound === 4) ||
+//                                         (userRound.round.numRound === 8 && group.currentRound === 6)) {
+//                                         userRound.roundScore = 0;
+//                                         async.forEachSeries(userRound.userMatchPredictions, function(userPrediction, next) {
+//                                             if (userPrediction) {
+//                                                 userRound.roundScore += userPrediction.score;
+//                                             }
+//                                             next();
+//                                         }, function(err) {
+//                                             if (err) console.log(err);
+//                                             else {
+//                                                 userRound.save();
+//                                                 callback();
+//                                             }
+//                                         });
+//                                     }
+//                                     else {
+//                                         callback();
+//                                     }
+//                                 },
+//                                 function(callback) {
+//                                     userTournament.score += userRound.roundScore;
+//                                     callback();
+//                                 }
+//                             ], function(err) {
+//                                 if (err) console.log(err);
+//                                 else {
+//                                     next();
+//                                 }
+//                             });
+//                         }, function(err) {
+//                             if (err) console.log(err);
+//                             else {
+//                                 userTournament.save();
+//                                 next();
+//                             }
+//                         });
+//                     }, function(err) {
+//                         if (err) console.log(err);
+//                         else next();
+//                     });
+//                 }, function(err) {
+//                     if (err) console.log(err);
+//                     else next();
+//                 });
+//             }
+//         });
+
+// };
+
+
+// //=========================================================================
+// // MIDDDLEWARE FOR:
+// //                 UPDATE - Round of Tournament (rounds.js route)
+// //                  router.put("/:numRound")
+// //  1) updateTournamentRound
+// //  2) scoreUserMatchPredictions
+// //  3) updateTournamentGroupScores
+// // *4) isRoundComplete
+// //=========================================================================
+// middlewareObj.isRoundComplete = function(req, res, next) {
+//     Tournament.findById(res.locals.tournamentId).populate({ path: "rounds", populate: { path: "matches" } }).exec(function(err, foundTournament) {
+//         if (err || !foundTournament) {
+//             console.log(err);
+//         }
+//         else {
+//             var currRound = foundTournament.currentRound;
+//             var numUnfinished = 0;
+
+//             async.forEachSeries(foundTournament.rounds[currRound - 1].matches, function(match, next) {
+//                 if (!match.winner) {
+//                     numUnfinished++;
+//                     next();
+//                 }
+//                 else next();
+//             }, function(err) {
+//                 if (err) {
+//                     console.log(err);
+//                 }
+//                 else if (numUnfinished === 0) {
+//                     foundTournament.currentRound++;
+//                     foundTournament.save();
+
+//                     //find all tournamentGroups, update their currentRounds, and send out email
+//                     TournamentGroup.find({ "tournamentReference.id": res.locals.tournamentId }).exec(function(err, foundTournamentGroup) {
+//                         if (err || !foundTournamentGroup) {
+//                             console.log(err);
+//                         }
+//                         else {
+//                             async.forEachSeries(foundTournamentGroup, function(group, next) {
+//                                 group.currentRound++;
+//                                 group.save();
+//                                 emailHelper.sendRoundSummary(group);
+//                                 next();
+//                             }, function(err) {
+//                                 if (err) {
+//                                     console.log(err);
+//                                 }
+//                                 else {
+//                                     next();
+//                                 }
+//                             });
+//                         }
+//                     });
+//                 }
+//             });
+//         }
+//     });
+// };
+
+
+// middlewareObj.isRoundComplete = function(req, res, next) {
+//   TournamentGroup.findOne( {"tournamentReference.id" : res.locals.tournamentId._id})
+//     .populate({path: "tournamentReference.id", populate: { path: "rounds", populate: {path: "matches"  }}})
+//     .exec(function(err, foundTournamentGroup) {
+//         if(err) console.log(err);
+//         else {
+//             var currRound = foundTournamentGroup.currentRound;
+//             var numUnfinished = 0;
+
+//             async.forEachSeries(foundTournamentGroup.tournamentReference.id.rounds[currRound-1].matches, function(match, next){
+//                 if(!match.winner) {
+//                     numUnfinished++;
+//                     next();
+//                 } else next();
+//             }, function(err) {
+//                 if (err) console.log(err);
+//                 else if (numUnfinished === 0) {
+//                     foundTournamentGroup.tournamentReference.id.currentRound++;
+//                     foundTournamentGroup.tournamentReference.id.save();
+//                     foundTournamentGroup.currentRound++;
+//                     foundTournamentGroup.save();
+//                     next();
+//                 } 
+//                 else {
+//                     next();
+//                 }
+//             });
+//         }
+//     });
+// };
 
 
 //=========================================================================
@@ -496,8 +1003,8 @@ middlewareObj.isRoundComplete = function(req, res, next) {
 //  3) updateUserMatchAggregates
 //=========================================================================
 middlewareObj.checkTipoffTime = function(req, res, next) {
-    UserTournament.findOne({"user.username": req.params.username, "tournamentGroup.groupName" : req.params.groupName}).populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
-        if(err) {
+    UserTournament.findOne({ "user.username": req.params.username, "tournamentGroup.groupName": req.params.groupName }).populate({ path: "tournamentReference.id", populate: "rounds" }).exec(function(err, foundUserTournament) {
+        if (err) {
             console.log(err);
             req.flash("error", "User Tournament not found");
             res.redirect("back");
@@ -508,24 +1015,25 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
             if (numRound === 7 || numRound === 8)
                 numRound = 1;
             //find the tournament round associated with this userRound
-            Round.findById(foundUserTournament.tournamentReference.id.rounds[numRound-1]).exec(function(err, foundRound){
-                if(err || !foundRound) {
+            Round.findById(foundUserTournament.tournamentReference.id.rounds[numRound - 1]).exec(function(err, foundRound) {
+                if (err || !foundRound) {
                     console.log(err);
                     req.flash("error", "Round not found");
                     res.redirect("back");
                 }
                 else {
-                    if (moment().isBefore( moment(foundRound.startTime) ) ) {
+                    if (moment().isBefore(moment(foundRound.startTime))) {
                         next();
-                    } else {
+                    }
+                    else {
                         req.flash("error", "Too late! Tipoff for the round has already started.");
                         res.redirect("/tournamentGroups/" + req.params.groupName);
                     }
                 }
             });
         }
-     });
-            
+    });
+
 };
 
 
@@ -537,92 +1045,92 @@ middlewareObj.checkTipoffTime = function(req, res, next) {
 //  *2) userRoundCreation
 //  3) updateUserMatchAggregates
 //=========================================================================
-    //req.body[matchNum][0] -> winningTeamId
-    //req.body[matchNum][1] -> comments
-    //req.params 
-    //      groupName -> March Madness 2012
-    //      id -> 5a8b0a650e17ab1749702c4b
-    //      numRound -> 1
+//req.body[matchNum][0] -> winningTeamId
+//req.body[matchNum][1] -> comments
+//req.params 
+//      groupName -> March Madness 2012
+//      id -> 5a8b0a650e17ab1749702c4b
+//      numRound -> 1
 middlewareObj.userRoundCreation = function(req, res, next) {
     //find the correct userTournament
-    UserTournament.findOne({"user.username": req.params.username, "tournamentGroup.groupName" : req.params.groupName})
-            .populate({path: "tournamentReference.id", populate: "rounds"}).exec(function(err, foundUserTournament){
-        if(err || !foundUserTournament){
-            req.flash("error", "User Tournament not found");
-            res.redirect("back");
-        } 
-        else {
-            res.locals.userFirstName = foundUserTournament.user.firstName;
-            var numRound = Number(req.params.numRound);
-            if (numRound === 7) {
-                numRound = 4;
-            } else if (numRound === 8)
-            {
-                numRound = 6;
+    UserTournament.findOne({ "user.username": req.params.username, "tournamentGroup.groupName": req.params.groupName })
+        .populate({ path: "tournamentReference.id", populate: "rounds" }).exec(function(err, foundUserTournament) {
+            if (err || !foundUserTournament) {
+                req.flash("error", "User Tournament not found");
+                res.redirect("back");
             }
-            //find the tournament round associated with this userRound
-            Round.findById(foundUserTournament.tournamentReference.id.rounds[numRound-1]).populate("matches").exec(function(err, foundRound){
-                if(err) console.log(err);
-                else {
-                    var newUserRound = {
-                        roundScore: 0,
-                        possiblePointsRemaining: 0,
-                        // user: {
-                        //     id: ,
-                        //     name:
-                        // }
-                        round: {
-                            id: foundRound.id,
-                            numRound: req.params.numRound
-                        },
-                        userMatchPredictions: [],
-                    };
-                    UserRound.create(newUserRound, function(err, newUserRound){
-                        if(err) console.log(err);
-                        else {
-                            //============================================================================================
-                            // userRound Created -> now fill with the userMatchPredictions
-                            //============================================================================================
-                            async.forEachSeries(foundRound.matches, function(match, next){
-                                var winner;
-                                var comment;
-                                if (req.body[match.matchNumber]){
-                                    winner = req.body[match.matchNumber][0];
-                                    comment = req.body[match.matchNumber][1];
-                                }
-                                var newUserMatchPrediction = {
-                                    score: 0,
-                                    numRound: newUserRound.round.numRound,
-                                    winner: winner,
-                                    match: {
-                                        id: match.id,
-                                        matchNumber: match.matchNumber
-                                    },
-                                    comment: comment
-                                };
-                                UserMatchPrediction.create(newUserMatchPrediction, function(err, newUserMatchPrediction){
-                                    if(err) console.log(err);
+            else {
+                res.locals.userFirstName = foundUserTournament.user.firstName;
+                var numRound = Number(req.params.numRound);
+                if (numRound === 7) {
+                    numRound = 4;
+                }
+                else if (numRound === 8) {
+                    numRound = 6;
+                }
+                //find the tournament round associated with this userRound
+                Round.findById(foundUserTournament.tournamentReference.id.rounds[numRound - 1]).populate("matches").exec(function(err, foundRound) {
+                    if (err) console.log(err);
+                    else {
+                        var newUserRound = {
+                            roundScore: 0,
+                            possiblePointsRemaining: 0,
+                            // user: {
+                            //     id: ,
+                            //     name:
+                            // }
+                            round: {
+                                id: foundRound.id,
+                                numRound: req.params.numRound
+                            },
+                            userMatchPredictions: [],
+                        };
+                        UserRound.create(newUserRound, function(err, newUserRound) {
+                            if (err) console.log(err);
+                            else {
+                                //============================================================================================
+                                // userRound Created -> now fill with the userMatchPredictions
+                                //============================================================================================
+                                async.forEachSeries(foundRound.matches, function(match, next) {
+                                    var winner;
+                                    var comment;
+                                    if (req.body[match.matchNumber]) {
+                                        winner = req.body[match.matchNumber][0];
+                                        comment = req.body[match.matchNumber][1];
+                                    }
+                                    var newUserMatchPrediction = {
+                                        score: 0,
+                                        numRound: newUserRound.round.numRound,
+                                        winner: winner,
+                                        match: {
+                                            id: match.id,
+                                            matchNumber: match.matchNumber
+                                        },
+                                        comment: comment
+                                    };
+                                    UserMatchPrediction.create(newUserMatchPrediction, function(err, newUserMatchPrediction) {
+                                        if (err) console.log(err);
+                                        else {
+                                            newUserRound.userMatchPredictions.addToSet(newUserMatchPrediction);
+                                            next();
+                                        }
+                                    });
+                                }, function(err) {
+                                    if (err) console.log(err);
                                     else {
-                                        newUserRound.userMatchPredictions.addToSet(newUserMatchPrediction);
+                                        res.locals.newUserRound = newUserRound;
+                                        foundUserTournament.userRounds.push(newUserRound);
+                                        newUserRound.save();
+                                        foundUserTournament.save();
                                         next();
                                     }
                                 });
-                            }, function(err){
-                                if(err) console.log(err);
-                                else {
-                                    res.locals.newUserRound = newUserRound;
-                                    foundUserTournament.userRounds.push(newUserRound);
-                                    newUserRound.save();
-                                    foundUserTournament.save();
-                                    next();
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    });
+                            }
+                        });
+                    }
+                });
+            }
+        });
 };
 
 
@@ -634,58 +1142,58 @@ middlewareObj.userRoundCreation = function(req, res, next) {
 //  2) userRoundCreation
 //  *3) updateUserMatchAggregates
 //=========================================================================
-    //req.body[matchNum][0] -> winningTeamId
-    //req.body[matchNum][1] -> comments
-    //req.params 
-    //      groupName -> March Madness 2012
-    //      id -> 5a8b0a650e17ab1749702c4b
-    //      numRound -> 1
-    //res.locals.newUserRound.userMatchPrediction
-    //      score: 0,
-    //      numRound: newUserRound.round.numRound,
-    //      winner: winner, (type: team)...(req.body[match.matchNumber][0])
-    //      match: {
-    //          id: match.id,
-    //          matchNumber: match.matchNumber
-    //      },
-    //      comment: comment    (req.body[match.matchNumber][1])
-                
+//req.body[matchNum][0] -> winningTeamId
+//req.body[matchNum][1] -> comments
+//req.params 
+//      groupName -> March Madness 2012
+//      id -> 5a8b0a650e17ab1749702c4b
+//      numRound -> 1
+//res.locals.newUserRound.userMatchPrediction
+//      score: 0,
+//      numRound: newUserRound.round.numRound,
+//      winner: winner, (type: team)...(req.body[match.matchNumber][0])
+//      match: {
+//          id: match.id,
+//          matchNumber: match.matchNumber
+//      },
+//      comment: comment    (req.body[match.matchNumber][1])
+
 middlewareObj.updateUserMatchAggregates = function(req, res, next) {
-    
-    TournamentGroup.findOne({groupName: req.params.groupName}).exec(function(err, foundTournamentGroup) {
-        if(err) console.log(err);
+
+    TournamentGroup.findOne({ groupName: req.params.groupName }).exec(function(err, foundTournamentGroup) {
+        if (err) console.log(err);
         else {
-            async.forEachSeries(res.locals.newUserRound.userMatchPredictions, function(userPrediction, next){
-            
-                Match.findOne({_id : userPrediction.match.id}).populate("topTeam").populate("bottomTeam").exec(function(err, userPredictionMatch) {
-                    if(err) console.log(err);
+            async.forEachSeries(res.locals.newUserRound.userMatchPredictions, function(userPrediction, next) {
+
+                Match.findOne({ _id: userPrediction.match.id }).populate("topTeam").populate("bottomTeam").exec(function(err, userPredictionMatch) {
+                    if (err) console.log(err);
                     else {
                         //Find or create a userMatchAggregate whose matchReference is the same as this userMatchPrediction's matchReference
                         if (req.params.numRound < 7) {
-                            UserMatchAggregate.findOne({matchReference : userPrediction.match.id, tournamentGroup : foundTournamentGroup.id}).exec(function(err, foundUserMatchAggregate) {
-                                if(err) console.log(err);
+                            UserMatchAggregate.findOne({ matchReference: userPrediction.match.id, tournamentGroup: foundTournamentGroup.id }).exec(function(err, foundUserMatchAggregate) {
+                                if (err) console.log(err);
                                 else {
                                     async.series([
                                         // if none exist, create a userMatchAggregate for the userMatchPrediction:
                                         function(callback) {
                                             if (!foundUserMatchAggregate) {
-                                                var ts = userPredictionMatch.topTeam.seed;   //ts = topseed
-                                                var bs = userPredictionMatch.bottomTeam.seed;    //bs = bottomseed
-                                                var nr = req.params.numRound;               //nr = numRound
-                                                
+                                                var ts = userPredictionMatch.topTeam.seed; //ts = topseed
+                                                var bs = userPredictionMatch.bottomTeam.seed; //bs = bottomseed
+                                                var nr = req.params.numRound; //nr = numRound
+
                                                 var newUserMatchAggregate = {
                                                     matchNumber: userPredictionMatch.matchNumber,
                                                     matchReference: userPredictionMatch.id,
                                                     tournamentGroup: foundTournamentGroup.id,
                                                     topTeamPickers: [],
                                                     topWinScore: nr * ts / bs,
-                                                    topLossScore: (ts < bs) ? -ts / bs * nr : -nr ,
+                                                    topLossScore: (ts < bs) ? -ts / bs * nr : -nr,
                                                     bottomTeamPickers: [],
-                                                    bottomWinScore:  nr * bs / ts,
+                                                    bottomWinScore: nr * bs / ts,
                                                     bottomLossScore: (bs < ts) ? -bs / ts * nr : -nr,
                                                 };
-                                                UserMatchAggregate.create(newUserMatchAggregate, function(err, newUserMatchAggregate){
-                                                    if(err) console.log(err);
+                                                UserMatchAggregate.create(newUserMatchAggregate, function(err, newUserMatchAggregate) {
+                                                    if (err) console.log(err);
                                                     else {
                                                         foundUserMatchAggregate = newUserMatchAggregate;
                                                         foundTournamentGroup.userMatchAggregates.push(foundUserMatchAggregate);
@@ -694,7 +1202,8 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                                 });
                                             }
                                             else callback();
-                                        }, function(callback) {
+                                        },
+                                        function(callback) {
                                             // If userMatchPrediction picks the topTeam…assign name and comments to topTeamPickerArray
                                             // Otherwise assign name and comments to BottomPickerArray
                                             var packedPrediction = {
@@ -704,29 +1213,30 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                             };
                                             if (String(userPrediction.winner) === userPredictionMatch.topTeam.id) {
                                                 foundUserMatchAggregate.topTeamPickers.push(packedPrediction);
-                                            } else {
+                                            }
+                                            else {
                                                 foundUserMatchAggregate.bottomTeamPickers.push(packedPrediction);
                                             }
                                             callback();
                                         }
                                     ], function(err) {
-                                        if(err) console.log(err);
+                                        if (err) console.log(err);
                                         else {
                                             foundUserMatchAggregate.save();
                                             next();
                                         }
                                     });
                                 }
-                                
+
                             });
                         }
                         // Find or create a final four bonusAggregate whose matchReference is the same as this userMatchPrediction's matchReference
-                        else if(Number(req.params.numRound) === 7 || Number(req.params.numRound) === 8) {
+                        else if (Number(req.params.numRound) === 7 || Number(req.params.numRound) === 8) {
                             Team.findById(userPrediction.winner, function(err, foundTeam) {
-                                if(err) console.log(err);
+                                if (err) console.log(err);
                                 else {
-                                    BonusAggregate.findOne({"team.id" : foundTeam.id, matchReference : userPrediction.match.id, tournamentGroup : foundTournamentGroup.id}).exec(function(err, foundBonusAggregate) {
-                                        if(err) console.log(err);
+                                    BonusAggregate.findOne({ "team.id": foundTeam.id, matchReference: userPrediction.match.id, tournamentGroup: foundTournamentGroup.id }).exec(function(err, foundBonusAggregate) {
+                                        if (err) console.log(err);
                                         else {
                                             async.series([
                                                 // if none exist, create a foundBonusAggregate for the userMatchPrediction:
@@ -737,7 +1247,7 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                                             name: foundTeam.name,
                                                             image: foundTeam.image,
                                                         };
-                                                    
+
                                                         var newBonusAggregate = {
                                                             matchNumber: userPredictionMatch.matchNumber,
                                                             matchReference: userPredictionMatch.id,
@@ -745,8 +1255,8 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                                             team: team,
                                                             teamPickers: [],
                                                         };
-                                                        BonusAggregate.create(newBonusAggregate, function(err, newBonusAggregate){
-                                                            if(err) console.log(err);
+                                                        BonusAggregate.create(newBonusAggregate, function(err, newBonusAggregate) {
+                                                            if (err) console.log(err);
                                                             else {
                                                                 foundBonusAggregate = newBonusAggregate;
                                                                 foundTournamentGroup.bonusAggregates.push(foundBonusAggregate);
@@ -755,7 +1265,8 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                                         });
                                                     }
                                                     else callback();
-                                                }, function(callback) {
+                                                },
+                                                function(callback) {
                                                     //  Assign name and comments to teamPickers array
                                                     var packedPrediction = {
                                                         id: userPrediction._id,
@@ -763,28 +1274,28 @@ middlewareObj.updateUserMatchAggregates = function(req, res, next) {
                                                         comment: userPrediction.comment
                                                     };
                                                     foundBonusAggregate.teamPickers.push(packedPrediction);
-                                                    
+
                                                     callback();
                                                 }
                                             ], function(err) {
-                                                if(err) console.log(err);
+                                                if (err) console.log(err);
                                                 else {
                                                     foundBonusAggregate.save();
                                                     next();
                                                 }
                                             });
                                         }
-                                        
+
                                     });
-                                                                
+
                                 }
                             });
                         }
                     }
-                    
+
                 });
             }, function(err) {
-                if(err) console.log(err);
+                if (err) console.log(err);
                 else {
                     foundTournamentGroup.save();
                     next();

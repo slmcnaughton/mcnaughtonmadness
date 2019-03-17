@@ -5,6 +5,26 @@ var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
+var emailHelper = require("../middleware/emailHelper");
+
+//SendRoundSummaryTest
+router.post("/:groupName/testRoundSummary", function(req, res) {
+   var groupName = req.params.groupName;
+    TournamentGroup.findOne({groupName: groupName})
+        .populate({path: "userTournaments", populate: "user"})
+        .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
+        .exec(function(err, foundTournamentGroup){
+        if(err){
+            console.log(err);
+            res.redirect("/tournamentGroups");
+        } else {
+            emailHelper.sendRoundSummary(foundTournamentGroup);
+            console.log("email sent");
+            res.redirect('back');
+        }
+    });
+});
+
 
 //INDEX - show all Tournament Groups
 router.get("/", function(req, res) {

@@ -46,10 +46,6 @@ router.post("/", middleware.isLoggedIn, function(req, res){
         } else {
             if(foundTournamentGroup.publicGroup || !foundTournamentGroup.publicGroup && foundTournamentGroup.secretCode === req.body.secretCode) {
                 
-                    console.log("here");
-                    emailHelper.sendRoundSummary(foundTournamentGroup);
-                    console.log("there");
-            
                 UserTournament.findOne({"user.id": req.user._id, "tournamentGroup.groupName" : req.params.groupName}).exec(function(err, foundUserTournament){
                     if(err) {
                         req.flash("error", "Error creating User Tournament");

@@ -25,10 +25,14 @@ router.get("/:numRound/edit", function(req, res){
 
 //UPDATE - Round of Tournament
 // middleware.checkCommentOwnership,
-router.put("/:numRound", middleware.updateTournamentRound, middleware.scoreUserMatchPredictions, 
-                        middleware.updateTournamentGroupScores, middleware.isRoundComplete, function(req, res){
+// router.put("/:numRound", middleware.updateTournamentRound, middleware.scoreUserMatchPredictions, 
+//                         middleware.updateTournamentGroupScores, middleware.isRoundComplete, function(req, res){
 
-    res.redirect("back");
+//     res.redirect("back");
+// });
+router.put("/:numRound", middleware.updateResults, function(req, res){
+    var currentYear = new Date().getFullYear();
+    res.redirect("/tournaments/" + currentYear);
 });
 
 //order teams correctly by matchNum from lowest to highest

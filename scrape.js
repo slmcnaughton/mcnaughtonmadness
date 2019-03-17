@@ -428,7 +428,7 @@ var isRoundComplete = function (updatedMatches, next) {
                             async.forEachSeries( foundTournamentGroup, function(group, next){
                                 group.currentRound++;
                                 group.save();
-                                // emailHelper.sendRoundSummary(foundTournamentGroup);
+                                emailHelper.sendRoundSummary(group);
                                 next();
                             }, function(err) {
                                 if(err) {

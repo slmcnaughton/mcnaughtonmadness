@@ -1,4 +1,4 @@
-var mongoose   = require("mongoose");
+var mongoose = require("mongoose");
 var TournamentStanding = require("./models/tournamentStanding");
 var User = require("./models/user");
 var Trophy = require("./models/trophy");
@@ -16,74 +16,147 @@ var TeamImage = require("./models/teamImage");
 var async = require("async");
 
 function seedDB() {
-    TournamentGroup.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all tournament groups");
-    });
-    UserTournament.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all userTournaments");
-    });
-    UserRound.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all user rounds");
-    });
-    UserMatchPrediction.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all user match predictions");
-    });
-    UserMatchAggregate.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all user match aggregates");
-    });
-    BonusAggregate.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all bonus match aggregates");
-    });
-    Team.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all teams");
-    });
-    Match.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all matches");
-    });
-    Round.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all rounds");
-    });
-    Tournament.deleteMany({}, function(err){
-        if(err) console.log(err);
-        else console.log("removed all matches");
-    });
-    User.deleteMany({}, function(err){
-      if (err) {
-          console.log("oops");
-      } else {
-          console.log("removed all users");
-      }
-    });
-    // TeamImage.deleteMany({}, function(err){
-    //   if (err) {
-    //       console.log("oops");
-    //   } else {
-    //       console.log("removed all team images");
-    //   }
-    // });
-    // Trophy.deleteMany({}, function(err){
-    //   if (err) {
-    //       console.log("oops");
-    //   } else {
-    //       console.log("removed all trophies");
-    //   }
-    // });
+    async.parallel([
+        function(callback) {
+            TournamentGroup.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all tournament groups");
+                callback();
+            });
+        },
+        function(callback) {
+            UserTournament.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all userTournaments");
+                callback();
+            });
+        },
+        function(callback) {
+            UserRound.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all user rounds");
+                callback();
+            });
+        },
+        function(callback) {
+            UserMatchPrediction.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all user match predictions");
+                callback();
+            });
+        },
+        function(callback) {
+            UserMatchAggregate.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all user match aggregates");
+                callback();
+            });
+        },
+        function(callback) {
+            BonusAggregate.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all bonus match aggregates");
+                callback();
+            });
+        },
+        function(callback) {
+            Team.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all teams");
+                callback();
+            });
+        },
+        function(callback) {
+            Match.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all matches");
+                callback();
+            });
+        },
+        function(callback) {
+            Round.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all rounds");
+                callback();
+            });
+        },
+        function(callback) {
+            Tournament.deleteMany({}, function(err) {
+                if (err) console.log(err);
+                else console.log("removed all matches");
+                callback();
+            });
+        },
+        function(callback) {
+            User.deleteMany({}, function(err) {
+                if (err) {
+                    console.log("oops");
+                }
+                else {
+                    console.log("removed all users");
+                }
+                callback();
+            });
+        },
 
-    // addTournamentStandings();
-    
-    // addTrophies();
+        // TeamImage.deleteMany({}, function(err){
+        //   if (err) {
+        //       console.log("oops");
+        //   } else {
+        //       console.log("removed all team images");
+        //   }
+        // });
+        // Trophy.deleteMany({}, function(err){
+        //   if (err) {
+        //       console.log("oops");
+        //   } else {
+        //       console.log("removed all trophies");
+        //   }
+        // });
+
+        // addTournamentStandings();
+
+        // addTrophies();
+
+    ], function(err) {
+        if (err) console.log(err);
+        // async.series([
+        addTwoUsers();
+        // addTournament();
+        // ], function(err) {
+        //     if(err) console.log(err);
+        // });
+
+    });
 }
 
-function compare(a,b) {
+function addTwoUsers() {
+    var users = [
+        new User({
+            username: 'seth',
+            firstName: 'Seth',
+            lastName: 'McNaughton',
+            email: 'slmcnaughton@yahoo.com'
+        }), new User({
+            username: 'daniel',
+            firstName: 'Daniel',
+            lastName: 'McNaughton',
+            email: 'sethingtonmac@gmail.com'
+        })
+    ];
+
+    users.forEach(function(user) {
+        User.register(user, "password", function(err, newUser) {
+            if (err) console.log(err);
+            else {
+                addPastTrophies(newUser);
+                console.log("Added " + newUser.firstName);
+            }
+        });
+    });
+}
+
+function compare(a, b) {
     if (a.year > b.year)
         return -1;
     else if (a.year < b.year)
@@ -91,14 +164,15 @@ function compare(a,b) {
     return 0;
 }
 
-var addTrophies = function(){
+var addTrophies = function() {
     Trophy.deleteMany({}, function(err) {
-        if(err) {
+        if (err) {
             console.log(err);
-        } else {
+        }
+        else {
             console.log("removed all trophies, added new ones!");
-            User.find({}, function(err, foundUsers){
-                if(err) console.log(err);
+            User.find({}, function(err, foundUsers) {
+                if (err) console.log(err);
                 else {
                     async.forEachSeries(foundUsers, function(user, callback) {
                         // console.log(user);
@@ -110,86 +184,264 @@ var addTrophies = function(){
 
         }
     });
-    
+
 }
 
-var addPastTrophies = function(user){
+var addPastTrophies = function(user) {
     //find tournaments the user has participated in
-    TournamentStanding.find({"standings.firstName" : user.firstName, "standings.lastName" : user.lastName}).exec(function(err, tournamentYears) {
+    TournamentStanding.find({ "standings.firstName": user.firstName, "standings.lastName": user.lastName }).exec(function(err, tournamentYears) {
         if (err) {
             console.log(err);
-        } else {
+        }
+        else {
             //for each tournament year, add the correct trophy
             async.forEachSeries(tournamentYears, function(tournamentYear, callback) {
-                var year = tournamentYear.year; 
+                var noTournamentEntryFoundScore = -10000;
+                
+                var year = tournamentYear.year;
                 var totalPlayers = tournamentYear.standings.length;
                 var rank = 1;
-                var score;
-                
+                var score = noTournamentEntryFoundScore;   
+
                 //find the user's score for this year
-                tournamentYear.standings.forEach(function(entry){
-                    if(entry.firstName === user.firstName && entry.lastName === user.lastName){
+                tournamentYear.standings.forEach(function(entry) {
+                    if (entry.firstName === user.firstName && entry.lastName === user.lastName) {
                         score = entry.score;
                     }
                 });
                 //calculate the user's rank by counting how many players scored higher
-                tournamentYear.standings.forEach(function(entry){
-                    if(entry.score > score){
+                tournamentYear.standings.forEach(function(entry) {
+                    if (entry.score > score) {
                         rank++;
                     }
                 });
-               
-                var newTrophy = {
+                
+                // Ticket MNM-61 (All Gold Trophies)
+                if (score != noTournamentEntryFoundScore) {
+                    var newTrophy = {
                         year: year,
                         userRank: rank,
                         totalPlayers: totalPlayers,
-                        score: score  
+                        score: score
                     };
-                Trophy.create(newTrophy, function(err, trophy){
-                    if(err){
-                        console.log(err);
-                    } else {
-                        user.trophies.addToSet(trophy._id);
-                        user.save(callback);
-                    }
-                });
-            }, function(err){
-                if(err) {
+                    Trophy.create(newTrophy, function(err, trophy) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        else {
+                            user.trophies.addToSet(trophy._id);
+                            user.save(callback);
+                        }
+                    });
+                }
+            }, function(err) {
+                if (err) {
                     console.log(err);
-                } 
+                }
             }); //end of async.forEachSeries
         }
     }); //end of TournamentStanding.find()
 };
 
 
-var addTournamentStandings = function (){
-    TournamentStanding.deleteMany({}, function(err){
-        if(err){
+var addTournamentStandings = function() {
+    TournamentStanding.deleteMany({}, function(err) {
+        if (err) {
             console.log(err);
-        }else{
-            console.log("removed all tournaments, added new ones!");
+        }
+        else {
+            console.log("removed all tournament standings, added new ones!");
             //add a few tournaments
-            data.forEach(function(seed){
-              TournamentStanding.create(seed, function(err, tournament){
-                  if(err){
-                      console.log(err);
-                  } else {
-                    //   console.log("added a tournament");
-                  }
-              }); 
+            data.forEach(function(seed) {
+                TournamentStanding.create(seed, function(err, tournament) {
+                    if (err) {
+                        console.log(err);
+                    }
+                    else {
+                        //   console.log("added a tournament");
+                    }
+                });
             });
         }
     });
-}
+};
 
 //Historical Tournament Standings Data
 var data = [
     {
-        year: 2017,
+        year: 2018,
         standings: [
             {
-                firstName: "Charlie",
+                firstName: "Gabrielle",
+                lastName: "McNaughton",
+                score: 57.51
+            },
+            {
+                firstName: "David",
+                lastName: "Mathias",
+                score: 57.003
+            },
+            {
+                firstName: "Daniel",
+                lastName: "McNaughton",
+                score: 43.717
+            },
+            {
+                firstName: "Seth",
+                lastName: "McNaughton",
+                score: 36.565
+            },
+            {
+                firstName: "Dave",
+                lastName: "McNaughton",
+                score: 33.696
+            },
+            {
+                firstName: "Nora",
+                lastName: "Mathias",
+                score: 33.415
+            },
+            {
+                firstName: "Rachel",
+                lastName: "McNaughton",
+                score: 33.328
+            },
+            {
+                firstName: "Kara",
+                lastName: "Deckard",
+                score: 33.222
+            },
+            {
+                firstName: "Amy",
+                lastName: "McNaughton",
+                score: 32.778
+            },
+            {
+                firstName: "Rhonda",
+                lastName: "Mathias",
+                score: 32.778
+            },
+            {
+                firstName: "Bethany",
+                lastName: "McNaughton",
+                score: 26.124
+            },
+            {
+                firstName: "James",
+                lastName: "Stapleton",
+                score: 25.902
+            },
+            {
+                firstName: "Ron",
+                lastName: "McNaughton",
+                score: 19.232
+            },
+            {
+                firstName: "Courtney",
+                lastName: "McNaughton",
+                score: 19.154
+            },
+            {
+                firstName: "Jim",
+                lastName: "Mathias",
+                score: 18.863
+            },
+            {
+                firstName: "Micah",
+                lastName: "Mathias",
+                score: 18.373
+            },
+            {
+                firstName: "Cherisse",
+                lastName: "McNaughton",
+                score: 18.075
+            },
+            {
+                firstName: "Emily",
+                lastName: "Stapleton",
+                score: 16.509
+            },
+            {
+                firstName: "Donna",
+                lastName: "McNaughton",
+                score: 15.812
+            },
+            {
+                firstName: "Elizabeth",
+                lastName: "Stapleton",
+                score: 15.657
+            },
+            {
+                firstName: "Gideon",
+                lastName: "Mathias",
+                score: 14.233
+            },
+            {
+                firstName: "Levi",
+                lastName: "Mathias",
+                score: 13.76
+            },
+            {
+                firstName: "Naomi",
+                lastName: "McNaughton",
+                score: 10.218
+            },
+            {
+                firstName: "Reuben",
+                lastName: "Mathias",
+                score: 7.559
+            },
+            {
+                firstName: "Sherri",
+                lastName: "Stapleton",
+                score: 6.868
+            },
+            {
+                firstName: "Lily",
+                lastName: "McNaughton",
+                score: 6.102
+            },
+            {
+                firstName: "Elijah",
+                lastName: "Deckard",
+                score: 1.957
+            },
+            {
+                firstName: "Judd",
+                lastName: "McNaughton",
+                score: -0.095
+            },
+            {
+                firstName: "Ryne",
+                lastName: "Deckard",
+                score: -10.28
+            },
+            {
+                firstName: "Sarah",
+                lastName: "McNaughton",
+                score: -11.87
+            },
+            {
+                firstName: "Charles",
+                lastName: "Stapleton",
+                score: -13.17
+            },
+            {
+                firstName: "Caleb",
+                lastName: "McNaughton",
+                score: -29.07
+            },
+            {
+                firstName: "Keena",
+                lastName: "McNaughton",
+                score: -30.89
+            },
+        ]
+    },
+    {
+        year: 2017,
+        standings: [{
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 54.87438
             },
@@ -317,9 +569,7 @@ var data = [
     },
     {
         year: 2016,
-        standings:
-        [
-            {
+        standings: [{
                 firstName: "Rhonda",
                 lastName: "Mathias",
                 score: 73.02575
@@ -415,7 +665,7 @@ var data = [
                 score: 16.30943
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 13.24811
             },
@@ -443,9 +693,7 @@ var data = [
     },
     {
         year: 2015,
-        standings:
-        [
-            {
+        standings: [{
                 firstName: "Seth",
                 lastName: "McNaughton",
                 score: 44.684
@@ -496,7 +744,7 @@ var data = [
                 score: 26.123
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 24.365
             },
@@ -549,8 +797,7 @@ var data = [
     },
     {
         year: 2014,
-        standings: [
-            {
+        standings: [{
                 firstName: "Ron",
                 lastName: "McNaughton",
                 score: 129.3377
@@ -631,7 +878,7 @@ var data = [
                 score: 27.236
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 23.380
             },
@@ -654,8 +901,7 @@ var data = [
     },
     {
         year: 2013,
-        standings: [
-            {
+        standings: [{
                 firstName: "Donna",
                 lastName: "McNaughton",
                 score: 65.5984
@@ -691,7 +937,7 @@ var data = [
                 score: 13.1974
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 12.3329
             },
@@ -734,14 +980,13 @@ var data = [
     },
     {
         year: 2012,
-        standings: [
-            {
+        standings: [{
                 firstName: "Sarah",
                 lastName: "McNaughton",
                 score: 56.279
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 41.750
             },
@@ -814,8 +1059,7 @@ var data = [
     },
     {
         year: 2011,
-        standings: [
-            {
+        standings: [{
                 firstName: "Daniel",
                 lastName: "McNaughton",
                 score: 97.9635
@@ -836,7 +1080,7 @@ var data = [
                 score: 72.7909
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 68.9460
             },
@@ -909,8 +1153,7 @@ var data = [
     },
     {
         year: 2010,
-        standings: [
-            {
+        standings: [{
                 firstName: "Emily",
                 lastName: "Stapleton",
                 score: 56.528
@@ -931,7 +1174,7 @@ var data = [
                 score: 38.027
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 34.119
             },
@@ -1010,8 +1253,7 @@ var data = [
     },
     {
         year: 2009,
-        standings: [
-            {
+        standings: [{
                 firstName: "Seth",
                 lastName: "McNaughton",
                 score: 47.3
@@ -1022,7 +1264,7 @@ var data = [
                 score: 38.29
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 36.8
             },
@@ -1095,8 +1337,7 @@ var data = [
     },
     {
         year: 2008,
-        standings: [
-            {
+        standings: [{
                 firstName: "Donna",
                 lastName: "McNaughton",
                 score: 51.02
@@ -1152,7 +1393,7 @@ var data = [
                 score: 4.0858
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 3.449
             },
@@ -1180,11 +1421,10 @@ var data = [
     },
     {
         year: 2007,
-        standings: [
-            {
+        standings: [{
                 firstName: "Daniel",
                 lastName: "McNaughton",
-                score:  55.6101
+                score: 55.6101
             },
             {
                 firstName: "Judd",
@@ -1232,7 +1472,7 @@ var data = [
                 score: 15.3647
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 14.4767
             },
@@ -1260,21 +1500,20 @@ var data = [
     },
     {
         year: 2006,
-        standings: [
-            {
+        standings: [{
                 firstName: "Elizabeth",
                 lastName: "Stapleton",
-                score:  96.592
+                score: 96.592
             },
             {
                 firstName: "Emily",
                 lastName: "Stapleton",
-                score:  96.592
+                score: 96.592
             },
             {
                 firstName: "James",
                 lastName: "Stapleton",
-                score:  96.592
+                score: 96.592
             },
             {
                 firstName: "David",
@@ -1297,7 +1536,7 @@ var data = [
                 score: 61.3148
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: 58.8489
             },
@@ -1335,11 +1574,10 @@ var data = [
     },
     {
         year: 2005,
-        standings: [
-            {
+        standings: [{
                 firstName: "Judd",
                 lastName: "McNaughton",
-                score:  44.25
+                score: 44.25
             },
             {
                 firstName: "Daniel",
@@ -1382,7 +1620,7 @@ var data = [
                 score: -12.3194
             },
             {
-                firstName: "Charlie",
+                firstName: "Charles",
                 lastName: "Stapleton",
                 score: -16.6995
             },
@@ -1398,7 +1636,7 @@ var data = [
             }
         ]
     }
-    
+
 ];
 
 module.exports = seedDB;

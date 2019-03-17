@@ -35,7 +35,9 @@ var commentRoutes = require("./routes/comments"),
     userRoundRoutes = require("./routes/userRounds");
     
 
-// mongoose.connect(process.env.DATABASEURL, { useNewUrlParser: true });
+
+
+mongoose.connect(process.env.DATABASEURL, { useNewUrlParser: true });
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");

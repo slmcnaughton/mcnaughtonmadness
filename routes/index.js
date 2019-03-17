@@ -10,6 +10,7 @@ var crypto = require('crypto');
 var TeamImage = require('../models/teamImage');
 var authHelper = require('../helpers/auth');
 var graph = require('@microsoft/microsoft-graph-client');
+var emailHelper = require("../middleware/emailHelper");
 
 
 //Root Route
@@ -179,39 +180,9 @@ router.post('/forgot', function(req, res, next) {
                 });
             });
         },
-        async function(token, user) {
-            const accessToken = await authHelper.getAccessToken();
-
-            const mail = {
-                subject: "McNaughton Madness Password Reset",
-                toRecipients: [{
-                    emailAddress: {
-                        address: user.email
-                    }
-                }],
-                body: {
-                    content: 'Hello ' + user.firstName + ',\n\n' + 'You are receiving this because you have requested the reset of the password for your McNaughton Madness account.\n\n' +
-                        'Please click the following link, or paste this into your browser to complete the process:\n\n' +
-                        'http://' + req.headers.host + '/reset/' + token + '\n\n' +
-                        'If you did not request this, please ignore this email and your password will remain unchanged.\n',
-                    contentType: "text"
-                }
-            };
-
-            const client = graph.Client.init({
-                authProvider: (done) => {
-                    done(null, accessToken);
-                }
-            });
-
-            client.api(`/users/5aa3050e-9eeb-43d3-894d-138d7f541245/sendMail`).post({ message: mail }, (err, res) => {
-                if (err) console.log(err);
-                if (res) console.log(res);
-                
-            });
-            req.flash('info', 'An e-mail has been sent to ' + user.email + ' with further instructions');
+        async function (token, user) {
+            emailHelper.sendPasswordRecovery(req, token, user);
         }
-
     ], function(err) {
         if (err) return next(err);
         res.redirect('/forgot');
@@ -253,51 +224,9 @@ router.post('/reset/:token', function(req, res) {
                 });
             });
         },
-        // function(user, done) {
-        //     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-        //     var mailOptions = {
-        //         to: user.email,
-        //         from: 'no-reply@mcnaughtonmadness.com',
-        //         subject: 'Your password has been changed',
-        //         text: 'Hello ' + user.firstName + ',\n\n' +
-        //             'This is a confirmation that the password for your McNaughton Madness account ' + user.email + ' has just been changed.\n'
-        //     };
-        //     sgMail.send(mailOptions, function(err) {
-        //         req.flash('success', 'Success! Your password has been changed.');
-        //         done(err);
-        //     });
-        // }
         
-        
-        async function(user, done) {
-            const accessToken = await authHelper.getAccessToken();
-
-            const mail = {
-                subject: "Your password has been changed",
-                toRecipients: [{
-                    emailAddress: {
-                        address: user.email
-                    }
-                }],
-                body: {
-                    content: 'Hello ' + user.firstName + ',\n\n' +
-                    'This is a confirmation that the password for your McNaughton Madness account ' + user.email + ' has just been changed.\n',
-                    contentType: "text"
-                }
-            };
-
-            const client = graph.Client.init({
-                authProvider: (done) => {
-                    done(null, accessToken);
-                }
-            });
-
-            client.api(`/users/5aa3050e-9eeb-43d3-894d-138d7f541245/sendMail`).post({ message: mail }, (err, res) => {
-                if (err) console.log(err);
-                
-            });
-            req.flash('success', 'Success! Your password has been changed.');
-
+        async function(user) {
+            emailHelper.confirmPasswordChange(req, user);
         }
         
     ], function(err) {
@@ -326,10 +255,12 @@ var addPastTrophies = function(user) {
         else {
             //for each tournament year, add the correct trophy
             async.forEachSeries(tournamentYears, function(tournamentYear, callback) {
+                var noTournamentEntryFoundScore = -10000;
+                
                 var year = tournamentYear.year;
                 var totalPlayers = tournamentYear.standings.length;
                 var rank = 1;
-                var score;
+                var score = noTournamentEntryFoundScore;   
 
                 //find the user's score for this year
                 tournamentYear.standings.forEach(function(entry) {
@@ -343,22 +274,25 @@ var addPastTrophies = function(user) {
                         rank++;
                     }
                 });
-
-                var newTrophy = {
-                    year: year,
-                    userRank: rank,
-                    totalPlayers: totalPlayers,
-                    score: score
-                };
-                Trophy.create(newTrophy, function(err, trophy) {
-                    if (err) {
-                        console.log(err);
-                    }
-                    else {
-                        user.trophies.addToSet(trophy._id);
-                        user.save(callback);
-                    }
-                });
+                
+                // Ticket MNM-61 (All Gold Trophies)
+                if (score != noTournamentEntryFoundScore) {
+                    var newTrophy = {
+                        year: year,
+                        userRank: rank,
+                        totalPlayers: totalPlayers,
+                        score: score
+                    };
+                    Trophy.create(newTrophy, function(err, trophy) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        else {
+                            user.trophies.addToSet(trophy._id);
+                            user.save(callback);
+                        }
+                    });
+                }
             }, function(err) {
                 if (err) {
                     console.log(err);
