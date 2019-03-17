@@ -5,7 +5,7 @@ var TeamImage = require("./models/teamImage");
 
 function scrapeTeams() {
     async.timesSeries(28, function(day, next) {
-        var extension = "201802"; 
+        var extension = "201902"; 
             if(day < 10)
                 extension += "0" + day;
             else
@@ -48,7 +48,7 @@ function scrapeTeams() {
                         else if (!foundTeamImage){
                             TeamImage.create(result, function(err, createdTeamImage) {
                                 if(err) console.log(err);
-                                // console.log(result.name + " added");
+                                console.log(result.name + " added");
                                 next();
                             });
                         }

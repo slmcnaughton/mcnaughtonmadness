@@ -30,7 +30,7 @@ router.get("/:numRound/edit", function(req, res){
 
 //     res.redirect("back");
 // });
-router.put("/:numRound", middleware.updateResults, function(req, res){
+router.put("/:numRound", middleware.manuallyUpdateResults, function(req, res){
     var currentYear = new Date().getFullYear();
     res.redirect("/tournaments/" + currentYear);
 });

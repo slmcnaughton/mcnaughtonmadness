@@ -39,8 +39,9 @@ emailObj.sendRoundSummary = async function(tournamentGroup) {
             }
         ],
         function(err) {
-            if (err) {
-                console.log(err);
+            if (err) console.log(err);
+            else {
+                console.log("end of round email sent");
             }
         });
 };

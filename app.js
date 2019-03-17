@@ -34,9 +34,6 @@ var commentRoutes = require("./routes/comments"),
     userTournamentRoutes = require("./routes/userTournaments"),
     userRoundRoutes = require("./routes/userRounds");
     
-
-
-
 mongoose.connect(process.env.DATABASEURL, { useNewUrlParser: true });
 
 app.use(bodyParser.urlencoded({extended: true}));
@@ -44,9 +41,6 @@ app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
 app.locals.moment = require('moment-timezone');
-
-
-
 
 
 

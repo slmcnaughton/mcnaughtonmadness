@@ -90,7 +90,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                 // console.log("Round 1 begins at " + createdRound.startTime.format('LLLL'));
                                 for(var i = 0; i < 2; i++) {
                                     var startTime = new moment(createdRound.startTime).add({'d': i, 'h' : 1, 'm': 30});
-                                    var endTime = new moment(startTime).add(12, 'h');
+                                    var endTime = new moment(startTime).add(13, 'h');
                                     
                                     var job = { start: startTime, end: endTime, rule: '0 */1 * * * *' };
                                     var j = schedule.scheduleJob(job, function(){
@@ -239,15 +239,15 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                                 
                                                             var endTime;
                                                             if(i === 0 ) {
-                                                                endTime = new moment(startTime).add(12, 'h');
+                                                                endTime = new moment(startTime).add(13, 'h');
                                                             }
                                                             else if (i < 3 ) {
-                                                                endTime = new moment(startTime).add(5, 'h');
+                                                                endTime = new moment(startTime).add(6, 'h');
                                                             }
                                                             
                                                             //2 final four matchups
                                                             else if (i === 3) {
-                                                                endTime = new moment(startTime).add(5, 'h');
+                                                                endTime = new moment(startTime).add(6, 'h');
                                                                 j++;
                                                             }
                                                             //championship match
@@ -260,7 +260,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                             // console.log("ScrapeStart: " + startTime.format('LLLL'));
                                                             // console.log("ScrapeStop: " + endTime.format('LLLL'));
                                                             
-                                                            var job = { start: startTime, end: endTime, rule: '0 */5 * * * *' };
+                                                            var job = { start: startTime, end: endTime, rule: '0 */1 * * * *' };
                                                             
                                                             var k = schedule.scheduleJob(job, function(){
                                                                 scrape();
@@ -423,63 +423,62 @@ function compareTeams(a,b) {
     return 0;
 }
 
-
 var teamNames = [
-        "Virginia",
-        "UMBC",
-        "Creighton",
-        "Kansas State",
-        "Kentucky",
-        "Davidson",
-        "Arizona",
-        "Buffalo",
-        "Miami (Fla.)",
-        "Loyola-Chi.",
-        "Tennessee",
-        "Wright State",
-        "Nevada",
-        "Texas",
-        "Cincinnati",
-        "Georgia State",
-        
-        "Xavier",
-        "Texas So.",
-        "Missouri",
-        "Florida State",
-        "Ohio State",
-        "S. Dak. St.",
-        "Gonzaga",
-        "NC-Greensboro",
-        "Houston",
-        "San Diego St",
-        "Michigan",
-        "Montana",
-        "Texas A&M",
-        "Providence",
-        "North Carolina",
-        "Lipscomb",
-        
-        "Villanova",
-        "Radford",
-        "Virginia Tech",
-        "Alabama",
-        "West Virginia",
-        "Murray St.",
-        "Wichita State",
-        "Marshall",
-        "Florida",
-        "St. Bona.",
-        "Texas Tech",
-        "SF Austin",
-        "Arkansas",
-        "Butler",
-        "Purdue",
         "CSFullerton",
-        
-        "Kansas",
+        "UCSB",
+        "UMBC",
+        "Vermont",
         "Pennsylvania",
+        "Harvard",
+        "NC Central",
+        "Norfolk St.",
+        "Florida",
+        "Auburn",
+        "Rhode Island",
+        "St. Bona.",
+        "Wisconsin",
+        "Michigan State",
+        "Houston",
+        "Memphis",
+        
+        "Princeton",
+        "Yale",
+        "Tennessee",
+        "Kentucky",
+        "Saint Louis",
+        "Davidson",
+        "Minnesota",
+        "Michigan",
+        "Texas St.",
+        "Georgia St.",
+        "Wichita State",
+        "Cincinnati",
+        "San Diego State",
+        "Utah State",
+        "Texas So.",
+        "Prairie View",
+        
+        "Iowa State",
+        "Kansas",
+        "Georgia Southern",
+        "Texas-Arlington",
         "Seton Hall",
-        "NC State",
+        "Villanova",
+        "Bowling Green",
+        "Buffalo",
+        "E. Washington",
+        "Montana",
+        "Florida State",
+        "Duke",
+        "Western Kentucky",
+        "Old Dominion",
+        "New Orleans",
+        "Abil Christian",
+        
+        "Grand Canyon",
+        "New Mexico St.",
+        "Oregon",
+        "Washington",
         "Clemson",
         "New Mex. St.",
         "Auburn",
@@ -496,6 +495,80 @@ var teamNames = [
         
         
     ];
+
+
+// var teamNames = [
+//         "Virginia",
+//         "UMBC",
+//         "Creighton",
+//         "Kansas State",
+//         "Kentucky",
+//         "Davidson",
+//         "Arizona",
+//         "Buffalo",
+//         "Miami (Fla.)",
+//         "Loyola-Chi.",
+//         "Tennessee",
+//         "Wright State",
+//         "Nevada",
+//         "Texas",
+//         "Cincinnati",
+//         "Georgia State",
+        
+//         "Xavier",
+//         "Texas So.",
+//         "Missouri",
+//         "Florida State",
+//         "Ohio State",
+//         "S. Dak. St.",
+//         "Gonzaga",
+//         "NC-Greensboro",
+//         "Houston",
+//         "San Diego St",
+//         "Michigan",
+//         "Montana",
+//         "Texas A&M",
+//         "Providence",
+//         "North Carolina",
+//         "Lipscomb",
+        
+//         "Villanova",
+//         "Radford",
+//         "Virginia Tech",
+//         "Alabama",
+//         "West Virginia",
+//         "Murray St.",
+//         "Wichita State",
+//         "Marshall",
+//         "Florida",
+//         "St. Bona.",
+//         "Texas Tech",
+//         "SF Austin",
+//         "Arkansas",
+//         "Butler",
+//         "Purdue",
+//         "CSFullerton",
+        
+//         "Kansas",
+//         "Pennsylvania",
+//         "Seton Hall",
+//         "NC State",
+//         "Clemson",
+//         "New Mex. St.",
+//         "Auburn",
+//         "Charleston",
+//         "TCU",
+//         "Syracuse",
+//         "Michigan State",
+//         "Bucknell",
+//         "Rhode Island",
+//         "Oklahoma",
+//         "Duke",
+//         "Iona"
+        
+        
+        
+//     ];
 
 
 
