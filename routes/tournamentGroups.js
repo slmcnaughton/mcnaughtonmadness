@@ -228,6 +228,25 @@ router.get("/:groupName/messageboard", function(req, res){
 });
 
 
+router.get("/:groupName/emailaddresslist", function(req, res){
+    var groupName = req.params.groupName;
+    TournamentGroup.findOne({groupName: groupName})
+        .populate({path: "userTournaments", populate: {path: "user.id"}})
+        .exec(function(err, foundTournamentGroup){
+        if (err || !foundTournamentGroup){
+            req.flash("error", "Tournament Group not found");
+            return res.redirect("/tournamentGroups");
+        } else {
+            foundTournamentGroup.userTournaments.forEach(function(userTournament){
+                console.log(userTournament.user.id.email);
+            });
+            req.flash("error", "Page Not Found");
+            return res.redirect("back");
+        }
+    }
+    )}
+);
+
 
 // //Note: this must be below the /tournaments/new route
 // //SHOW - shows more information about a particular tournament
