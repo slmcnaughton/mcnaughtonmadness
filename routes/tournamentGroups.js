@@ -60,6 +60,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
         }
         else {
             var newTournamentGroup = {
+                year: new Date().getFullYear(),
                 groupName: req.body.groupName,
                 commissioner: {
                     id: req.user._id,
