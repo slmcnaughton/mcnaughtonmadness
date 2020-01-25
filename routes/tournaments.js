@@ -262,9 +262,11 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                             
                                                             var job = { start: startTime, end: endTime, rule: '0 */1 * * * *' };
                                                             
+                                                            //create the job
                                                             var k = schedule.scheduleJob(job, function(){
                                                                 scrape();
                                                             });
+                                                            //save the scrape-job information to the database for persistence; called to reschedule the job  in app.js when the app is restarted
                                                             Scrape.create( job, function(err, createdJob) {
                                                                 if(err) console.log(err);
                                                                 createdTournament.scrapes.push(createdJob);
@@ -425,7 +427,7 @@ function compareTeams(a,b) {
 
 var teamNames = [
         "Duke",
-        "NDS/NCC",
+        "N. Dak. St.",
         "VCU",
         "UCF",
         "Miss. State",
@@ -433,7 +435,7 @@ var teamNames = [
         "Virginia Tech",
         "Saint Louis",
         "Maryland",
-        "BEL/TEM",
+        "Belmont",
         "LSU",
         "Yale",
         "Louisville",
@@ -442,7 +444,7 @@ var teamNames = [
         "Bradley",
         
         "Gonzaga",
-        "FDU/PV",
+        "F. Dickinson",
         "Syracuse",
         "Baylor",
         "Marquette",
@@ -450,7 +452,7 @@ var teamNames = [
         "Florida State",
         "Vermont",
         "Buffalo",
-        "ASU/SJU",
+        "Arizona State",
         "Texas Tech",
         "N. Kentucky",
         "Nevada",
