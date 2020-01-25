@@ -281,7 +281,8 @@ emailObj.sendPasswordRecovery = async function(req, token, user) {
         content: 'Hello ' + user.firstName + ',\n\n' + 'You are receiving this because you have requested the reset of the password for your McNaughton Madness account with the following username: ' + user.username + '\n\n' +
             'Please click the following link, or paste this into your browser to complete the process:\n\n' +
             'http://' + req.headers.host + '/reset/' + token + '\n\n' +
-            'If you did not request this, please ignore this email and your password will remain unchanged.\n',
+            'If you did not request this, please ignore this email and your password will remain unchanged.\n' +
+            'The link above will be active for the next 1 hour.',
         contentType: "text"
     };
     
