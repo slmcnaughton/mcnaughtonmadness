@@ -98,6 +98,18 @@ function seedDB() {
                 callback();
             });
         },
+        
+        // function(callback) {
+        //     User.deleteMany({ "tournamentGroups": {"$exists": true, "$size": 0 } }, function(err) {
+        //         if (err) {
+        //             console.log("oops");
+        //         }
+        //         else {
+        //             console.log("removed all users not in a tournament group");
+        //         }
+        //         callback();
+        //     });
+        // },
 
         // TeamImage.deleteMany({}, function(err){
         //   if (err) {
@@ -122,7 +134,7 @@ function seedDB() {
         if (err) console.log(err);
         // async.series([
         addTwoUsers();
-        // addTournament();
+        // addTournament()
         // ], function(err) {
         //     if(err) console.log(err);
         // });
@@ -181,11 +193,9 @@ var addTrophies = function() {
                     });
                 }
             });
-
         }
     });
-
-}
+};
 
 var addPastTrophies = function(user) {
     //find tournaments the user has participated in

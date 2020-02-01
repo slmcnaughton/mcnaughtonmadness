@@ -2,47 +2,35 @@ var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
 var User = require("../models/user");
 require('dotenv').config();
-var authHelper = require('../helpers/auth');
-var graph = require('@microsoft/microsoft-graph-client');
+// var authHelper = require('../helpers/auth');
+// var graph = require('@microsoft/microsoft-graph-client');
 var async = require("async");
+var sgMail = require('@sendgrid/mail');
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 var emailObj = {};
-
 
 emailObj.sendRoundSummary = async function(tournamentGroup) {
     tournamentGroup.userTournaments.sort(compareUserTournaments);
     async.waterfall([
             async.apply(createMailingList, tournamentGroup),
-            formatMailingList,
-            async function(formattedMailingList) {
-                const accessToken = await authHelper.getAccessToken();
-
+            async function(emailList) {
                 const mail = {
                     subject: "End of Round " + (tournamentGroup.currentRound - 1) + " Summary",
-                    toRecipients: formattedMailingList,
+                    to: emailList,
                     body: {
                         content: buildGroupScoreTableHtml(tournamentGroup),
                         contentType: "html"
                     }
                 };
-
-                const client = graph.Client.init({
-                    authProvider: (done) => {
-                        done(null, accessToken);
-                    }
-                });
-
-                client.api(`/users/5aa3050e-9eeb-43d3-894d-138d7f541245/sendMail`).post({ message: mail }, (err, res) => {
+                sendEmail(mail.to, mail.subject, mail.body, function(err) {
                     if (err) console.log(err);
-                    if (res) console.log(res);
                 });
             }
         ],
         function(err) {
             if (err) console.log(err);
-            else {
-                console.log("end of round email sent");
-            }
         });
 };
 
@@ -131,146 +119,6 @@ function buildGroupScoreTableHtml(tournamentGroup){
     
    
     return intro + tableHead + tableBody + htmlEnd;
-    
-    //===========================================================================================
-    //BASE FORMATTED TABLE FOR HTML
-    //Formatted here https://templates.mailchimp.com/resources/inline-css/
-    //===========================================================================================
-    // <html>
-    //     <head>
-    //         <style>
-    //             table {  
-    //                 color: #333; /* Lighten up font color */
-    //                 background: #FAFAFA; /* Lighter grey background */
-    //                 font-family: Helvetica, Arial, sans-serif; /* Nicer font */
-    //                 width: 400px; 
-    //                 border-collapse:  collapse; 
-    //                 border-spacing: 0; 
-    //             }
-                
-    //             td, th { 
-    //                 /*border: 1px solid #CCC; */
-    //                 height: 30px; 
-    //             } /* Make cells a bit taller */
-                
-    //             th {  
-    //                 background: #F3F3F3; /* Light grey background */
-    //                 font-weight: bold; /* Make sure they're bold */
-    //                 text-align: center; /* Center our text 
-                
-    //             */
-    //             }
-    //         </style>
-    //     </head>
-    //     <body>
-    //         <div class="table-responsive">
-    //             <table class="table table-striped table-bordered table-hover table-condensed" id="tournamentStandings" style="color: #333;background: #FAFAFA;font-family: Helvetica, Arial, sans-serif;width: 400px;border-collapse: collapse;border-spacing: 0;">
-    //                 <thead>
-    //                     <tr>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Rank</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Total</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Name</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Round 1</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Round 2</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Round 3</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Round 4</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Round 5</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Round 6</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Final Four Bonus</th>
-    //                         <th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center;">Champion Bonus</th>
-    //                     </tr>
-    //                 </thead>
-    //                 <tbody>
-    //                     <tr>
-    //                         <td style="height: 30px;">1</td>
-    //                         <td style="height: 30px;">25</td>
-    //                         <td style="height: 30px;">Seth</td>
-    //                         <td style="height: 30px;">12.2</td>
-    //                         <td style="height: 30px;">12.8</td>
-    //                         <td style="height: 30px;">0</td>
-    //                         <td style="height: 30px;">0</td>
-    //                         <td style="height: 30px;">0</td>
-    //                         <td style="height: 30px;">0</td>
-    //                         <td style="height: 30px;">0</td>
-    //                         <td style="height: 30px;">0</td>
-    //                     </tr>
-    //                 </tbody>
-    //             </table>
-    //         </div></body>
-        
-    // </html>
-    
-    
-    //===========================================================================================
-    //BASE TABLE FOR HTML
-    //Formatted here https://templates.mailchimp.com/resources/inline-css/
-    //===========================================================================================
-    // <html>
-    //     <head>
-    //         <style>
-    //             table {  
-    //                 color: #333; /* Lighten up font color */
-    //                 background: #FAFAFA; /* Lighter grey background */
-    //                 font-family: Helvetica, Arial, sans-serif; /* Nicer font */
-    //                 width: 400px; 
-    //                 border-collapse:  collapse; 
-    //                 border-spacing: 0; 
-    //             }
-                
-    //             td, th { 
-    //                 /*border: 1px solid #CCC; */
-    //                 height: 30px; 
-    //             } /* Make cells a bit taller */
-                
-    //             th {  
-    //                 background: #F3F3F3; /* Light grey background */
-    //                 font-weight: bold; /* Make sure they're bold */
-    //                 text-align: center; /* Center our text 
-                
-    //             */
-    //             }
-    //         </style>
-    //     </head>
-    //     <body>
-    //         <div class="table-responsive">
-    //             <table class="table table-striped table-bordered table-hover table-condensed" id="tournamentStandings">
-    //                 <thead>
-    //                     <tr>
-    //                         <th>Rank</th>
-    //                         <th>Total</th>
-    //                         <th>Name</th>
-    //                         <th>Round 1</th>
-    //                         <th>Round 2</th>
-    //                         <th>Round 3</th>
-    //                         <th>Round 4</th>
-    //                         <th>Round 5</th>
-    //                         <th>Round 6</th>
-    //                         <th>Final Four Bonus</th>
-    //                         <th>Champion Bonus</th>
-    //                     </tr>
-    //                 </thead>
-    //                 <tbody>
-    //                     <tr>
-    //                         <td>1</td>
-    //                         <td>25</td>
-    //                         <td>Seth</td>
-    //                         <td>12.2</td>
-    //                         <td>12.8</td>
-    //                         <td>0</td>
-    //                         <td>0</td>
-    //                         <td>0</td>
-    //                         <td>0</td>
-    //                         <td>0</td>
-    //                         <td>0</td>
-    //                     </tr>
-    //                 </tbody>
-    //             </table>
-    //         </body>
-    //     </div>
-    // </html>
-    
-                    
-                    
 
 }
 
@@ -285,17 +133,10 @@ emailObj.sendPasswordRecovery = async function(req, token, user) {
             'The link above will be active for the next 1 hour.',
         contentType: "text"
     };
-    
-    async.waterfall([
-        async.apply(formatMailingList, new Array(user.email)),
-        function(list, callback) {
-            callback(null, list, subject, mailBody);
-        },
-        sendEmail
-    ], function(err) {
+
+    sendEmail(user.email, subject, mailBody, function(err) {
         if (err) console.log(err);
     });
-    
     
 
     req.flash('info', 'An e-mail has been sent to ' + user.email + ' with further instructions');
@@ -308,42 +149,34 @@ emailObj.confirmPasswordChange = async function(req, user) {
             'This is a confirmation that the password for your McNaughton Madness account has just been changed.\n',
         contentType: "text"
     };
-
-    async.waterfall([
-        async.apply(formatMailingList, new Array(user.email)),
-        function(list, callback) {
-            callback(null, list, subject, mailBody);
-        },
-        sendEmail
-    ], function(err) {
+    
+    sendEmail(user.email, subject, mailBody, function(err) {
         if (err) console.log(err);
     });
 
     req.flash('success', 'Success! Your password has been changed.');
 };
 
-
-
-
-async function sendEmail(formattedMailingList, subject, mailBody) {
-    const accessToken = await authHelper.getAccessToken();
-
+async function sendEmail(mailingList, subject, mailBody) {
     const mail = {
-        toRecipients: formattedMailingList,
+        to: mailingList,
+        from: 'seth@mcnaughtonmadness.com',
+        fromName: 'McNaughton Madness',
         subject: subject,
-        body: mailBody
     };
-
-    const client = graph.Client.init({
-        authProvider: (done) => {
-            done(null, accessToken);
-        }
-    });
-
-    client.api(`/users/5aa3050e-9eeb-43d3-894d-138d7f541245/sendMail`).post({ message: mail }, (err, res) => {
-        if (err) console.log(err);
-        if (res) console.log(res);
-
+    
+    if(mailBody.contentType == "text")
+    {
+        mail.text = mailBody.content;
+    }
+    else if(mailBody.contentType == "html")
+    {
+        mail.html = mailBody.content;
+    }
+    
+    sgMail.send(mail, function(err) {
+        if(err) console.log(err);
+        else console.log("Email successfully sent to " + mailingList);
     });
 }
 
@@ -359,10 +192,9 @@ function createMailingList(tournamentGroup, done) {
             done(null, emailAddressList);
         }
     });
-
 }
 
-function formatMailingList(emailAddressList, done) {
+function formatMailingListForGraph(emailAddressList, done) {
     var formattedMailingList = [];
     for (var i = 0; i < emailAddressList.length; i++) {
         var address = {
@@ -383,7 +215,5 @@ function compareUserTournaments(a,b) {
     else 
         return 0;
 }
-
-
 
 module.exports = emailObj;

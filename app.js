@@ -35,10 +35,9 @@ var commentRoutes = require("./routes/comments"),
     userRoundRoutes = require("./routes/userRounds");
     
 // mongoose.connect(process.env.DATABASEURL, { useNewUrlParser: true });
-
 // mongoose.connect("mongodb://localhost/mcnaughtonmadness", { useNewUrlParser: true });
-
 mongoose.connect("mongodb://seth:Psalm1195@ds113169.mlab.com:13169/mcnaughton_madness", { useNewUrlParser: true });
+// mongoose.connect("mongodb://seth:Psalm1195@ds139334.mlab.com:39334/dev_mcnaughtonmadness", { useNewUrlParser: true });
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");

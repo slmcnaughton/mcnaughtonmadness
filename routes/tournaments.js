@@ -35,7 +35,7 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2019;
+    var year = 2020;
     var regions = ["East", "West", "South", "Midwest"];
     // var year = Math.floor((Math.random()*100+2000));
     
