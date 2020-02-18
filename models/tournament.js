@@ -23,6 +23,12 @@ var tournamentSchema = new mongoose.Schema({
             ref: "Scrape"
         }
     ],
+    emailPickReminderJobs: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Scrape"
+        }
+    ]
 
 });
 

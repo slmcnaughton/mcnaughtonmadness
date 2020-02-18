@@ -11,6 +11,7 @@ var TeamImage = require("../models/teamImage");
 var Scrape = require("../models/scrape");
 var scrape         = require("../scrape");
 var schedule        = require('node-schedule');
+var emailHelper = require('../middleware/emailHelper');
 
 //Page:  /tournaments
 
@@ -40,7 +41,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
     // var year = Math.floor((Math.random()*100+2000));
     
     //march month is actually 2
-    var startDay = moment.tz([2019, 02, 21], "America/New_York");
+    var startDay = moment.tz([2020, 02, 19], "America/New_York");
     
     //[year, month, day, hour, minute, second, millisecond]
     // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
@@ -55,7 +56,6 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
    
     var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
     var numRounds = Math.log(teamNames.length)/Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
-    // var numRounds = 20;
     
    Tournament.create(
         {
@@ -64,7 +64,8 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
             rounds: [],
             regions: regions,
             currentRound: 1,
-            scrapes: []
+            scrapes: [],
+            emailPickReminderJobs: []
         }, function (err, createdTournament) {
             if(err) console.log(err);
             else {
@@ -81,17 +82,26 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                             numRound: 1,
                             matches: [],
                             startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
-                            // startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 4, 31], "America/New_York"),
 
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
+                                //Schedule email reminders for the round
+                                var emailSendTime = moment(createdRound.startTime).add({hours: -3});
+                                var k = schedule.scheduleJob(emailSendTime, 
+                                    emailHelper.sendPickReminderEmail);
+                                Scrape.create( {date: emailSendTime}, function(err, createdJob) {
+                                    if (err) console.log(err);
+                                    else {
+                                        createdTournament.emailPickReminderJobs.push(createdJob);
+                                    }
+                                });
+                                
                                 //Add two days of round 1 scrape listener
                                 // console.log("Round 1 begins at " + createdRound.startTime.format('LLLL'));
                                 for(var i = 0; i < 2; i++) {
                                     var startTime = new moment(createdRound.startTime).add({'d': i, 'h' : 1, 'm': 30});
                                     var endTime = new moment(startTime).add(13, 'h');
-                                    
                                     var job = { start: startTime, end: endTime, rule: '0 */1 * * * *' };
                                     var j = schedule.scheduleJob(job, function(){
                                         scrape();
@@ -100,10 +110,6 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                         if(err) console.log(err);
                                         createdTournament.scrapes.push(createdJob);
                                     });
-                                    
-                                    // console.log("Round 1." + i);
-                                    // console.log("Scrape Start: " + startTime.format('LLLL'));
-                                    // console.log("Scrape End: " + endTime.format('LLLL'));
                                 }
                                
                                 var teams = [];
@@ -225,6 +231,16 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                         }, function(err, createdRound){
                                             if(err) console.log(err);
                                             else {
+                                                //Schedule email reminders for the round
+                                                var emailSendTime = moment(createdRound.startTime).add({hours: -3});
+                                                var k = schedule.scheduleJob(emailSendTime, 
+                                                    emailHelper.sendPickReminderEmail);
+                                                Scrape.create( {date: emailSendTime}, function(err, createdJob) {
+                                                    if (err) console.log(err);
+                                                    else {
+                                                        createdTournament.emailPickReminderJobs.push(createdJob);
+                                                    }
+                                                });
                                                 
                                                 //Add round scrape listeners
                                                 asyncNpm.series([
@@ -266,7 +282,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                             var k = schedule.scheduleJob(job, function(){
                                                                 scrape();
                                                             });
-                                                            //save the scrape-job information to the database for persistence; called to reschedule the job  in app.js when the app is restarted
+                                                            //save the scrape-job information to the database for persistence; called to reschedule the job in app.js when the app is restarted
                                                             Scrape.create( job, function(err, createdJob) {
                                                                 if(err) console.log(err);
                                                                 createdTournament.scrapes.push(createdJob);

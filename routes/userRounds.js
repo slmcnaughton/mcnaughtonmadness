@@ -59,8 +59,8 @@ router.get("/:numRound/edit", middleware.checkUserTournamentOwnership, function(
 
 
 //UPDATE - UserRound of Tournament
-// router.put("/:numRound", middleware.checkUserTournamentOwnership, middleware.checkTipoffTime, middleware.userRoundCreation, 
-router.put("/:numRound", middleware.userRoundCreation, 
+// router.put("/:numRound", middleware.userRoundCreation, 
+router.put("/:numRound", middleware.checkUserTournamentOwnership, middleware.checkTipoffTime, middleware.userRoundCreation, 
                                 middleware.updateUserMatchAggregates, function(req, res){
     var round = Number(req.params.numRound);
     if(round === 1) {

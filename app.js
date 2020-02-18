@@ -8,12 +8,14 @@ var express             = require("express"),
     flash               = require("connect-flash"),
     Comment             = require("./models/comment"),
     seedDB              = require("./seeds"),
+    emailHelper         = require("./middleware/emailHelper"),
     scrape              = require("./scrape"),
     scrapeTeams         = require("./scrapeTeams"),
     Trophy              = require("./models/trophy"),
     TeamImage           = require("./models/teamImage"),
     TournamentStanding  = require("./models/tournamentStanding"),
-    Tournament         = require("./models/tournament"),
+    Tournament          = require("./models/tournament"),
+    TournamentGroup     = require("./models/tournamentGroup"),
     Match          = require("./models/match"),
     User                = require("./models/user"),
     async = require("async"),
@@ -34,10 +36,7 @@ var commentRoutes = require("./routes/comments"),
     userTournamentRoutes = require("./routes/userTournaments"),
     userRoundRoutes = require("./routes/userRounds");
     
-// mongoose.connect(process.env.DATABASEURL, { useNewUrlParser: true });
-// mongoose.connect("mongodb://localhost/mcnaughtonmadness", { useNewUrlParser: true });
-mongoose.connect("mongodb://seth:Psalm1195@ds113169.mlab.com:13169/mcnaughton_madness", { useNewUrlParser: true });
-// mongoose.connect("mongodb://seth:Psalm1195@ds139334.mlab.com:39334/dev_mcnaughtonmadness", { useNewUrlParser: true });
+mongoose.connect(process.env.DATABASEURL, { useNewUrlParser: true });
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
@@ -88,24 +87,37 @@ app.use("/tournamentGroups/:groupName/userTournaments/:username", userRoundRoute
 app.listen(process.env.PORT, process.env.IP, function(){
    console.log("McNaughton Madness Server has started"); 
    
-    Tournament.find({year: new Date().getFullYear()}).populate("scrapes").exec(function(err, foundTournaments) {
+    Tournament.findOne({year: new Date().getFullYear()})
+        .populate("scrapes")
+        .populate("emailPickReminderJobs")
+        .exec(function(err, foundTournament) {
         if(err) console.log(err);
         else {
-            
-            for (var i = 0; i < foundTournaments.length; i++) {
-                for(var j = 0; j < foundTournaments[i].scrapes.length; j++) {
-                    var job = {
-                        start: foundTournaments[i].scrapes[j].start, 
-                        end: foundTournaments[i].scrapes[j].end, 
-                        rule: foundTournaments[i].scrapes[j].rule
-                    };
-                    schedule.scheduleJob(job, function() {
-                        scrape();
-                    });
+            if(foundTournament){
+                if(foundTournament.scrapes) {
+                    for(var j = 0; j < foundTournament.scrapes.length; j++) {
+                        var job = {
+                            start: foundTournament.scrapes[j].start, 
+                            end: foundTournament.scrapes[j].end, 
+                            rule: foundTournament.scrapes[j].rule
+                        };
+                        schedule.scheduleJob(job, function() {
+                            scrape();
+                        });
+                    }
                 }
+                if(foundTournament.emailPickReminderJobs) {
+                    for(var i = 0; i < foundTournament.emailPickReminderJobs.length; i++) {
+                        var date = foundTournament.emailPickReminderJobs[i].date;
+                        schedule.scheduleJob(date, function() {
+                            emailHelper.sendPickReminderEmail();
+                        });
+                    }
+                }
+            } else {
+                console.log("No tournament has been created for this year.");
             }
         }
     });
-  
 });
 

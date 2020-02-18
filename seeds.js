@@ -13,6 +13,7 @@ var Round = require("./models/round");
 var Match = require("./models/match");
 var Team = require("./models/team");
 var TeamImage = require("./models/teamImage");
+var Scrape = require("./models/scrape");
 var async = require("async");
 
 function seedDB() {
@@ -84,6 +85,17 @@ function seedDB() {
             Tournament.deleteMany({}, function(err) {
                 if (err) console.log(err);
                 else console.log("removed all matches");
+                callback();
+            });
+        },
+        function(callback) {
+            Scrape.deleteMany({}, function(err) {
+                if (err) {
+                    console.log("oops");
+                }
+                else {
+                    console.log("removed all scrapes");
+                }
                 callback();
             });
         },

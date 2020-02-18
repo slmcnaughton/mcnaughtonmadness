@@ -6,9 +6,7 @@ var Round = require("../models/round");
 var Team = require("../models/team");
 var middleware = require("../middleware");
 
-
 //EDIT - render edit round form
-// middleware.checkCommentOwnership, 
 router.get("/:numRound/edit", function(req, res){
      Tournament.findOne({year: req.params.year})
         .populate({path: "rounds", populate: { path: "matches",populate:{ path: "topTeam" } }})

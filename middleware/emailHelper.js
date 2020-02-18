@@ -1,3 +1,4 @@
+var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
 var User = require("../models/user");
@@ -14,13 +15,49 @@ var emailObj = {};
 emailObj.sendRoundSummary = async function(tournamentGroup) {
     tournamentGroup.userTournaments.sort(compareUserTournaments);
     async.waterfall([
-            async.apply(createMailingList, tournamentGroup),
-            async function(emailList) {
+        async.apply(createMailingList, tournamentGroup),
+        async function(emailList) {
+            const mail = {
+                subject: "End of Round " + (tournamentGroup.currentRound - 1) + " Summary",
+                to: emailList,
+                body: {
+                    content: buildGroupScoreTableHtml(tournamentGroup),
+                    contentType: "html"
+                }
+            };
+            sendEmail(mail.to, mail.subject, mail.body, function(err) {
+                if (err) console.log(err);
+            });
+        }
+    ],
+    function(err) {
+        if (err) console.log(err);
+    });
+};
+
+emailObj.sendPickReminderEmail = function() {
+    TournamentGroup.find({year: new Date().getFullYear()})
+        .populate("CurrentRound")
+        .exec(function (err, foundTournamentGroups){
+        if(err) {
+            console.log(err);
+        }
+        else {
+            foundTournamentGroups.forEach(sendEmailReminderToEachMemberInGroup);
+        }
+    });
+};
+
+function sendEmailReminderToEachMemberInGroup(tournamentGroup){
+    async.waterfall([
+        async.apply(createMailingListForThoseWhoStillNeedToMakePicksThisRound, tournamentGroup),
+        async function(emailList) {
+            if(emailList.length > 0) {
                 const mail = {
-                    subject: "End of Round " + (tournamentGroup.currentRound - 1) + " Summary",
+                    subject: "Make Your Round " + (tournamentGroup.currentRound) + " Picks Now! Tipoff In 3 Hours.",
                     to: emailList,
-                    body: {
-                        content: buildGroupScoreTableHtml(tournamentGroup),
+                    body: { 
+                        content: buildPickReminderContent(tournamentGroup),
                         contentType: "html"
                     }
                 };
@@ -28,11 +65,15 @@ emailObj.sendRoundSummary = async function(tournamentGroup) {
                     if (err) console.log(err);
                 });
             }
-        ],
-        function(err) {
-            if (err) console.log(err);
-        });
-};
+            else {
+                console.log(`All users from ${tournamentGroup.groupName} have submitted picks.`);
+            }
+        }
+    ],
+    function(err){
+        if (err) console.log(err);
+    });
+}
 
 function buildGroupScoreTableHtml(tournamentGroup){
     var intro = "<div><p>Round complete! Below is the end of round summary.</p> </div>";
@@ -123,6 +164,18 @@ function buildGroupScoreTableHtml(tournamentGroup){
 }
 
 
+function buildPickReminderContent(tournamentGroup){
+    var intro = '<p>Hello,</p>' + '<p>You are receiving this because there are just three hours until March Madness Round ' + (tournamentGroup.currentRound) + ' tips off.</p>';
+    
+    var groupLink = "http://www.mcnaughtonmadness.com/tournamentGroups/" + tournamentGroup.groupName;
+    var groupLinkHtml = "<a href=" + groupLink + ">McNaughton Madness: " + tournamentGroup.groupName + "</a>";
+    var linkParagraph = '<p>Go to ' + groupLinkHtml + ' and login to make your picks now!</p>';
+    
+    var closing = '<p>Good luck!</p>';
+                        
+    return intro + linkParagraph + closing;
+}
+
 emailObj.sendPasswordRecovery = async function(req, token, user) {
     var subject = "McNaughton Madness Password Reset";
     var mailBody = {
@@ -137,7 +190,6 @@ emailObj.sendPasswordRecovery = async function(req, token, user) {
     sendEmail(user.email, subject, mailBody, function(err) {
         if (err) console.log(err);
     });
-    
 
     req.flash('info', 'An e-mail has been sent to ' + user.email + ' with further instructions');
 };
@@ -176,7 +228,6 @@ async function sendEmail(mailingList, subject, mailBody) {
     
     sgMail.send(mail, function(err) {
         if(err) console.log(err);
-        else console.log("Email successfully sent to " + mailingList);
     });
 }
 
@@ -193,6 +244,31 @@ function createMailingList(tournamentGroup, done) {
         }
     });
 }
+
+function createMailingListForThoseWhoStillNeedToMakePicksThisRound(tournamentGroup, done) {
+    UserTournament.find({ "tournamentGroup.id": tournamentGroup._id, 
+    })
+        .populate({ path: "user.id", populate: "email" })
+        .populate({ path: "userRounds", populate: "round"})
+        .exec(function(err, foundUserTournaments) {
+        if (err) console.log(err);
+        else {
+            // Keep tournaments which do not have picks for this round - they need a reminder!
+            foundUserTournaments = foundUserTournaments.filter(tournament => 
+                (tournament.userRounds.filter(
+                    userRound => userRound.round.numRound === tournamentGroup.currentRound)).length === 0);
+                    
+            var foundUserEmails = foundUserTournaments.map(tournament => tournament.user.id.email);
+            var emailAddressSet = new Set();
+            for (var i = 0; i < foundUserEmails.length; i++) {
+                    emailAddressSet.add(foundUserEmails[i]);
+            }
+            var emailAddressList = Array.from(emailAddressSet);
+            done(null, emailAddressList);
+        }
+    });
+}
+
 
 function formatMailingListForGraph(emailAddressList, done) {
     var formattedMailingList = [];

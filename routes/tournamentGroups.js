@@ -19,7 +19,22 @@ router.post("/:groupName/testRoundSummary", function(req, res) {
             res.redirect("/tournamentGroups");
         } else {
             emailHelper.sendRoundSummary(foundTournamentGroup);
-            console.log("email sent");
+            res.redirect('back');
+        }
+    });
+});
+
+router.post("/:groupName/testPickReminder", function(req, res) {
+   var groupName = req.params.groupName;
+    TournamentGroup.findOne({groupName: groupName})
+        .populate({path: "userTournaments", populate: "user"})
+        .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
+        .exec(function(err, foundTournamentGroup){
+        if(err){
+            console.log(err);
+            res.redirect("/tournamentGroups");
+        } else {
+            emailHelper.sendPickReminderEmail();
             res.redirect('back');
         }
     });
@@ -53,7 +68,8 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
-    Tournament.findOne({year: new Date().getFullYear()}).exec(function (err, foundTournament){
+    Tournament.findOne({year: new Date().getFullYear()})
+        .exec(function (err, foundTournament){
         if(err) {
             console.log(err);
             res.redirect("back");
@@ -76,7 +92,7 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                 userMatchAggregates: [],
                 bonusAggregates: [],
                 currentRound: 1,
-                comments: []
+                comments: [],
             };
             TournamentGroup.create(newTournamentGroup, function(err, newlyCreated) {
                 if(err) {
