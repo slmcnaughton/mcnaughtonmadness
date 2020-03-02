@@ -24,15 +24,15 @@
             <% user.trophies.forEach(function(trophy) { %>
                 <div class="col-md-3 col-sm-6 thumbnail">
                     <% if (trophy.userRank === 1) {%>
-                        <img class="trophyPic" src="http://i68.tinypic.com/2v0hf7d.png" alt="First Place Trophy">
+                        <img class="trophyPic" src="/imgs/trophies/first-place-trophy.png" alt="First Place Trophy">
                     <% } else if (trophy.userRank === 2) { %>
-                        <img class="trophyPic" src="http://i68.tinypic.com/dzw1z9.jpg" alt="Second Place Trophy">
+                        <img class="trophyPic" src="/imgs/trophies/second-place-trophy.png" alt="Second Place Trophy">
                     <% } else if (trophy.userRank === 3) { %>
-                        <img class="trophyPic" src="http://i63.tinypic.com/w9ya9j.jpg" alt="Third Place Trophy">
+                        <img class="trophyPic" src="/imgs/trophies/third-place-trophy.png" alt="Third Place Trophy">
                     <% } else if (trophy.userRank === trophy.totalPlayers) { %>
-                        <img width="50px" class="trophyPic" src="http://i64.tinypic.com/34g7tdh.jpg" alt="Last Place Trophy">
+                        <img width="50px" class="trophyPic" src="/imgs/trophies/toilet-trophy.png" alt="Last Place Trophy">
                     <% } else { %>
-                        <img class="trophyPic" src="http://i64.tinypic.com/2yk0zlt.jpg" alt="Participation Ribbon">
+                        <img class="trophyPic" src="/imgs/trophies/participation-ribbon.png" alt="Participation Ribbon">
                     <% } %>
                 
                     <div class="caption text-center">

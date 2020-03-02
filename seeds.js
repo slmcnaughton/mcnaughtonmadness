@@ -17,6 +17,8 @@ var Scrape = require("./models/scrape");
 var async = require("async");
 
 function seedDB() {
+    // addTournamentStandings();
+    // addTrophies();
     async.parallel([
         function(callback) {
             TournamentGroup.deleteMany({}, function(err) {
@@ -138,9 +140,6 @@ function seedDB() {
         //   }
         // });
 
-        // addTournamentStandings();
-
-        // addTrophies();
 
     ], function(err) {
         if (err) console.log(err);
