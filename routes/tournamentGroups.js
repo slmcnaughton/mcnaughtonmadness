@@ -40,6 +40,32 @@ router.post("/:groupName/testPickReminder", function(req, res) {
     });
 });
 
+router.get("/:groupName/json-score-report", function(req, res) {
+   var groupName = req.params.groupName;
+    TournamentGroup.findOne({groupName: groupName})
+        .populate({path: "userTournaments", populate: "user"})
+        .exec(function(err, foundTournamentGroup){
+        if(err){
+            console.log(err);
+            res.redirect("/tournamentGroups");
+        } else {
+            console.log(`year: ${foundTournamentGroup.year},`);
+            console.log(`\tstandings: [`);
+            
+            foundTournamentGroup.userTournaments.forEach(function(userTournament) {
+                console.log('\t    {');
+                console.log(`\t\tfirstName: "${userTournament.user.firstName}",`);
+                console.log(`\t\tlastName: "${userTournament.user.lastName}",`);
+                console.log(`\t\tscore: ${Math.round(userTournament.score * 1000) / 1000}`);
+                console.log('\t    },');
+            });
+            
+            console.log(`\t]`);
+            res.redirect("/tournamentGroups/" + foundTournamentGroup.groupName);
+        }
+    });
+});
+
 
 //INDEX - show all current Tournament Groups 
 router.get("/", function(req, res) {

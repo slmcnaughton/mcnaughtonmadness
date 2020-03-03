@@ -152,12 +152,12 @@ router.get("/users/:username", function(req, res) {
     });
 });
 
-router.get('/forgot', function(req, res) {
-    res.render('forgot', { user: req.user, page: "login" });
+router.get('/forgotPassword', function(req, res) {
+    res.render('forgotPassword', { user: req.user, page: "login" });
 });
 
 // http://sahatyalkabov.com/how-to-implement-password-reset-in-nodejs/
-router.post('/forgot', function(req, res, next) {
+router.post('/forgotPassword', function(req, res, next) {
     async.waterfall([
         function(done) {
             crypto.randomBytes(20, function(err, buf) {
@@ -169,7 +169,7 @@ router.post('/forgot', function(req, res, next) {
             User.findOne({ email: req.body.email, firstName: req.body.firstName, lastName: req.body.lastName }, function(err, user) {
                 if (err || !user) {
                     req.flash('error', 'No account with that name/email address combination exists.');
-                    return res.redirect('/forgot');
+                    return res.redirect('/forgotPassword');
                 }
 
                 user.resetPasswordToken = token;
@@ -185,17 +185,34 @@ router.post('/forgot', function(req, res, next) {
         }
     ], function(err) {
         if (err) return next(err);
-        res.redirect('/forgot');
+        res.redirect('/forgotPassword');
     });
 });
 
+router.get('/forgotUsername', function(req, res) {
+    res.render('forgotUsername', { user: req.user, page: "login" });
+});
+
+router.post('/forgotUsername', function(req, res, next) {
+    User.findOne({ email: req.body.email, firstName: req.body.firstName, lastName: req.body.lastName }, function(err, user) {
+        if (err || !user) {
+            req.flash('error', 'No account with that name/email address combination exists.');
+            return res.redirect('/forgotUsername');
+        }
+        else {
+            emailHelper.sendUsernameRecovery(req, user, err);
+            if (err) return next(err);
+            res.redirect('/login');
+        }
+    });
+});
 
 router.get('/reset/:token', function(req, res) {
 
     User.findOne({ resetPasswordToken: req.params.token, resetPasswordExpires: { $gt: Date.now() } }, function(err, user) {
         if (err || !user) {
             req.flash('error', 'Password reset token is invalid or has expired.');
-            return res.redirect('/forgot');
+            return res.redirect('/forgotPassword');
         }
         res.render('reset', { user: req.user, token: req.params.token, page: "login" });
     });

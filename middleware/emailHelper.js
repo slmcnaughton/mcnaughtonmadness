@@ -176,6 +176,23 @@ function buildPickReminderContent(tournamentGroup){
     return intro + linkParagraph + closing;
 }
 
+emailObj.sendUsernameRecovery = async function(req, user) {
+    var subject = "McNaughton Madness Forgot Username";
+    var mailBody = {
+        content: 'Hello ' + user.firstName + ',\n\n' 
+            + 'You are receiving this because you have requested the username for your McNaughton Madness account.\n\n'
+            +'Username: ' + user.username + '\n\n'
+            +'Please reach out to me if you feel like you have received this email in error or if you still have trouble logging in.',
+        contentType: "text"
+    };
+
+    sendEmail(user.email, subject, mailBody, function(err) {
+        if (err) console.log(err);
+    });
+
+    req.flash('info', 'An e-mail has been sent to ' + user.email + ' with your username.');
+};
+
 emailObj.sendPasswordRecovery = async function(req, token, user) {
     var subject = "McNaughton Madness Password Reset";
     var mailBody = {
