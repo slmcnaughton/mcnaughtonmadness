@@ -285,11 +285,6 @@ th {
 */
 }
 
-td {  
-    /*text-align: center;*/
-}
-
-
 
 /*===========================================*/
 /*Tournament Group Standings Table Styles*/
@@ -310,6 +305,7 @@ td {
     color: #101010;
     vertical-align: middle;
 }
+
 
 
 /*===========================================*/

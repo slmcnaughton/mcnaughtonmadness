@@ -200,7 +200,8 @@ var addTrophies = function() {
                 if (err) console.log(err);
                 else {
                     async.forEachSeries(foundUsers, function(user, callback) {
-                        // console.log(user);
+                        //console.logging here allows for the process to be slow enough to run for each user?
+                        console.log(user.firstName);
                         addPastTrophies(user, callback);
                     });
                 }
