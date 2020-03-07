@@ -297,7 +297,7 @@ th {
 /*Smoky Black: #0C0C0C*/
 #tournamentStandings{
     text-align: center;
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 #tournamentStandings th{
