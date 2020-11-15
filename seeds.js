@@ -19,6 +19,7 @@ var async = require("async");
 function seedDB() {
     // addTournamentStandings();
     // addTrophies();
+    // removeBots();
     
     // async.parallel([
     //     function(callback) {
@@ -114,19 +115,6 @@ function seedDB() {
     //         });
     //     },
         
-        //remove all bots that found this site
-        // function(callback) {
-        //     User.deleteMany({ "tournamentGroups": {"$exists": true, "$size": 0 } }, function(err) {
-        //         if (err) {
-        //             console.log("oops");
-        //         }
-        //         else {
-        //             console.log("removed all users not in a tournament group");
-        //         }
-        //         callback();
-        //     });
-        // }]);
-
     //     // TeamImage.deleteMany({}, function(err){
     //     //   if (err) {
     //     //       console.log("oops");
@@ -206,6 +194,18 @@ var addTrophies = function() {
                     });
                 }
             });
+        }
+    });
+};
+
+// remove all bots that found this site
+var removeBots = function() {
+    User.deleteMany({ "tournamentGroups": {"$exists": true, "$size": 0 } }, function(err) {
+        if (err) {
+            console.log("oops");
+        }
+        else {
+            console.log("removed all users not in a tournament group");
         }
     });
 };
