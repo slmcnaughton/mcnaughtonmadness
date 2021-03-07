@@ -85,7 +85,7 @@ app.use("/tournamentGroups/:groupName/userTournaments/:username", userRoundRoute
 
 
 app.listen(process.env.PORT, process.env.IP, function(){
-   console.log("McNaughton Madness Server has started"); 
+    console.log("McNaughton Madness Server has started on port " + (process.env.PORT) );
    
     Tournament.findOne({year: new Date().getFullYear()})
         .populate("scrapes")

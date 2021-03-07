@@ -60,6 +60,11 @@ router.get("/register", function(req, res) {
 
 //handle sign up logic
 router.post("/register", function(req, res) {
+    if (req.body.message) {
+        req.flash('error', 'Nonhuman user detected. Please contact us if you feel that this was in error.');
+        return res.redirect('/register');
+    };
+
     var username = req.body.username;
     var firstName = req.body.firstName;
     var lastName = req.body.lastName;
