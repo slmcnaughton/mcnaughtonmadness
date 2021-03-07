@@ -36,12 +36,13 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2020;
+    var year = 2021;
     var regions = ["East", "West", "South", "Midwest"];
     // var year = Math.floor((Math.random()*100+2000));
     
     //march month is actually 2
-    var startDay = moment.tz([2020, 02, 19], "America/New_York");
+    var startDay = moment.tz([2021, 02, 19], "America/New_York");
+
     
     //[year, month, day, hour, minute, second, millisecond]
     // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
@@ -211,16 +212,34 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                     function(i, next){
                                         var startTime;
                                                             // year         month           day      hour  min
-                                        if(i == 0)
-                                            startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
-                                        else if (i == 1)
-                                            startTime = moment(startDay).add({days: 7, hours: 19, minutes: 9}, "America/New_York");
-                                        else if (i == 2)
-                                            startTime = moment(startDay).add({days: 9, hours: 18, minutes: 9}, "America/New_York");
-                                        else if (i == 3)
-                                            startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9}, "America/New_York");
-                                        else if (i == 4)
-                                            startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20}, "America/New_York");
+                                        // Regular Year (2021 has a weird schedule)                    
+                                        // if(i == 0)
+                                        //     startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
+                                        // else if (i == 1)
+                                        //     startTime = moment(startDay).add({days: 7, hours: 19, minutes: 9}, "America/New_York");
+                                        // else if (i == 2)
+                                        //     startTime = moment(startDay).add({days: 9, hours: 18, minutes: 9}, "America/New_York");
+                                        // else if (i == 3)
+                                        //     startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9}, "America/New_York");
+                                        // else if (i == 4)
+                                        //     startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20}, "America/New_York");
+
+                                        // 2021 Shfited Dates/Times
+                                        if(i == 0)  // Second Round
+                                            startTime =  moment.tz([2021, 02, 21, 12, 0], "America/New_York");
+                                            // startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
+                                        else if (i == 1) //Sweet 16
+                                            startTime =  moment.tz([2021, 02, 27, 14, 0], "America/New_York");
+                                            // startTime = moment(startDay).add({days: 8, hours: 14, minutes: 9}, "America/New_York");
+                                        else if (i == 2) //Elite Eight
+                                            startTime =  moment.tz([2021, 02, 29, 19, 0], "America/New_York");
+                                            // startTime = moment(startDay).add({days: 10, hours: 19, minutes: 9}, "America/New_York");
+                                        else if (i == 3) //Final Four -  5 p.m. start on Saturday, April 3
+                                            startTime =  moment.tz([2021, 03, 03, 18, 0], "America/New_York");
+                                            // startTime = moment(startDay).add({days: 15, hours: 18, minutes: 0}, "America/New_York");
+                                        else if (i == 4) //NCAA Championship Game
+                                            startTime =  moment.tz([2021, 03, 05, 21, 0], "America/New_York");
+                                            // startTime = moment(startDay).add({days: 17, hours: 21, minutes: 0}, "America/New_York");
                                             
                                         
                                         Round.create(
@@ -248,27 +267,27 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                         // console.log("Round " + createdRound.numRound + " begins at " + createdRound.startTime.format('LLLL'));
                                                         for(var j = 0; j < 2; j++) {
                                                             var startTime;
-                                                            if(i === 2 && j === 1)
-                                                                startTime = new moment(createdRound.startTime).add({'h': 21, 'm': 30});
+                                                            if( (i === 1 || i === 2) && j === 1)  //Second day of Sweet 16/Elite 8 starts an hour earlier than day 1
+                                                                startTime = new moment(createdRound.startTime).add({'d': 1, 'h': 00, 'm': 00});
                                                             else 
-                                                                startTime = new moment(createdRound.startTime).add({'d': j, 'h' : 1, 'm': 30});
+                                                                startTime = new moment(createdRound.startTime).add({'d': j, 'h' : 1, 'm': 00});
                                                                 
                                                             var endTime;
-                                                            if(i === 0 ) {
+                                                            if(i === 0 ) {  //Round 2
                                                                 endTime = new moment(startTime).add(13, 'h');
                                                             }
-                                                            else if (i < 3 ) {
+                                                            else if (i < 3 ) {  //Sweet 16, Elite 8; (2 time slots)
                                                                 endTime = new moment(startTime).add(6, 'h');
                                                             }
                                                             
                                                             //2 final four matchups
                                                             else if (i === 3) {
-                                                                endTime = new moment(startTime).add(6, 'h');
-                                                                j++;
+                                                                endTime = new moment(startTime).add(6, 'h');    
+                                                                j++;    //only 1 day of final four
                                                             }
                                                             //championship match
                                                             else {
-                                                                endTime = new moment(startTime).add(2, 'h');
+                                                                endTime = new moment(startTime).add(3, 'h');    //Ends 1 + 3  = 4 hours after roundStart
                                                                 j++;
                                                             }
         
@@ -442,14 +461,14 @@ function compareTeams(a,b) {
 }
 
 var teamNames = [
-        "Duke",
-        "N. Dak. St.",
-        "VCU",
-        "UCF",
-        "Miss. State",
-        "Liberty",
-        "Virginia Tech",
-        "Saint Louis",
+        "Pittsburgh",
+        "Clemson",
+        "Rutgers",
+        "Minnesota",
+        "South Carolina",
+        "Kentucky",
+        "Georgetown",
+        "Connecticut",
         "Maryland",
         "Belmont",
         "LSU",
