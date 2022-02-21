@@ -1,6 +1,150 @@
 //Historical Tournament Standings Data
 var data = [
     {
+        year: 2021,
+        standings: [{
+            firstName: "Sherri",
+            lastName: "Stapleton",
+            score: 93.313
+        },
+        {
+            firstName: "Emily",
+            lastName: "Stapleton",
+            score: 86.193
+        },
+        {
+            firstName: "Ron",
+            lastName: "McNaughton",
+            score: 82.26
+        },
+        {
+            firstName: "Amy",
+            lastName: "McNaughton",
+            score: 76.541
+        },
+        {
+            firstName: "Charles",
+            lastName: "Stapleton",
+            score: 76.258
+        },
+        {
+            firstName: "Lily",
+            lastName: "McNaughton",
+            score: 71.422
+        },
+        {
+            firstName: "Judd",
+            lastName: "McNaughton",
+            score: 66.698
+        },
+        {
+            firstName: "Daniel",
+            lastName: "McNaughton",
+            score: 65.88
+        },
+        {
+            firstName: "Dave",
+            lastName: "McNaughton",
+            score: 62.882
+        },
+        {
+            firstName: "Cherisse",
+            lastName: "McNaughton-Balzano",
+            score: 55.92
+        },
+        {
+            firstName: "Michael",
+            lastName: "Balzano",
+            score: 44.724
+        },
+        {
+            firstName: "James",
+            lastName: "Stapleton",
+            score: 42.911
+        },
+        {
+            firstName: "Seth",
+            lastName: "McNaughton",
+            score: 41.115
+        },
+        {
+            firstName: "Elizabeth",
+            lastName: "Stapleton",
+            score: 34.683
+        },
+        {
+            firstName: "Nora",
+            lastName: "Mathias",
+            score: 30.547
+        },
+        {
+            firstName: "Gabrielle",
+            lastName: "McNaughton",
+            score: 30.493
+        },
+        {
+            firstName: "Micah",
+            lastName: "Mathias",
+            score: 30.059
+        },
+        {
+            firstName: "Donna",
+            lastName: "McNaughton",
+            score: 29.441
+        },
+        {
+            firstName: "Ryne",
+            lastName: "Deckard",
+            score: 19.097
+        },
+        {
+            firstName: "Rachel",
+            lastName: "McNaughton",
+            score: 16.733
+        },
+        {
+            firstName: "Bethany",
+            lastName: "McNaughton",
+            score: 7.798
+        },
+        {
+            firstName: "David",
+            lastName: "Mathias",
+            score: 5.215
+        },
+        {
+            firstName: "Jim",
+            lastName: "Mathias",
+            score: -3.178
+        },
+        {
+            firstName: "Rhonda",
+            lastName: "Mathias",
+            score: -7.753
+        },
+        {
+            firstName: "Reuben",
+            lastName: "Mathias",
+            score: -14.964
+        },
+        {
+            firstName: "Gideon",
+            lastName: "Mathias",
+            score: -16.482
+        },
+        {
+            firstName: "Levi",
+            lastName: "Mathias",
+            score: -27.112
+        },
+        {
+            firstName: "Ethan",
+            lastName: "Cummings",
+            score: -74.036
+        }
+        ]
+    },
+    {
         year: 2019,
         standings: [{
             firstName: "Seth",
@@ -14,7 +158,7 @@ var data = [
         },
         {
             firstName: "Cherisse",
-            lastName: "McNaughton",
+            lastName: "McNaughton-Balzano",
             score: 26.32
         },
         {
@@ -233,7 +377,7 @@ var data = [
         },
         {
             firstName: "Courtney",
-            lastName: "McNaughton",
+            lastName: "Cummings",
             score: 19.154
         },
         {
@@ -248,7 +392,7 @@ var data = [
         },
         {
             firstName: "Cherisse",
-            lastName: "McNaughton",
+            lastName: "McNaughton-Balzano",
             score: 18.075
         },
         {
@@ -397,7 +541,7 @@ var data = [
         },
         {
             firstName: "Cherisse",
-            lastName: "McNaughton",
+            lastName: "McNaughton-Balzano",
             score: 15.68384
         },
         {
@@ -496,7 +640,7 @@ var data = [
         },
         {
             firstName: "Cherisse",
-            lastName: "McNaughton",
+            lastName: "McNaughton-Balzano",
             score: 55.14857
         },
         {
@@ -1085,7 +1229,7 @@ var data = [
         },
         {
             firstName: "Courtney",
-            lastName: "McNaughton",
+            lastName: "Cummings",
             score: 30.104
         },
         {
