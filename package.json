@@ -10,8 +10,8 @@
   "author": "Seth McNaughton",
   "license": "ISC",
   "dependencies": {
-    "@microsoft/microsoft-graph-client": "^1.4.0",
-    "@sendgrid/mail": "^6.5.1",
+    "@microsoft/microsoft-graph-client": "^3.0.2",
+    "@sendgrid/mail": "^7.6.1",
     "async": "^2.6.2",
     "body-parser": "^1.18.2",
     "cheerio": "^1.0.0-rc.10",
