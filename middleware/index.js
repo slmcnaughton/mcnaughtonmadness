@@ -52,7 +52,7 @@ middlewareObj.checkUserTournamentOwnership = function(req, res, next) {
             }
             else {
                 //does user own the User Tournament?
-                if (foundUserTournament.user.id.equals(req.user.id)) {
+                if (foundUserTournament.user.id.equals(req.user.id) || req.user.isAdmin) {
                     next();
                 }
                 else {

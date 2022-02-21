@@ -167,6 +167,7 @@ router.post('/forgotPassword', function(req, res, next) {
         function(done) {
             crypto.randomBytes(20, function(err, buf) {
                 var token = buf.toString('hex');
+                if (err) console.log(err);
                 done(err, token);
             });
         },
@@ -231,7 +232,6 @@ router.post('/reset/:token', function(req, res) {
                     req.flash('error', 'Password reset token is invalid or has expired.');
                     return res.redirect('back');
                 }
-
 
                 user.resetPasswordToken = undefined;
                 user.resetPasswordExpires = undefined;
