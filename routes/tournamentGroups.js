@@ -146,7 +146,6 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
 router.get("/:groupName", function(req, res){
     var groupName = req.params.groupName;
     TournamentGroup.findOne({groupName: groupName})
-        .populate({path: "userTournaments", populate: "user"})
         .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
         .populate("comments")
         .populate({path: "tournamentReference.id", populate: {path: "rounds"}})
