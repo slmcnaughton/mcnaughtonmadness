@@ -36,12 +36,12 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2021;
-    var regions = ["East", "West", "South", "Midwest"];
+    var year = 2022;
+    var regions = ["West", "East", "South", "Midwest"];
     // var year = Math.floor((Math.random()*100+2000));
     
     //march month is actually 2
-    var startDay = moment.tz([2021, 02, 19], "America/New_York");
+    var startDay = moment.tz([2022, 02, 17], "America/New_York");
 
     
     //[year, month, day, hour, minute, second, millisecond]
@@ -212,34 +212,34 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                     function(i, next){
                                         var startTime;
                                                             // year         month           day      hour  min
-                                        // Regular Year (2021 has a weird schedule)                    
-                                        // if(i == 0)
-                                        //     startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
-                                        // else if (i == 1)
-                                        //     startTime = moment(startDay).add({days: 7, hours: 19, minutes: 9}, "America/New_York");
-                                        // else if (i == 2)
-                                        //     startTime = moment(startDay).add({days: 9, hours: 18, minutes: 9}, "America/New_York");
-                                        // else if (i == 3)
-                                        //     startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9}, "America/New_York");
-                                        // else if (i == 4)
-                                        //     startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20}, "America/New_York");
+                                        // Regular Year (2021 had a weird schedule)                    
+                                        if(i == 0)
+                                            startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
+                                        else if (i == 1)
+                                            startTime = moment(startDay).add({days: 7, hours: 19, minutes: 9}, "America/New_York");
+                                        else if (i == 2)
+                                            startTime = moment(startDay).add({days: 9, hours: 18, minutes: 9}, "America/New_York");
+                                        else if (i == 3)
+                                            startTime = moment(startDay).add({days: 16, hours: 18, minutes: 9}, "America/New_York");
+                                        else if (i == 4)
+                                            startTime = moment(startDay).add({days: 18, hours: 21, minutes: 20}, "America/New_York");
 
                                         // 2021 Shfited Dates/Times
-                                        if(i == 0)  // Second Round
-                                            startTime =  moment.tz([2021, 02, 21, 12, 0], "America/New_York");
-                                            // startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
-                                        else if (i == 1) //Sweet 16
-                                            startTime =  moment.tz([2021, 02, 27, 14, 0], "America/New_York");
-                                            // startTime = moment(startDay).add({days: 8, hours: 14, minutes: 9}, "America/New_York");
-                                        else if (i == 2) //Elite Eight
-                                            startTime =  moment.tz([2021, 02, 29, 19, 0], "America/New_York");
-                                            // startTime = moment(startDay).add({days: 10, hours: 19, minutes: 9}, "America/New_York");
-                                        else if (i == 3) //Final Four -  5 p.m. start on Saturday, April 3
-                                            startTime =  moment.tz([2021, 03, 03, 18, 0], "America/New_York");
-                                            // startTime = moment(startDay).add({days: 15, hours: 18, minutes: 0}, "America/New_York");
-                                        else if (i == 4) //NCAA Championship Game
-                                            startTime =  moment.tz([2021, 03, 05, 21, 0], "America/New_York");
-                                            // startTime = moment(startDay).add({days: 17, hours: 21, minutes: 0}, "America/New_York");
+                                        // if(i == 0)  // Second Round
+                                        //     startTime =  moment.tz([2021, 02, 21, 12, 0], "America/New_York");
+                                        //     // startTime = moment(startDay).add({days: 2, hours: 12, minutes: 10}, "America/New_York");
+                                        // else if (i == 1) //Sweet 16
+                                        //     startTime =  moment.tz([2021, 02, 27, 14, 0], "America/New_York");
+                                        //     // startTime = moment(startDay).add({days: 8, hours: 14, minutes: 9}, "America/New_York");
+                                        // else if (i == 2) //Elite Eight
+                                        //     startTime =  moment.tz([2021, 02, 29, 19, 0], "America/New_York");
+                                        //     // startTime = moment(startDay).add({days: 10, hours: 19, minutes: 9}, "America/New_York");
+                                        // else if (i == 3) //Final Four -  5 p.m. start on Saturday, April 3
+                                        //     startTime =  moment.tz([2021, 03, 03, 18, 0], "America/New_York");
+                                        //     // startTime = moment(startDay).add({days: 15, hours: 18, minutes: 0}, "America/New_York");
+                                        // else if (i == 4) //NCAA Championship Game
+                                        //     startTime =  moment.tz([2021, 03, 05, 21, 0], "America/New_York");
+                                        //     // startTime = moment(startDay).add({days: 17, hours: 21, minutes: 0}, "America/New_York");
                                             
                                         
                                         Round.create(
@@ -461,73 +461,73 @@ function compareTeams(a,b) {
 }
 
 var teamNames = [
-        "Pittsburgh",
-        "Clemson",
-        "Rutgers",
-        "Minnesota",
-        "South Carolina",
-        "Kentucky",
-        "Georgetown",
-        "Connecticut",
-        "Maryland",
-        "Belmont",
-        "LSU",
-        "Yale",
-        "Louisville",
-        "Minnesota",
-        "Michigan State",
-        "Bradley",
-        
         "Gonzaga",
-        "F. Dickinson",
-        "Syracuse",
-        "Baylor",
-        "Marquette",
-        "Murray State",
-        "Florida State",
-        "Vermont",
-        "Buffalo",
-        "Arizona State",
-        "Texas Tech",
-        "N. Kentucky",
-        "Nevada",
-        "Florida",
-        "Michigan",
-        "Montana",
-        
-        "Virginia",
-        "Gardner-Webb",
-        "Ole Miss",
-        "Oklahoma",
-        "Wisconsin",
-        "Oregon",
-        "Kansas State",
-        "UC Irvine",
-        "Villanova",
-        "Saint Mary's",
-        "Purdue",
-        "Old Dominion",
-        "Cincinnati",
-        "Iowa",
-        "Tennessee",
-        "Colgate",
-        
-        "North Carolina",
-        "Iona",
-        "Utah State",
-        "Washington",
-        "Auburn",
-        "New Mex. St.",
-        "Kansas",
-        "Northeastern",
-        "Iowa State",
-        "Ohio State",
-        "Houston",
         "Georgia State",
-        "Wofford",
-        "Seton Hall",
+        "Boise State",
+        "Memphis",
+        "Connecticut",
+        "New Mexico St.",
+        "Arkansas",
+        "Vermont",
+        "Alabama",
+        "Rutgers/Notre Dame",
+        "Texas Tech",
+        "Montana St.",
+        "Michigan State",
+        "Davidson",
+        "Duke",
+        "CSFullerton",
+        
+        "Baylor",
+        "Norfolk St.",
+        "North Carolina",
+        "Marquette",
+        "Saint Mary's",
+        "Wyoming/Indiana",
+        "UCLA",
+        "Akron",
+        "Texas",
+        "Virginia Tech",
+        "Purdue",
+        "Yale",
+        "Murray St.",
+        "San Francisco",
         "Kentucky",
-        "Abil Christian"
+        "St. Peter's",
+        
+        "Arizona",
+        "Wright St./Bryant",
+        "Seton Hall",
+        "TCU",
+        "Houston",
+        "UAB",
+        "Illinois",
+        "Chattanooga",
+        "Colorado State",
+        "Michigan",
+        "Tennessee",
+        "Longwood",
+        "Ohio State",
+        "Loyola Chicago",
+        "Villanova",
+        "Delaware",
+        
+        "Kansas",
+        "TX Southern / TX A&M CC",
+        "San Diego State",
+        "Creighton",
+        "Iowa",
+        "Richmond",
+        "Providence",
+        "South Dakota St.",
+        "LSU",
+        "Iowa State",
+        "Wisconsin",
+        "Colgate",
+        "USC",
+        "Miami (Fla.)",
+        "Auburn",
+        "Jax. State"
         
         
         

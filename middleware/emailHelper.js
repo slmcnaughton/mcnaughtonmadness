@@ -265,7 +265,7 @@ function createMailingList(tournamentGroup, done) {
 function createMailingListForThoseWhoStillNeedToMakePicksThisRound(tournamentGroup, done) {
     UserTournament.find({ "tournamentGroup.id": tournamentGroup._id, 
     })
-        .populate({ path: "user.id", populate: "email" })
+        .populate({ path: "user.id"})
         .populate({ path: "userRounds", populate: "round"})
         .exec(function(err, foundUserTournaments) {
         if (err) console.log(err);

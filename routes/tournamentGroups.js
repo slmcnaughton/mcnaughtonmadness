@@ -11,7 +11,6 @@ var emailHelper = require("../middleware/emailHelper");
 router.post("/:groupName/testRoundSummary", function(req, res) {
    var groupName = req.params.groupName;
     TournamentGroup.findOne({groupName: groupName})
-        .populate({path: "userTournaments", populate: "user"})
         .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
         .exec(function(err, foundTournamentGroup){
         if(err){
@@ -27,7 +26,6 @@ router.post("/:groupName/testRoundSummary", function(req, res) {
 router.post("/:groupName/testPickReminder", function(req, res) {
    var groupName = req.params.groupName;
     TournamentGroup.findOne({groupName: groupName})
-        .populate({path: "userTournaments", populate: "user"})
         .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
         .exec(function(err, foundTournamentGroup){
         if(err){
