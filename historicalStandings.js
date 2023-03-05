@@ -1,6 +1,126 @@
 //Historical Tournament Standings Data
 var data = [
     {
+        year: 2022,
+        standings: [
+            {
+                firstName: "James",
+                lastName: "Stapleton",
+                score: 106.041
+            },
+            {
+                firstName: "Sherri",
+                lastName: "Stapleton",
+                score: 91.337
+            },
+            {
+                firstName: "Emily",
+                lastName: "Stapleton",
+                score: 87.954
+            },
+            {
+                firstName: "Gabrielle",
+                lastName: "McNaughton",
+                score: 79.258
+            },
+            {
+                firstName: "Ron",
+                lastName: "McNaughton",
+                score: 77.866
+            },
+            {
+                firstName: "Daniel",
+                lastName: "McNaughton",
+                score: 60.839
+            },
+            {
+                firstName: "Seth",
+                lastName: "McNaughton",
+                score: 60.381
+            },
+            {
+                firstName: "Amy",
+                lastName: "McNaughton",
+                score: 55.838
+            },
+            {
+                firstName: "Naomi",
+                lastName: "McNaughton",
+                score: 55.03
+            },
+            {
+                firstName: "Micah",
+                lastName: "Mathias",
+                score: 54.411
+            },
+            {
+                firstName: "David",
+                lastName: "Mathias",
+                score: 42.751
+            },
+            {
+                firstName: "Dave",
+                lastName: "McNaughton",
+                score: 41.589
+            },
+            {
+                firstName: "Donna",
+                lastName: "McNaughton",
+                score: 33.494
+            },
+            {
+                firstName: "Cherisse",
+                lastName: "McNaughton-Balzano",
+                score: 29.097
+            },
+            {
+                firstName: "Gideon",
+                lastName: "Mathias",
+                score: 28.922
+            },
+            {
+                firstName: "Reuben",
+                lastName: "Mathias",
+                score: 28.203
+            },
+            {
+                firstName: "Rachel",
+                lastName: "McNaughton",
+                score: 26.6
+            },
+            {
+                firstName: "Judd",
+                lastName: "McNaughton",
+                score: 24.969
+            },
+            {
+                firstName: "Michael",
+                lastName: "Balzano",
+                score: 19.599
+            },
+            {
+                firstName: "Ryne",
+                lastName: "Deckard",
+                score: 18.437
+            },
+            {
+                firstName: "Rhonda",
+                lastName: "Mathias",
+                score: 18.038
+            },
+            {
+                firstName: "Elizabeth",
+                lastName: "Stapleton",
+                score: 6.392
+            },
+            {
+                firstName: "Nora",
+                lastName: "Mathias",
+                score: -9.192
+            },
+        ]
+    },
+    {
         year: 2021,
         standings: [{
             firstName: "Sherri",

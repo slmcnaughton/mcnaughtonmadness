@@ -43,6 +43,7 @@ app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
 app.locals.moment = require('moment-timezone');
+app.use(express.static(__dirname + '/static', { dotfiles: 'allow' }))
 
 // seedDB();
 // scrape();
