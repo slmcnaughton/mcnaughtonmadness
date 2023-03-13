@@ -36,12 +36,12 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2022;
-    var regions = ["West", "East", "South", "Midwest"];
+    var year = 2023;
+    var regions = ["South", "East", "Midwest", "West"];
     // var year = Math.floor((Math.random()*100+2000));
     
     //march month is actually 2
-    var startDay = moment.tz([2022, 02, 17], "America/New_York");
+    var startDay = moment.tz([2023, 02, 16], "America/New_York");
 
     
     //[year, month, day, hour, minute, second, millisecond]
@@ -461,73 +461,73 @@ function compareTeams(a,b) {
 }
 
 var teamNames = [
-        "Gonzaga",
-        "Georgia State",
-        "Boise State",
-        "Memphis",
-        "Connecticut",
-        "New Mexico St.",
-        "Arkansas",
-        "Vermont",
         "Alabama",
-        "Rutgers/Notre Dame",
-        "Texas Tech",
+        "AMCC/SMO",
+        "Maryland",
+        "West Virginia",
+        "San Diego State",
+        "Charleston",
+        "Virginia",
+        "Furman",
+        "Creighton",
+        "NC State",
+        "Baylor",
+        "UCSB",
+        "Missouri",
+        "Utah State",
+        "Arizona",
+        "Princeton",
+        
+        "Purdue",
+        "TSO/FDU",
+        "Memphis",
+        "FAU",
+        "Duke",
+        "Oral Roberts",
+        "Tennessee",
+        "Louisiana",
+        "Kentucky",
+        "Providence",
+        "Kansas State",
         "Montana St.",
         "Michigan State",
-        "Davidson",
-        "Duke",
-        "CSFullerton",
-        
-        "Baylor",
-        "Norfolk St.",
-        "North Carolina",
+        "USC",
         "Marquette",
-        "Saint Mary's",
-        "Wyoming/Indiana",
-        "UCLA",
-        "Akron",
-        "Texas",
-        "Virginia Tech",
-        "Purdue",
-        "Yale",
-        "Murray St.",
-        "San Francisco",
-        "Kentucky",
-        "St. Peter's",
+        "Vermont",
         
-        "Arizona",
-        "Wright St./Bryant",
-        "Seton Hall",
-        "TCU",
         "Houston",
-        "UAB",
-        "Illinois",
-        "Chattanooga",
-        "Colorado State",
-        "Michigan",
-        "Tennessee",
-        "Longwood",
-        "Ohio State",
-        "Loyola Chicago",
-        "Villanova",
-        "Delaware",
+        "N. Kentucky",
+        "Iowa",
+        "Auburn",
+        "Miami (Fla.)",
+        "Drake",
+        "Indiana",
+        "Kent State",
+        "Iowa State",
+        "MSST/Pitt",
+        "Xavier",
+        "Kennesaw St.",
+        "Texas A&M",
+        "Penn State",
+        "Texas",
+        "Colgate",
         
         "Kansas",
-        "TX Southern / TX A&M CC",
-        "San Diego State",
-        "Creighton",
-        "Iowa",
-        "Richmond",
-        "Providence",
-        "South Dakota St.",
-        "LSU",
-        "Iowa State",
-        "Wisconsin",
-        "Colgate",
-        "USC",
-        "Miami (Fla.)",
-        "Auburn",
-        "Jax. State"
+        "Howard",
+        "Arkansas",
+        "Illinois",
+        "Saint Mary's",
+        "VCU",
+        "Connecticut",
+        "Iona",
+        "TCU",
+        "ASU/NEV",
+        "Gonzaga",
+        "Grand Canyon",
+        "Northwestern",
+        "Boise State",
+        "UCLA",
+        "UNC-Asheville"
         
         
         
