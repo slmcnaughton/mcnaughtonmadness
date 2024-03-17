@@ -36,12 +36,12 @@ router.get("/new", middleware.isLoggedIn, function(req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function(req, res) {
     
-    var year = 2023;
+    var year = 2024;
     var regions = ["South", "East", "Midwest", "West"];
     // var year = Math.floor((Math.random()*100+2000));
     
     //march month is actually 2
-    var startDay = moment.tz([2023, 02, 16], "America/New_York");
+    var startDay = moment.tz([2024, 02, 21], "America/New_York");
 
     
     //[year, month, day, hour, minute, second, millisecond]
@@ -83,7 +83,6 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                             numRound: 1,
                             matches: [],
                             startTime: moment.tz([startDay.year(), startDay.month(), startDay.date(), 12, 15], "America/New_York"),
-
                         }, function(err, createdRound){
                             if(err) console.log(err);
                             else {
@@ -101,8 +100,8 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                 //Add two days of round 1 scrape listener
                                 // console.log("Round 1 begins at " + createdRound.startTime.format('LLLL'));
                                 for(var i = 0; i < 2; i++) {
-                                    var startTime = new moment(createdRound.startTime).add({'d': i, 'h' : 1, 'm': 30});
-                                    var endTime = new moment(startTime).add(13, 'h');
+                                    var startTime = new moment(createdRound.startTime).add({'d': i, 'h' : 0, 'm': 0});
+                                    var endTime = new moment(startTime).add(15, 'h');
                                     var job = { start: startTime, end: endTime, rule: '0 */1 * * * *' };
                                     var j = schedule.scheduleJob(job, function(){
                                         scrape();
@@ -270,24 +269,24 @@ router.post("/", middleware.isLoggedIn, function(req, res) {
                                                             if( (i === 1 || i === 2) && j === 1)  //Second day of Sweet 16/Elite 8 starts an hour earlier than day 1
                                                                 startTime = new moment(createdRound.startTime).add({'d': 1, 'h': 00, 'm': 00});
                                                             else 
-                                                                startTime = new moment(createdRound.startTime).add({'d': j, 'h' : 1, 'm': 00});
+                                                                startTime = new moment(createdRound.startTime).add({'d': j, 'h' : 0, 'm': 00});
                                                                 
                                                             var endTime;
                                                             if(i === 0 ) {  //Round 2
-                                                                endTime = new moment(startTime).add(13, 'h');
+                                                                endTime = new moment(startTime).add(15, 'h');
                                                             }
                                                             else if (i < 3 ) {  //Sweet 16, Elite 8; (2 time slots)
-                                                                endTime = new moment(startTime).add(6, 'h');
+                                                                endTime = new moment(startTime).add(12, 'h');
                                                             }
                                                             
                                                             //2 final four matchups
                                                             else if (i === 3) {
-                                                                endTime = new moment(startTime).add(6, 'h');    
+                                                                endTime = new moment(startTime).add(12, 'h');    
                                                                 j++;    //only 1 day of final four
                                                             }
                                                             //championship match
                                                             else {
-                                                                endTime = new moment(startTime).add(3, 'h');    //Ends 1 + 3  = 4 hours after roundStart
+                                                                endTime = new moment(startTime).add(5, 'h');    //Ends 1 + 3  = 4 hours after roundStart
                                                                 j++;
                                                             }
         
