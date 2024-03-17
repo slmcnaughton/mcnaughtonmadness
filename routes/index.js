@@ -35,7 +35,7 @@ router.get("/website", function(req, res) {
 });
 
 
-router.get("/test", function(req, res) {
+router.get("/team-names", function(req, res) {
     TeamImage.find().sort("name").exec(function(err, foundTeamImages) {
         // foundTeamImages.forEach(function(foundTeamImage) {
         //     console.log(foundTeamImage.name + " " + foundTeamImage.image);
