@@ -5,7 +5,7 @@ var TeamImage = require("./models/teamImage");
 
 function scrapeTeams() {
     async.timesSeries(28, function(day, next) {
-        var extension = "201902"; 
+        var extension = "202402"; 
             if(day < 10)
                 extension += "0" + day;
             else
@@ -19,7 +19,7 @@ function scrapeTeams() {
                 $('div.live-update').each(function(i, element){
                     var a = $(this);
                     
-                    var team1 = a.find('.in-progress-table').find('a.team').first().text();
+                    var team1 = a.find('.in-progress-table').find('td.team').first().find('a').text();
                     var image1 = a.find('.in-progress-table').find('td.team').first().find('img').attr('src');
                     if(image1){
                         image1 = image1.replace(/90/g,"100");
@@ -30,7 +30,7 @@ function scrapeTeams() {
                         parsedResults.push(metadata);
                     }
                     
-                    var team2 = a.find('.in-progress-table').find('a.team').last().text();
+                    var team2 = a.find('.in-progress-table').find('td.team').last().find('a').text();
                     var image2 = a.find('.in-progress-table').find('td.team').last().find('img').attr('src');
                     if(image2) {
                         image2 = image2.replace(/90/g,"100");
@@ -53,6 +53,11 @@ function scrapeTeams() {
                             });
                         }
                         else {
+                            foundTeamImage.name = result.name
+                            foundTeamImage.image = result.image
+                            foundTeamImage.save(function(err) {
+                            console.log(foundTeamImage.name + " Updated");
+                        });
                             next();
                         }
                     });
