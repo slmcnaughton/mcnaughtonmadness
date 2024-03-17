@@ -179,9 +179,15 @@ middlewareObj.scrapeUpdateResults = function(parsedResults){
                                             || matchTop === resultTeam2 && matchBottom === resultTeam1)) {
                             var winningTeam;
                             if(filter(result.winner) === matchTop)
+                            {
+                                console.log(matchTop + " defeated " + matchBottom);
                                 winningTeam = match.topTeam;
+                            }
                             else 
+                            {
+                                console.log(matchBottom + " defeated " + matchTop);
                                 winningTeam = match.bottomTeam;
+                            }
                             var tempMatch = {
                                 roundMatchIndex: roundMatchIndex,
                                 tournament: foundTournament,
@@ -545,6 +551,7 @@ var isRoundComplete = function(updatedMatches, done) {
     Tournament.findById(updatedMatches[0].tournament.id).populate({ path: "rounds", populate: { path: "matches" } }).exec(function(err, foundTournament) {
         if (err || !foundTournament) {
             console.log(err);
+            console.log("Problems Finding Tournament")
         }
         else {
             var currRound = foundTournament.currentRound;

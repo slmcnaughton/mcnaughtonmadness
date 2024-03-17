@@ -227,6 +227,7 @@ emailObj.confirmPasswordChange = async function(req, user) {
 };
 
 async function sendEmail(mailingList, subject, mailBody) {
+    console.log("Email sent to " + mailingList);
     const mail = {
         to: mailingList,
         from: 'seth@mcnaughtonmadness.com',
