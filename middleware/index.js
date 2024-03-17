@@ -573,7 +573,6 @@ var isRoundComplete = function(updatedMatches, done) {
 
                     //find all tournamentGroups, update their currentRounds, and send out email
                     TournamentGroup.find({ "tournamentReference.id": updatedMatches[0].tournament.id })
-                        .populate({path: "userTournaments", populate: "user"})
                         .populate({path: "userTournaments", populate: {path: "userRounds", populate: "round"}})
                         .exec(function(err, foundTournamentGroup) {
                         if (err || !foundTournamentGroup) {
