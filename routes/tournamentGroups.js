@@ -155,6 +155,8 @@ router.get("/:groupName", function(req, res){
             var isInGroup = false;
             // var whichIndexMatches = -1;
             var picksNeeded = true;
+            var finalFourPicksNeeded = false;
+            var championshipPicksNeeded = false;
             async.series([
                 
                 function(callback) {
@@ -172,8 +174,17 @@ router.get("/:groupName", function(req, res){
                                             async.forEachSeries(foundUserTournament.userRounds, function(userRound, next) {
                                                 if (userRound.round.numRound === foundTournamentGroup.currentRound ) {
                                                     picksNeeded = false;
+                                                    if (foundTournamentGroup.currentRound == 1 && foundUserTournament.userRounds.length === 1)
+                                                    {
+                                                        finalFourPicksNeeded = true;
+                                                    }
+                                                    if (foundTournamentGroup.currentRound == 1 && foundUserTournament.userRounds.length === 2)
+                                                    {
+                                                        championshipPicksNeeded = true;
+                                                    }
                                                     next();
-                                                } else {
+                                                } 
+                                                else {
                                                     next();
                                                 }
                                             }, function(err) {
@@ -200,7 +211,13 @@ router.get("/:groupName", function(req, res){
                 if (err) console.log(err);
                 else {
                     foundTournamentGroup.userTournaments.sort(compareUserTournaments);
-                    res.render("tournamentGroups/show", {tournamentGroup: foundTournamentGroup, isInGroup: isInGroup, picksNeeded : picksNeeded, page: "tournamentGroups"});
+                    res.render("tournamentGroups/show", {
+                        tournamentGroup: foundTournamentGroup,
+                        isInGroup: isInGroup,
+                        picksNeeded : picksNeeded,
+                        finalFourPicksNeeded: finalFourPicksNeeded,
+                        championshipPicksNeeded: championshipPicksNeeded,
+                        page: "tournamentGroups"});
                 }
             });
         }

@@ -91,6 +91,20 @@
                         Make Round <%=tournamentGroup.currentRound%> Picks!
                     </a>
                 </div>
+            <% } else if (finalFourPicksNeeded) { %>
+                <div class="text-center">
+                    <a class="btn btn-success btn-lg btn-default" 
+                        href="/tournamentGroups/<%= tournamentGroup.groupName%>/userTournaments/<%=currentUser.username%>/7/edit">
+                        Make Final Four Picks!
+                    </a>
+                </div>
+            <% } else if (championshipPicksNeeded) { %>
+                <div class="text-center">
+                    <a class="btn btn-success btn-lg btn-default" 
+                        href="/tournamentGroups/<%= tournamentGroup.groupName%>/userTournaments/<%=currentUser.username%>/8/edit">
+                        Make Championship Pick!
+                    </a>
+                </div>
             <% } else { %>
                 <h4>Picks made. Go cheer on your teams!</h4>
             <% } %>
