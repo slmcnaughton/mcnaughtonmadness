@@ -766,7 +766,8 @@ middlewareObj.checkTipoffTime = function (req, res, next) {
             req.flash("error", "Round not found");
             res.redirect("back");
           } else {
-            if (moment().isBefore(moment(foundRound.startTime))) {
+            if (moment().isBefore(moment(foundRound.startTime)) ||
+              req.user.isAdmin ){
               next();
             } else {
               req.flash(

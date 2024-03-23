@@ -11,6 +11,7 @@ var Team = require("../models/team");
 var middleware = require("../middleware");
 
 //EDIT - render edit userRound form (aka...makePicks)
+///tournamentGroups/McNaughton%20Family%20Group%202024/userTournaments/<USERNAME>/2/edit
 router.get(
   "/:numRound/edit",
   middleware.checkUserTournamentOwnership,
