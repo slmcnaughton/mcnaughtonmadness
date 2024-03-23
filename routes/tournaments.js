@@ -262,7 +262,7 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                         // Regular Year (2021 had a weird schedule)
                         if (i == 0)
                           startTime = moment(startDay).add(
-                            { days: 2, hours: 12, minutes: 10 },
+                            { days: 2, hours: 12, minutes: 45 },
                             "America/New_York",
                           );
                         else if (i == 1)
