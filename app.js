@@ -55,7 +55,7 @@ app.locals.moment = require("moment-timezone");
 // PASSPORT CONFIGURATION
 app.use(
   require("express-session")({
-    secret: "Rachel is the best wife ever",
+    secret: process.env.SESSION_SECRET || "fallback-dev-secret",
     resave: false,
     saveUninitialized: false,
   }),
