@@ -1,0 +1,308 @@
+<% include ../partials/header %>
+
+<div class="row">
+  <div class="col-lg-12">
+    <h2><i class="fas fa-cog"></i> Admin Dashboard</h2>
+    <p class="text-muted"><%= year %> Tournament</p>
+    <hr>
+  </div>
+</div>
+
+<!-- ── Quick Links ───────────────────────────────────────────────── -->
+<div class="row" style="margin-bottom: 20px;">
+  <div class="col-sm-4">
+    <a href="/admin/teams" class="btn btn-default btn-block">
+      <i class="fas fa-basketball-ball"></i> Manage Teams & Aliases
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="/tournaments/<%= year %>" class="btn btn-default btn-block">
+      <i class="fas fa-sitemap"></i> View Bracket
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="/tournamentGroups" class="btn btn-default btn-block">
+      <i class="fas fa-users"></i> View Groups
+    </a>
+  </div>
+</div>
+
+<!-- ── User Management ───────────────────────────────────────────── -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title" style="display: inline-block;">
+          <i class="fas fa-user"></i> Users (<%= users.length %>)
+        </h3>
+      </div>
+      <div class="panel-body">
+        <!-- Toolbar -->
+        <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button type="button" id="btnFindSuspicious" class="btn btn-sm btn-warning">
+            <i class="fas fa-search"></i> Find Suspicious
+          </button>
+          <button type="button" id="btnSelectNone" class="btn btn-sm btn-default">
+            Clear Selection
+          </button>
+          <span id="selectionCount" class="text-muted" style="margin-left: 8px;"></span>
+          <button type="button" id="btnBulkDelete" class="btn btn-sm btn-danger" style="margin-left: auto; display: none;">
+            <i class="fas fa-trash"></i> Delete Selected (<span id="deleteCount">0</span>)
+          </button>
+        </div>
+
+        <!-- Bulk delete form (submitted by JS) -->
+        <form id="bulkDeleteForm" action="/admin/users/bulk-delete" method="POST" style="display: none;">
+          <div id="bulkDeleteInputs"></div>
+        </form>
+
+        <div style="overflow-x: auto;">
+          <table class="table table-striped table-condensed" id="userTable">
+            <thead>
+              <tr>
+                <th style="width: 30px;">
+                  <input type="checkbox" id="selectAll" title="Select all non-admin users">
+                </th>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <% groups.forEach(function(g) { %>
+                  <th class="text-center" title="<%= g.groupName %>"><%= g.groupName.substring(0, 12) %></th>
+                <% }); %>
+                <th>Reset Password</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% users.forEach(function(user) { %>
+                <%
+                  var hasAnyGroup = user.tournamentGroups && user.tournamentGroups.length > 0;
+                %>
+                <tr data-user-id="<%= user._id %>"
+                    data-is-admin="<%= user.isAdmin ? 'true' : 'false' %>"
+                    data-has-group="<%= hasAnyGroup ? 'true' : 'false' %>">
+                  <td>
+                    <% if(!user.isAdmin) { %>
+                      <input type="checkbox" class="user-checkbox" value="<%= user._id %>">
+                    <% } %>
+                  </td>
+                  <td>
+                    <a href="/users/<%= user.username %>">
+                      <%= user.firstName %> <%= user.lastName %>
+                    </a>
+                    <% if(user.isAdmin) { %>
+                      <span class="label label-warning">Admin</span>
+                    <% } %>
+                  </td>
+                  <td><%= user.username %></td>
+                  <td><%= user.email %></td>
+                  <% groups.forEach(function(g) { %>
+                    <td class="text-center">
+                      <% var status = pickStatus[user.username] && pickStatus[user.username][g.groupName]; %>
+                      <% if(!status) { %>
+                        <span class="text-muted" title="Not joined">&#x2014;</span>
+                      <% } else { %>
+                        <%
+                          var roundNums = Object.keys(status.rounds).sort();
+                          var allDone = roundNums.length > 0 && roundNums.every(function(r) { return status.rounds[r]; });
+                          var someDone = roundNums.some(function(r) { return status.rounds[r]; });
+                        %>
+                        <% if(allDone) { %>
+                          <span class="label label-success" title="All picks made">
+                            <i class="fas fa-check"></i> <%= roundNums.length %>R
+                          </span>
+                        <% } else if(someDone) { %>
+                          <span class="label label-warning" title="Some picks made">
+                            <i class="fas fa-exclamation"></i>
+                            <%
+                              var doneCount = roundNums.filter(function(r) { return status.rounds[r]; }).length;
+                            %>
+                            <%= doneCount %>/<%= roundNums.length %>R
+                          </span>
+                        <% } else { %>
+                          <span class="label label-info" title="Joined but no picks yet">Joined</span>
+                        <% } %>
+                      <% } %>
+                    </td>
+                  <% }); %>
+                  <td>
+                    <% if(!user.isAdmin) { %>
+                      <form action="/admin/users/<%= user.username %>/resetPassword" method="POST" style="display: inline-flex; gap: 5px; align-items: center;">
+                        <input type="password" name="newPassword" placeholder="New password" class="form-control input-sm" style="width: 140px;" minlength="6" required>
+                        <button type="submit" class="btn btn-xs btn-warning" onclick="return confirm('Reset password for <%= user.firstName %> <%= user.lastName %>?');">
+                          Reset
+                        </button>
+                      </form>
+                    <% } else { %>
+                      <span class="text-muted">&#x2014;</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Group Summaries ───────────────────────────────────────────── -->
+<% if(groups.length > 0) { %>
+  <div class="row">
+    <div class="col-lg-12">
+      <h3>Group Summaries</h3>
+    </div>
+    <% groups.forEach(function(group) { %>
+      <div class="col-md-6">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4 class="panel-title">
+              <a href="/tournamentGroups/<%= group.groupName %>"><%= group.groupName %></a>
+              <span class="badge"><%= group.userTournaments ? group.userTournaments.length : 0 %> members</span>
+            </h4>
+          </div>
+          <div class="panel-body">
+            <% if(group.userTournaments && group.userTournaments.length > 0) { %>
+              <table class="table table-condensed" style="margin-bottom: 0;">
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th>R1</th>
+                    <th>R2</th>
+                    <th>R3</th>
+                    <th>R4</th>
+                    <th>FF</th>
+                    <th>Champ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% group.userTournaments.forEach(function(ut) { %>
+                    <tr>
+                      <td><%= ut.user.firstName %> <%= ut.user.lastName %></td>
+                      <%
+                        // Rounds: 1-4 are regular, 7=final four, 8=champion
+                        var roundLabels = [1, 2, 3, 4, 7, 8];
+                      %>
+                      <% roundLabels.forEach(function(rn) { %>
+                        <td class="text-center">
+                          <%
+                            var ur = ut.userRounds ? ut.userRounds.find(function(r) { return r.round.numRound === rn; }) : null;
+                            var hasPicks = ur && ur.userMatchPredictions && ur.userMatchPredictions.length > 0 &&
+                              ur.userMatchPredictions.some(function(p) { return p.winner && p.winner.length > 0; });
+                          %>
+                          <% if(hasPicks) { %>
+                            <span style="color: #5cb85c;"><i class="fas fa-check"></i></span>
+                          <% } else if(ur) { %>
+                            <span style="color: #f0ad4e;"><i class="fas fa-minus"></i></span>
+                          <% } else { %>
+                            <span class="text-muted">&#x2014;</span>
+                          <% } %>
+                        </td>
+                      <% }); %>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            <% } else { %>
+              <p class="text-muted">No members yet.</p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<% include ../partials/footer %>
+
+<!-- ── Admin JS (after footer so jQuery is loaded) ───────────────── -->
+<script>
+$(document).ready(function () {
+  var $checkboxes = $('.user-checkbox');
+  var $selectAll = $('#selectAll');
+  var $btnDelete = $('#btnBulkDelete');
+  var $deleteCount = $('#deleteCount');
+  var $selectionCount = $('#selectionCount');
+
+  function updateUI() {
+    var count = $checkboxes.filter(':checked').length;
+    $deleteCount.text(count);
+    $selectionCount.text(count > 0 ? count + ' selected' : '');
+    if (count > 0) {
+      $btnDelete.show();
+    } else {
+      $btnDelete.hide();
+    }
+    // Update "select all" state
+    $selectAll.prop('checked', $checkboxes.length > 0 && count === $checkboxes.length);
+  }
+
+  $checkboxes.on('change', updateUI);
+
+  $selectAll.on('change', function () {
+    $checkboxes.prop('checked', this.checked);
+    updateUI();
+  });
+
+  // Find Suspicious: select users who have NEVER been in any group (any year)
+  $('#btnFindSuspicious').on('click', function () {
+    // Clear current selection
+    $checkboxes.prop('checked', false);
+
+    // Highlight and check rows where data-has-group="false" and not admin
+    $('#userTable tbody tr').each(function () {
+      var $row = $(this);
+      // jQuery .data() auto-converts "true"/"false" strings to booleans
+      if ($row.data('is-admin') === true) return;
+
+      if ($row.data('has-group') === false) {
+        $row.find('.user-checkbox').prop('checked', true);
+        $row.css('background-color', '#fcf8e3');
+      } else {
+        $row.css('background-color', '');
+      }
+    });
+
+    updateUI();
+    var count = $checkboxes.filter(':checked').length;
+    if (count === 0) {
+      alert('No suspicious accounts found! All non-admin users have been in at least one group.');
+    }
+  });
+
+  // Clear selection
+  $('#btnSelectNone').on('click', function () {
+    $checkboxes.prop('checked', false);
+    $('#userTable tbody tr').css('background-color', '');
+    updateUI();
+  });
+
+  // Bulk delete
+  $btnDelete.on('click', function () {
+    var checked = $checkboxes.filter(':checked');
+    var count = checked.length;
+    if (count === 0) return;
+
+    // Build names list for confirmation
+    var names = [];
+    checked.each(function () {
+      var $row = $(this).closest('tr');
+      var name = $row.find('td:nth-child(2) a').text().trim();
+      names.push(name);
+    });
+
+    var msg = 'DELETE ' + count + ' user(s)?\n\n' + names.join('\n') +
+      '\n\nThis will remove these users and all their picks, rounds, and group memberships. This cannot be undone.';
+
+    if (!confirm(msg)) return;
+
+    // Build hidden inputs and submit
+    var $inputs = $('#bulkDeleteInputs');
+    $inputs.empty();
+    checked.each(function () {
+      $inputs.append('<input type="hidden" name="userIds" value="' + $(this).val() + '">');
+    });
+    $('#bulkDeleteForm').submit();
+  });
+});
+</script>

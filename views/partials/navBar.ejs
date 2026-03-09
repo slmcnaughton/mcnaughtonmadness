@@ -60,6 +60,10 @@
             						    <% } %>
             						<% } %>
             						<!--<li><a href="#">Edit Profile</a></li>-->
+            						<% if(currentUser.isAdmin) { %>
+            						  <li role="separator" class="divider"></li>
+            						  <li><a href="/admin"><i class="fas fa-cog"></i> Admin</a></li>
+            						<% } %>
             						<li><a href="/logout">Log Out</a></li>
             					</ul>
             				</li>

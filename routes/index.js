@@ -62,6 +62,26 @@ router.post("/register", function (req, res) {
     return res.redirect("/register");
   }
 
+  // Bot detection: JS token check — bots don't execute JavaScript
+  if (req.body._token !== "human") {
+    req.flash(
+      "error",
+      "Nonhuman user detected. Please contact us if you feel that this was in error.",
+    );
+    return res.redirect("/register");
+  }
+
+  // Bot detection: timing check — bots submit forms instantly
+  var formLoadedAt = parseInt(req.body._ts, 10) || 0;
+  var elapsedMs = Date.now() - formLoadedAt;
+  if (elapsedMs < 3000) {
+    req.flash(
+      "error",
+      "Nonhuman user detected. Please contact us if you feel that this was in error.",
+    );
+    return res.redirect("/register");
+  }
+
   var username = req.body.username;
   var firstName = req.body.firstName;
   var lastName = req.body.lastName;

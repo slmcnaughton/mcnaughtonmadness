@@ -29,6 +29,7 @@ mongoose.set("useCreateIndex", true);
 //requiring routes
 var commentRoutes = require("./routes/comments"),
   indexRoutes = require("./routes/index"),
+  adminRoutes = require("./routes/admin"),
   tournamentStandingsRoutes = require("./routes/tournamentStandings"),
   tournamentRoutes = require("./routes/tournaments"),
   roundRoutes = require("./routes/rounds"),
@@ -76,6 +77,7 @@ app.use(function (req, res, next) {
 });
 
 app.use("/", indexRoutes);
+app.use("/admin", adminRoutes);
 app.use("/tournamentGroups/:groupName/comments", commentRoutes);
 app.use("/tournamentStandings", tournamentStandingsRoutes);
 app.use("/tournaments", tournamentRoutes);

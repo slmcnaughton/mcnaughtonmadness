@@ -22,6 +22,9 @@
             <div class="form-group" style="display: none;">
                 <input class="form-control" type="text" name="message" value="" />
             </div>
+            <!-- Bot prevention: JS sets these at page load. Bots that don't run JS submit empty values. -->
+            <input type="hidden" name="_token" value="">
+            <input type="hidden" name="_ts" value="">
             <div class="form-group">
                 <button class="btn btn-lg btn-primary btn-block">Sign Up!</button>
             </div>
@@ -34,6 +37,10 @@
 
 <script>
     $(document).ready(function(){
+        // Bot prevention: set JS token + timestamp (bots don't execute JS)
+        $('input[name="_token"]').val('human');
+        $('input[name="_ts"]').val(Date.now().toString());
+
         $("#registrationForm").validate({
             rules: {
                  username: {

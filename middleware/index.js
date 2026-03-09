@@ -1129,4 +1129,15 @@ middlewareObj.updateUserMatchAggregates = function (req, res, next) {
   );
 };
 
+// ─── Admin Guard ──────────────────────────────────────────────────────────────
+// Reusable middleware: requires authenticated user with isAdmin flag.
+
+middlewareObj.isAdmin = function (req, res, next) {
+  if (req.isAuthenticated() && req.user.isAdmin) {
+    return next();
+  }
+  req.flash("error", "You don't have permission to do that.");
+  res.redirect("/");
+};
+
 module.exports = middlewareObj;
