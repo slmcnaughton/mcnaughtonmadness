@@ -38,12 +38,12 @@ router.get("/new", middleware.isLoggedIn, function (req, res) {
 
 //CREATE -
 router.post("/", middleware.isLoggedIn, function (req, res) {
-  var year = 2024;
+  var year = 2026;
   var regions = ["East", "West", "South", "Midwest"];
   // var year = Math.floor((Math.random()*100+2000));
 
   //march month is actually 2
-  var startDay = moment.tz([2024, 02, 21], "America/New_York");
+  var startDay = moment.tz([2026, 02, 19], "America/New_York");
 
   //[year, month, day, hour, minute, second, millisecond]
   // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));

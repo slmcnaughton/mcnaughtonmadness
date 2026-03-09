@@ -5,7 +5,7 @@ var TeamImage = require("./models/teamImage");
 
 function scrapeTeams() {
   async.timesSeries(28, function (day, next) {
-    var extension = "202402";
+    var extension = "202602";
     if (day < 10) extension += "0" + day;
     else extension += day;
     var link =
