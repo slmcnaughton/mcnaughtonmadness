@@ -8,8 +8,6 @@ var TournamentStanding = require("../models/tournamentStanding");
 var Trophy = require("../models/trophy");
 var crypto = require("crypto");
 var TeamImage = require("../models/teamImage");
-var authHelper = require("../helpers/auth");
-var graph = require("@microsoft/microsoft-graph-client");
 var emailHelper = require("../middleware/emailHelper");
 
 //Root Route
