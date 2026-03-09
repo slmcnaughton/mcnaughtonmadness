@@ -6,9 +6,9 @@ require("dotenv").config();
 // var authHelper = require('../helpers/auth');
 // var graph = require('@microsoft/microsoft-graph-client');
 var async = require("async");
-var sgMail = require("@sendgrid/mail");
+var { Resend } = require("resend");
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+var resend = new Resend(process.env.RESEND_API_KEY);
 
 var emailObj = {};
 
@@ -291,9 +291,8 @@ emailObj.confirmPasswordChange = async function (req, user) {
 async function sendEmail(mailingList, subject, mailBody) {
   console.log("Email sent to " + mailingList);
   const mail = {
-    to: mailingList,
-    from: "seth@mcnaughtonmadness.com",
-    fromName: "McNaughton Madness",
+    from: "McNaughton Madness <seth@mcnaughtonmadness.com>",
+    to: Array.isArray(mailingList) ? mailingList : [mailingList],
     subject: subject,
   };
 
@@ -303,9 +302,11 @@ async function sendEmail(mailingList, subject, mailBody) {
     mail.html = mailBody.content;
   }
 
-  sgMail.send(mail, function (err) {
-    if (err) console.log(err);
-  });
+  try {
+    await resend.emails.send(mail);
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 function createMailingList(tournamentGroup, done) {
