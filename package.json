@@ -9,6 +9,9 @@
   },
   "author": "Seth McNaughton",
   "license": "ISC",
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "async": "^2.6.2",
     "body-parser": "^1.18.2",
