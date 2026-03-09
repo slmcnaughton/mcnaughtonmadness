@@ -13,6 +13,7 @@ var UserMatchPrediction = require("../models/userMatchPrediction");
 var UserMatchAggregate = require("../models/userMatchAggregate");
 var BonusAggregate = require("../models/bonusAggregate");
 var emailHelper = require("./emailHelper");
+var teamAliases = require("../helpers/teamAliases");
 
 var middlewareObj = {};
 
@@ -182,22 +183,26 @@ middlewareObj.scrapeUpdateResults = function (parsedResults) {
             async.forEach(
               parsedResults,
               function (result, next) {
-                var matchTop = filter(match.topTeam.name);
-                var matchBottom = filter(match.bottomTeam.name);
-                var resultTeam1 = filter(result.team1);
-                var resultTeam2 = filter(result.team2);
+                var topAliases = match.topTeam.aliases || [];
+                var bottomAliases = match.bottomTeam.aliases || [];
 
-                if (
+                var topMatchesTeam1 = teamAliases.teamsMatch(match.topTeam.name, result.team1, topAliases);
+                var topMatchesTeam2 = teamAliases.teamsMatch(match.topTeam.name, result.team2, topAliases);
+                var bottomMatchesTeam1 = teamAliases.teamsMatch(match.bottomTeam.name, result.team1, bottomAliases);
+                var bottomMatchesTeam2 = teamAliases.teamsMatch(match.bottomTeam.name, result.team2, bottomAliases);
+
+                var matchFound =
                   !match.winner &&
-                  ((matchTop === resultTeam1 && matchBottom === resultTeam2) ||
-                    (matchTop === resultTeam2 && matchBottom === resultTeam1))
-                ) {
+                  ((topMatchesTeam1 && bottomMatchesTeam2) ||
+                    (topMatchesTeam2 && bottomMatchesTeam1));
+
+                if (matchFound) {
                   var winningTeam;
-                  if (filter(result.winner) === matchTop) {
-                    console.log(matchTop + " defeated " + matchBottom);
+                  if (teamAliases.teamsMatch(match.topTeam.name, result.winner, topAliases)) {
+                    console.log(match.topTeam.name + " defeated " + match.bottomTeam.name);
                     winningTeam = match.topTeam;
                   } else {
-                    console.log(matchBottom + " defeated " + matchTop);
+                    console.log(match.bottomTeam.name + " defeated " + match.topTeam.name);
                     winningTeam = match.bottomTeam;
                   }
                   var tempMatch = {
@@ -224,6 +229,7 @@ middlewareObj.scrapeUpdateResults = function (parsedResults) {
           },
           function (err) {
             if (err) console.log(err);
+            logUnmatchedResults(parsedResults, round);
             if (matchUpdates.length > 0) {
               updateResults(matchUpdates);
             }
@@ -233,13 +239,29 @@ middlewareObj.scrapeUpdateResults = function (parsedResults) {
     });
 };
 
-function filter(teamName) {
-  return teamName
-    .replace("State", "St.")
-    .replace("North", "N.")
-    .replace("South", "S.")
-    .replace("Dakota", "Dak.")
-    .replace("Saint", "St.");
+// Log any scraped results that didn't match a DB team so Seth can spot problems
+function logUnmatchedResults(parsedResults, round) {
+  parsedResults.forEach(function (result) {
+    var matched = false;
+    for (var i = 0; i < round.matches.length; i++) {
+      var match = round.matches[i];
+      if (!match.topTeam || !match.bottomTeam) continue;
+      var topAliases = match.topTeam.aliases || [];
+      var bottomAliases = match.bottomTeam.aliases || [];
+      if (
+        teamAliases.teamsMatch(match.topTeam.name, result.team1, topAliases) ||
+        teamAliases.teamsMatch(match.topTeam.name, result.team2, topAliases) ||
+        teamAliases.teamsMatch(match.bottomTeam.name, result.team1, bottomAliases) ||
+        teamAliases.teamsMatch(match.bottomTeam.name, result.team2, bottomAliases)
+      ) {
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      console.log("[UNMATCHED] CBS result not matched to any DB team: " + result.team1 + " vs " + result.team2);
+    }
+  });
 }
 
 var updateResults = function (matchUpdates, next) {
