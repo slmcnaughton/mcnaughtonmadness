@@ -4,7 +4,7 @@
   "description": "Web app to host the annual McNaughton March Madness bracket picks, scores, smack talk, and results",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node test/teamAliases.test.js && node test/scoring.test.js",
     "start": "node --max_old_space_size=2192 app.js"
   },
   "author": "Seth McNaughton",
