@@ -3,12 +3,14 @@ var cheerio = require("cheerio");
 var middleware = require("./middleware");
 
 // Inspiration from https://www.digitalocean.com/community/tutorials/how-to-use-node-js-request-and-cheerio-to-set-up-simple-web-scraping
-function scrape() {
+function scrape(dateStr) {
   logTimeToConsole();
+  var url = dateStr
+    ? "https://www.cbssports.com/college-basketball/scoreboard/FBS/" + dateStr + "/"
+    : "https://www.cbssports.com/college-basketball/scoreboard/";
   request(
-    "https://www.cbssports.com/college-basketball/scoreboard/",
+    url,
     function (error, response, html) {
-      // request('https://www.cbssports.com/college-basketball/scoreboard/FBS/20240316/', function (error, response, html) {
       if (!error && response.statusCode == 200) {
         var $ = cheerio.load(html);
         var parsedResults = [];

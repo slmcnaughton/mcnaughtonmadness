@@ -42,6 +42,7 @@ router.get(
                   round: foundTournament.rounds[numRound - 1],
                   tournamentGroup: foundTournamentGroup,
                   username: req.params.username,
+                  targetFirstName: req.targetUserFirstName,
                   page: "tournamentGroups",
                 });
               } else if (numRound === 7) {
@@ -50,6 +51,7 @@ router.get(
                   numRound: numRound,
                   tournamentGroup: foundTournamentGroup,
                   username: req.params.username,
+                  targetFirstName: req.targetUserFirstName,
                   page: "tournamentGroups",
                 });
               } else {
@@ -58,6 +60,7 @@ router.get(
                   numRound: Number(numRound),
                   tournamentGroup: foundTournamentGroup,
                   username: req.params.username,
+                  targetFirstName: req.targetUserFirstName,
                   page: "tournamentGroups",
                 });
               }

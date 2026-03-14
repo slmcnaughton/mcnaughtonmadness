@@ -27,6 +27,28 @@
   </div>
 </div>
 
+<!-- ── Scrape Trigger ──────────────────────────────────────────────── -->
+<div class="row" style="margin-bottom: 20px;">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-sync-alt"></i> Scrape Scores</h3>
+      </div>
+      <div class="panel-body">
+        <form action="/admin/scrape" method="POST" class="form-inline">
+          <div class="form-group" style="margin-right: 10px;">
+            <input type="text" name="dateStr" class="form-control" placeholder="YYYYMMDD (blank = today)" style="width: 200px;" pattern="\d{8}" title="8-digit date like 20260313">
+          </div>
+          <button type="submit" class="btn btn-primary" onclick="return confirm('Trigger a scrape? This will update match results from CBS.');">
+            <i class="fas fa-play"></i> Run Scrape
+          </button>
+          <span class="text-muted" style="margin-left: 10px;">Leave blank to scrape today's scoreboard, or enter a date like 20260313</span>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── User Management ───────────────────────────────────────────── -->
 <div class="row">
   <div class="col-lg-12">
@@ -171,6 +193,8 @@
                     <th>R2</th>
                     <th>R3</th>
                     <th>R4</th>
+                    <th>R5</th>
+                    <th>R6</th>
                     <th>FF</th>
                     <th>Champ</th>
                   </tr>
@@ -178,24 +202,27 @@
                 <tbody>
                   <% group.userTournaments.forEach(function(ut) { %>
                     <tr>
-                      <td><%= ut.user.firstName %> <%= ut.user.lastName %></td>
+                      <td>
+                        <a href="/tournamentGroups/<%= group.groupName %>/userTournaments/<%= ut.user.username %>">
+                          <%= ut.user.firstName %> <%= ut.user.lastName %>
+                        </a>
+                      </td>
                       <%
                         // Rounds: 1-4 are regular, 7=final four, 8=champion
-                        var roundLabels = [1, 2, 3, 4, 7, 8];
+                        var roundLabels = [1, 2, 3, 4, 5, 6, 7, 8];
+                        var editBase = "/tournamentGroups/" + group.groupName + "/userTournaments/" + ut.user.username + "/";
                       %>
                       <% roundLabels.forEach(function(rn) { %>
                         <td class="text-center">
                           <%
                             var ur = ut.userRounds ? ut.userRounds.find(function(r) { return r.round.numRound === rn; }) : null;
                             var hasPicks = ur && ur.userMatchPredictions && ur.userMatchPredictions.length > 0 &&
-                              ur.userMatchPredictions.some(function(p) { return p.winner && p.winner.length > 0; });
+                              ur.userMatchPredictions.some(function(p) { return !!p.winner; });
                           %>
                           <% if(hasPicks) { %>
-                            <span style="color: #5cb85c;"><i class="fas fa-check"></i></span>
-                          <% } else if(ur) { %>
-                            <span style="color: #f0ad4e;"><i class="fas fa-minus"></i></span>
+                            <a href="<%= editBase + rn + '/edit' %>" title="Edit R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #5cb85c;"><i class="fas fa-check"></i></a>
                           <% } else { %>
-                            <span class="text-muted">&#x2014;</span>
+                            <a href="<%= editBase + rn + '/edit' %>" title="Make R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #f0ad4e;"><i class="fas fa-pencil-alt"></i></a>
                           <% } %>
                         </td>
                       <% }); %>

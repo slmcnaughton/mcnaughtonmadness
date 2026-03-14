@@ -6,8 +6,8 @@ var Round = require("../models/round");
 var Team = require("../models/team");
 var middleware = require("../middleware");
 
-//EDIT - render edit round form
-router.get("/:numRound/edit", function (req, res) {
+//EDIT - render edit round form (admin only)
+router.get("/:numRound/edit", middleware.isAdmin, function (req, res) {
   Tournament.findOne({ year: req.params.year })
     .populate({
       path: "rounds",
@@ -37,7 +37,7 @@ router.get("/:numRound/edit", function (req, res) {
 
 //     res.redirect("back");
 // });
-router.put("/:numRound", middleware.manuallyUpdateResults, function (req, res) {
+router.put("/:numRound", middleware.isAdmin, middleware.manuallyUpdateResults, function (req, res) {
   var currentYear = new Date().getFullYear();
   res.redirect("/tournaments/" + currentYear);
 });

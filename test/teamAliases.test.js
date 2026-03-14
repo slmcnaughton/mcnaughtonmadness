@@ -145,6 +145,18 @@ test("UCSB ↔ UC Santa Barbara", function () {
   assert.ok(teamsMatch("UCSB", "UC Santa Barbara", []));
 });
 
+test("George Wash. ↔ George Washington", function () {
+  assert.ok(teamsMatch("George Wash.", "George Washington", []));
+});
+
+test("CSFullerton ↔ Cal State Fullerton", function () {
+  assert.ok(teamsMatch("CSFullerton", "Cal State Fullerton", []));
+});
+
+test("CSNorthridge ↔ Cal State Northridge", function () {
+  assert.ok(teamsMatch("CSNorthridge", "Cal State Northridge", []));
+});
+
 console.log("\nteamsMatch() — non-matches");
 
 test("Duke does NOT match North Carolina", function () {

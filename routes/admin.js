@@ -10,6 +10,7 @@ var UserRound = require("../models/userRound");
 var UserMatchPrediction = require("../models/userMatchPrediction");
 var UserMatchAggregate = require("../models/userMatchAggregate");
 var Comment = require("../models/comment");
+var scrape = require("../scrape");
 
 // All admin routes require isAdmin
 router.use(middleware.isAdmin);
@@ -65,7 +66,7 @@ router.get("/", function (req, res) {
                     ur.userMatchPredictions &&
                     ur.userMatchPredictions.length > 0 &&
                     ur.userMatchPredictions.some(function (p) {
-                      return p.winner && p.winner.length > 0;
+                      return !!p.winner;
                     });
                   pickStatus[username][group.groupName].rounds[
                     ur.round.numRound
@@ -249,6 +250,21 @@ router.post("/users/bulk-delete", function (req, res) {
 
     deleteNext();
   });
+});
+
+// ─── Scrape Trigger ──────────────────────────────────────────────────────────
+
+router.post("/scrape", function (req, res) {
+  var dateStr = (req.body.dateStr || "").trim();
+  if (dateStr) {
+    console.log("[ADMIN] Manual scrape triggered for date: " + dateStr);
+    scrape(dateStr);
+  } else {
+    console.log("[ADMIN] Manual scrape triggered for today");
+    scrape();
+  }
+  req.flash("success", "Scrape triggered" + (dateStr ? " for " + dateStr : " for today") + ". Check server logs for results.");
+  res.redirect("/admin");
 });
 
 // ─── Team Management ────────────────────────────────────────────────────────

@@ -33,6 +33,18 @@
         
     </div>
     
+    <% if (currentUser && currentUser.isAdmin) { %>
+        <div class="container" style="margin-bottom: 10px;">
+            <div class="text-center">
+                <% for (var r = 1; r <= tournament.rounds.length; r++) { %>
+                    <a href="/tournaments/<%= tournament.year %>/rounds/<%= r %>/edit" class="btn btn-sm btn-warning" style="margin: 2px;">
+                        <i class="fas fa-edit"></i> Set R<%= r %> Winners
+                    </a>
+                <% } %>
+            </div>
+        </div>
+    <% } %>
+
     <div class="container-fluid tournamentContents" style="padding-bottom: 50px; min-height: 300px">
         <div class="row">
             <div class="col-xs-12 bracket"> 

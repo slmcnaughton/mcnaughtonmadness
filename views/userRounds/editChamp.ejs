@@ -1,14 +1,14 @@
 <% include ../partials/header %>
 
-<h1 style="text-align: left;"> 
+<h1 style="text-align: left;">
     <% if (numRound < 7) { %>
-        Round <%= numRound %> Picks:
+        <% if (targetFirstName) { %><%= targetFirstName %>'s <% } %>Round <%= numRound %> Picks:
     <% } else if (numRound === 7) { %>
-        Final Four Picks:
+        <% if (targetFirstName) { %><%= targetFirstName %>'s <% } %>Final Four Picks:
     <% } else {%>
-        Champion Pick:
+        <% if (targetFirstName) { %><%= targetFirstName %>'s <% } %>Champion Pick:
     <% } %>
-        </h1>
+</h1>
 
 <!--=======================================================-->
 <!--UPDATE FORM ACTION AND LOCATION-->

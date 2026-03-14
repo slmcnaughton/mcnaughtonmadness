@@ -133,6 +133,7 @@ var ALIAS_GROUPS = [
   ["eastern illinois", "e illinois"],
   ["western illinois", "w illinois"],
   ["western georgia", "w georgia"],
+  ["george washington", "george wash", "geo washington", "geo wash"],
 
   // --- CBS "Ga."/"Va."/"Okla."/"La."/"So." abbreviations ---
   ["georgia tech", "ga tech", "georgia technology"],
@@ -156,6 +157,8 @@ var ALIAS_GROUPS = [
   ["miami ohio", "miami oh"],
   ["texas am", "texas a m"],
   ["nc at", "north carolina at"],
+  ["cal state fullerton", "csfullerton", "cs fullerton", "cal st fullerton"],
+  ["cal state northridge", "csnorthridge", "cs northridge", "cal st northridge"],
   ["uc davis", "california davis"],
   ["uc irvine", "california irvine"],
   ["uc santa barbara", "california santa barbara", "ucsb"],

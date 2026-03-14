@@ -57,6 +57,7 @@ middlewareObj.checkUserTournamentOwnership = function (req, res, next) {
           foundUserTournament.user.id.equals(req.user.id) ||
           req.user.isAdmin
         ) {
+          req.targetUserFirstName = foundUserTournament.user.firstName;
           next();
         } else {
           req.flash("error", "You don't have permission to do that");
