@@ -54,27 +54,14 @@ router.get("/register", function (req, res) {
 
 //handle sign up logic
 router.post("/register", function (req, res) {
-  if (req.body.message) {
-    req.flash(
-      "error",
-      "Nonhuman user detected. Please contact us if you feel that this was in error.",
-    );
-    return res.redirect("/register");
-  }
-
-  // Bot detection: JS token check — bots don't execute JavaScript
-  if (req.body._token !== "human") {
-    req.flash(
-      "error",
-      "Nonhuman user detected. Please contact us if you feel that this was in error.",
-    );
-    return res.redirect("/register");
-  }
-
-  // Bot detection: timing check — bots submit forms instantly
+  // Bot detection: honeypot field, JS token, and timing check
   var formLoadedAt = parseInt(req.body._ts, 10) || 0;
-  var elapsedMs = Date.now() - formLoadedAt;
-  if (elapsedMs < 3000) {
+  var isBot =
+    req.body.message ||
+    req.body._token !== "human" ||
+    Date.now() - formLoadedAt < 3000;
+
+  if (isBot) {
     req.flash(
       "error",
       "Nonhuman user detected. Please contact us if you feel that this was in error.",
@@ -89,7 +76,6 @@ router.post("/register", function (req, res) {
     username: username,
     firstName: firstName,
     lastName: lastName,
-    image: req.body.image,
     email: req.body.email,
   });
 

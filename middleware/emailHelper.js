@@ -3,8 +3,6 @@ var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
 var User = require("../models/user");
 require("dotenv").config();
-// var authHelper = require('../helpers/auth');
-// var graph = require('@microsoft/microsoft-graph-client');
 var async = require("async");
 var { Resend } = require("resend");
 

@@ -159,13 +159,18 @@ function deleteUserCascade(userId, done) {
             if (err) console.log("Error deleting user tournaments:", err);
 
             TournamentGroup.updateMany(
-              {},
+              { userTournaments: { $in: utIds } },
               { $pull: { userTournaments: { $in: utIds } } },
               function (err) {
                 if (err) console.log("Error updating groups:", err);
 
                 UserMatchAggregate.updateMany(
-                  {},
+                  {
+                    $or: [
+                      { "topTeamPickers.id": userId },
+                      { "bottomTeamPickers.id": userId },
+                    ],
+                  },
                   {
                     $pull: {
                       topTeamPickers: { id: userId },
@@ -251,7 +256,7 @@ router.post("/users/bulk-delete", function (req, res) {
 router.get("/teams", function (req, res) {
   var year = new Date().getFullYear();
 
-  Tournament.findOne({ year: year })
+  Tournament.findOne({ year: year }, { rounds: { $slice: 1 } })
     .populate({
       path: "rounds",
       populate: {
