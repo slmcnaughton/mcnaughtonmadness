@@ -14,6 +14,7 @@ var UserMatchAggregate = require("../models/userMatchAggregate");
 var BonusAggregate = require("../models/bonusAggregate");
 var emailHelper = require("./emailHelper");
 var teamAliases = require("../helpers/teamAliases");
+var scoring = require("../helpers/scoring");
 
 var middlewareObj = {};
 
@@ -382,20 +383,16 @@ var scoreUserMatchPredictions = function (updatedMatches, next) {
         .exec(function (err, foundMatch) {
           if (err) console.log(err);
           else {
-            var ts = foundMatch.topTeam.seed; //ts = topseed
-            var bs = foundMatch.bottomTeam.seed; //bs = bottomseed
             var winner = match.winningTeam;
-            var winningScore = 0;
-            var losingScore = 0;
-            if (winner.equals(foundMatch.topTeam._id)) {
-              winningScore = ts / bs;
-              losingScore = ts < bs ? -1 : -bs / ts;
-            } else {
-              winningScore = bs / ts;
-              losingScore = bs < ts ? -1 : -ts / bs;
-            }
-            winningScore *= match.tournament.currentRound;
-            losingScore *= match.tournament.currentRound;
+            var winnerIsTop = winner.equals(foundMatch.topTeam._id);
+            var matchScores = scoring.calculateMatchScores(
+              foundMatch.topTeam.seed,
+              foundMatch.bottomTeam.seed,
+              winnerIsTop,
+              match.tournament.currentRound,
+            );
+            var winningScore = matchScores.winningScore;
+            var losingScore = matchScores.losingScore;
 
             //=============================================
             // a) Find all userMatchPredictions and update their score attribute
@@ -966,21 +963,22 @@ middlewareObj.updateUserMatchAggregates = function (req, res, next) {
                             // if none exist, create a userMatchAggregate for the userMatchPrediction:
                             function (callback) {
                               if (!foundUserMatchAggregate) {
-                                var ts = userPredictionMatch.topTeam.seed; //ts = topseed
-                                var bs = userPredictionMatch.bottomTeam.seed; //bs = bottomseed
-                                var nr = req.params.numRound; //nr = numRound
+                                var aggScores = scoring.calculateAggregateScores(
+                                  userPredictionMatch.topTeam.seed,
+                                  userPredictionMatch.bottomTeam.seed,
+                                  req.params.numRound,
+                                );
 
                                 var newUserMatchAggregate = {
                                   matchNumber: userPredictionMatch.matchNumber,
                                   matchReference: userPredictionMatch.id,
                                   tournamentGroup: foundTournamentGroup.id,
                                   topTeamPickers: [],
-                                  topWinScore: (nr * ts) / bs,
-                                  topLossScore: ts < bs ? (-ts / bs) * nr : -nr,
+                                  topWinScore: aggScores.topWinScore,
+                                  topLossScore: aggScores.topLossScore,
                                   bottomTeamPickers: [],
-                                  bottomWinScore: (nr * bs) / ts,
-                                  bottomLossScore:
-                                    bs < ts ? (-bs / ts) * nr : -nr,
+                                  bottomWinScore: aggScores.bottomWinScore,
+                                  bottomLossScore: aggScores.bottomLossScore,
                                 };
                                 UserMatchAggregate.create(
                                   newUserMatchAggregate,
