@@ -10,6 +10,9 @@ var UserRound = require("../models/userRound");
 var UserMatchPrediction = require("../models/userMatchPrediction");
 var UserMatchAggregate = require("../models/userMatchAggregate");
 var Comment = require("../models/comment");
+var Trophy = require("../models/trophy");
+var TournamentStanding = require("../models/tournamentStanding");
+var async = require("async");
 var scrape = require("../scrape");
 
 // All admin routes require isAdmin
@@ -359,6 +362,206 @@ router.post("/teams/:teamId", function (req, res) {
       res.redirect("/admin/teams");
     },
   );
+});
+
+// ─── Toggle Official Group ──────────────────────────────────────────────────
+
+router.post("/groups/:groupName/toggle-official", function (req, res) {
+  TournamentGroup.findOne(
+    { groupName: req.params.groupName },
+    function (err, group) {
+      if (err || !group) {
+        req.flash("error", "Group not found.");
+        return res.redirect("/admin");
+      }
+      group.isOfficial = !group.isOfficial;
+      group.save(function (err) {
+        if (err) console.log(err);
+        req.flash(
+          "success",
+          group.groupName +
+            " is now " +
+            (group.isOfficial ? "official" : "unofficial") +
+            ".",
+        );
+        res.redirect("/admin");
+      });
+    },
+  );
+});
+
+// ─── Finalize Tournament (Create Trophies) ──────────────────────────────────
+
+router.post("/finalize-tournament", function (req, res) {
+  var year = new Date().getFullYear();
+
+  // 1. Find all official groups for this year
+  TournamentGroup.find({ year: year, isOfficial: true })
+    .populate({ path: "userTournaments", populate: "user" })
+    .exec(function (err, officialGroups) {
+      if (err) {
+        console.log(err);
+        req.flash("error", "Error finding official groups.");
+        return res.redirect("/admin");
+      }
+
+      if (!officialGroups || officialGroups.length === 0) {
+        req.flash(
+          "error",
+          "No official groups found for " + year + ". Mark a group as official first.",
+        );
+        return res.redirect("/admin");
+      }
+
+      // 2. Collect standings from all official groups, deduplicate by name
+      var standingsMap = {}; // key: "firstName|lastName" → { firstName, lastName, score }
+
+      officialGroups.forEach(function (group) {
+        if (!group.userTournaments) return;
+        group.userTournaments.forEach(function (ut) {
+          var key = ut.user.firstName + "|" + ut.user.lastName;
+          var score = Math.round(ut.score * 1000) / 1000;
+          if (!standingsMap[key] || score > standingsMap[key].score) {
+            standingsMap[key] = {
+              firstName: ut.user.firstName,
+              lastName: ut.user.lastName,
+              score: score,
+            };
+          }
+        });
+      });
+
+      var standings = Object.keys(standingsMap).map(function (key) {
+        return standingsMap[key];
+      });
+
+      if (standings.length === 0) {
+        req.flash("error", "No user scores found in official groups.");
+        return res.redirect("/admin");
+      }
+
+      console.log(
+        "[ADMIN] Finalizing " +
+          year +
+          " tournament with " +
+          standings.length +
+          " participants from " +
+          officialGroups.length +
+          " official group(s).",
+      );
+
+      // 3. Upsert TournamentStanding for idempotency
+      TournamentStanding.findOneAndUpdate(
+        { year: year },
+        { year: year, standings: standings },
+        { upsert: true, new: true },
+        function (err) {
+          if (err) {
+            console.log(err);
+            req.flash("error", "Error creating tournament standing.");
+            return res.redirect("/admin");
+          }
+
+          // 4. Delete any existing trophies for this year (idempotent re-run)
+          Trophy.find({ year: year }, function (err, oldTrophies) {
+            if (err) console.log("Error finding old trophies:", err);
+
+            var oldTrophyIds = (oldTrophies || []).map(function (t) {
+              return t._id;
+            });
+
+            // Remove old trophy refs from all users, then delete the trophy docs
+            User.updateMany(
+              { trophies: { $in: oldTrophyIds } },
+              { $pull: { trophies: { $in: oldTrophyIds } } },
+              function (err) {
+                if (err) console.log("Error removing old trophy refs:", err);
+
+                Trophy.deleteMany({ year: year }, function (err) {
+                  if (err) console.log("Error deleting old trophies:", err);
+
+            // 5. For each standing entry, create trophy and assign to user
+            var totalPlayers = standings.length;
+            var created = 0;
+
+            async.eachSeries(
+              standings,
+              function (entry, next) {
+                // Calculate rank
+                var rank = 1;
+                standings.forEach(function (other) {
+                  if (other.score > entry.score) rank++;
+                });
+
+                // Find matching user
+                User.findOne(
+                  {
+                    firstName: entry.firstName,
+                    lastName: entry.lastName,
+                  },
+                  function (err, user) {
+                    if (err || !user) {
+                      console.log(
+                        "[TROPHY] No user found for " +
+                          entry.firstName +
+                          " " +
+                          entry.lastName,
+                      );
+                      return next();
+                    }
+
+                    // Create trophy
+                    Trophy.create(
+                      {
+                        year: year,
+                        userRank: rank,
+                        totalPlayers: totalPlayers,
+                        score: entry.score,
+                      },
+                      function (err, trophy) {
+                        if (err) {
+                          console.log("Error creating trophy:", err);
+                          return next();
+                        }
+
+                        user.trophies.addToSet(trophy._id);
+                        user.save(function (err) {
+                          if (err) console.log("Error saving user trophy:", err);
+                          created++;
+                          next();
+                        });
+                      },
+                    );
+                  },
+                );
+              },
+              function (err) {
+                if (err) console.log(err);
+                console.log(
+                  "[ADMIN] Finalized! Created " +
+                    created +
+                    " trophies for " +
+                    year +
+                    ".",
+                );
+                req.flash(
+                  "success",
+                  "Tournament finalized! Created " +
+                    created +
+                    " trophies for " +
+                    totalPlayers +
+                    " participants.",
+                );
+                res.redirect("/admin");
+              },
+            );
+                });
+              },
+            );
+          });
+        },
+      );
+    });
 });
 
 module.exports = router;

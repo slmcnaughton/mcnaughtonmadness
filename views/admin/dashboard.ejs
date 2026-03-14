@@ -178,9 +178,17 @@
       <div class="col-md-6">
         <div class="panel panel-default">
           <div class="panel-heading">
-            <h4 class="panel-title">
+            <h4 class="panel-title" style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
               <a href="/tournamentGroups/<%= group.groupName %>"><%= group.groupName %></a>
               <span class="badge"><%= group.userTournaments ? group.userTournaments.length : 0 %> members</span>
+              <% if(group.isOfficial) { %>
+                <span class="label label-success"><i class="fas fa-trophy"></i> Official</span>
+              <% } %>
+              <form action="/admin/groups/<%= group.groupName %>/toggle-official" method="POST" style="display: inline; margin-left: auto;">
+                <button type="submit" class="btn btn-xs <%= group.isOfficial ? 'btn-default' : 'btn-success' %>" title="<%= group.isOfficial ? 'Remove official status' : 'Mark as official (used for trophies)' %>">
+                  <i class="fas fa-trophy"></i> <%= group.isOfficial ? 'Unofficial' : 'Make Official' %>
+                </button>
+              </form>
             </h4>
           </div>
           <div class="panel-body">
@@ -239,6 +247,41 @@
     <% }); %>
   </div>
 <% } %>
+
+<!-- ── Finalize Tournament ───────────────────────────────────────── -->
+<div class="row" style="margin-top: 20px;">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-trophy"></i> Finalize Tournament</h3>
+      </div>
+      <div class="panel-body">
+        <%
+          var officialGroups = groups.filter(function(g) { return g.isOfficial; });
+        %>
+        <% if(officialGroups.length === 0) { %>
+          <p class="text-muted">No official groups marked. Use the "Make Official" button above to designate which group(s) count for trophies.</p>
+        <% } else { %>
+          <p>
+            Official group<%= officialGroups.length > 1 ? 's' : '' %>:
+            <% officialGroups.forEach(function(g, i) { %>
+              <strong><%= g.groupName %></strong><%= i < officialGroups.length - 1 ? ', ' : '' %>
+            <% }); %>
+          </p>
+          <p class="text-muted" style="margin-bottom: 12px;">
+            This will create a historical standing record and assign trophies to all participants based on final scores.
+            Safe to run multiple times (replaces previous trophies for this year).
+          </p>
+          <form action="/admin/finalize-tournament" method="POST">
+            <button type="submit" class="btn btn-warning btn-lg" onclick="return confirm('Finalize the <%= year %> tournament and assign trophies? Make sure all scores are final before proceeding.');">
+              <i class="fas fa-trophy"></i> Finalize <%= year %> Tournament & Assign Trophies
+            </button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
 
 <% include ../partials/footer %>
 

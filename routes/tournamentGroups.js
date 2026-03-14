@@ -131,6 +131,7 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
           bonusAggregates: [],
           currentRound: 1,
           comments: [],
+          isOfficial: req.user.isAdmin && req.body.isOfficial === "true",
         };
         TournamentGroup.create(
           newTournamentGroup,

@@ -14,6 +14,7 @@ var tournamentGroupSchema = new mongoose.Schema({
     name: String,
   },
   publicGroup: Boolean,
+  isOfficial: { type: Boolean, default: false },
   secretCode: String,
   currentRound: Number,
   comments: [
