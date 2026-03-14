@@ -12,6 +12,7 @@ var Scrape = require("../models/scrape");
 var scrape = require("../scrape");
 var schedule = require("node-schedule");
 var emailHelper = require("../middleware/emailHelper");
+var teamAliases = require("../helpers/teamAliases");
 
 //Page:  /tournaments
 
@@ -148,43 +149,44 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                         // 1) Use array of teamNames and order of seeds to create array of teams
                         //==========================================================
                         function (callback) {
-                          var i = 0;
+                          // Load all TeamImages once, then match by alias
+                          TeamImage.find({}).exec(function (err, allTeamImages) {
+                            if (err) console.log(err);
+                            allTeamImages = allTeamImages || [];
 
-                          asyncNpm.forEachSeries(
-                            teamNames,
-                            function (teamName, next) {
-                              TeamImage.findOne({ name: teamName }).exec(
-                                function (err, foundTeamImage) {
+                            var i = 0;
+                            asyncNpm.forEachSeries(
+                              teamNames,
+                              function (teamName, next) {
+                                var matched = allTeamImages.find(function (ti) {
+                                  return teamAliases.teamsMatch(teamName, ti.name, []);
+                                });
+                                var team = {
+                                  region:
+                                    regions[Math.floor(i / order.length)],
+                                  name: teamName,
+                                  seed: order[i % order.length],
+                                  firstMatchNum: Math.floor(i / 2) + 1,
+                                  lost: 0,
+                                };
+                                if (matched) {
+                                  team.image = matched.image;
+                                }
+                                Team.create(team, function (err, newTeam) {
                                   if (err) console.log(err);
-                                  var image;
-                                  if (foundTeamImage) {
-                                    image = foundTeamImage.image;
+                                  else {
+                                    teams.push(newTeam);
+                                    i++;
+                                    next();
                                   }
-                                  var team = {
-                                    region:
-                                      regions[Math.floor(i / order.length)],
-                                    name: teamName,
-                                    seed: order[i % order.length],
-                                    firstMatchNum: Math.floor(i / 2) + 1,
-                                    image: image,
-                                    lost: 0,
-                                  };
-                                  Team.create(team, function (err, newTeam) {
-                                    if (err) console.log(err);
-                                    else {
-                                      teams.push(newTeam);
-                                      i++;
-                                      next();
-                                    }
-                                  });
-                                },
-                              );
-                            },
-                            function (err) {
-                              if (err) console.log(err);
-                              else callback();
-                            },
-                          );
+                                });
+                              },
+                              function (err) {
+                                if (err) console.log(err);
+                                else callback();
+                              },
+                            );
+                          });
                         },
                         //==========================================================
                         // 2) Create and fill matches with teams array
@@ -343,11 +345,11 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                                         //Second day of Sweet 16/Elite 8 starts an hour earlier than day 1
                                         startTime = new moment(
                                           createdRound.startTime,
-                                        ).add({ d: 1, h: 00, m: 00 });
+                                        ).add({ d: 1, h: 0, m: 0 });
                                       else
                                         startTime = new moment(
                                           createdRound.startTime,
-                                        ).add({ d: j, h: 0, m: 00 });
+                                        ).add({ d: j, h: 0, m: 0 });
 
                                       var endTime;
                                       if (i === 0) {
