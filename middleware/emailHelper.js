@@ -287,10 +287,12 @@ emailObj.confirmPasswordChange = async function (req, user) {
 };
 
 async function sendEmail(mailingList, subject, mailBody) {
-  console.log("Email sent to " + mailingList);
-  const mail = {
+  var recipients = Array.isArray(mailingList) ? mailingList : [mailingList];
+  console.log("Sending email to " + recipients.length + " recipient(s): " + recipients.join(", "));
+
+  var mail = {
     from: "McNaughton Madness <seth@mcnaughtonmadness.com>",
-    to: Array.isArray(mailingList) ? mailingList : [mailingList],
+    to: recipients,
     subject: subject,
   };
 
@@ -301,9 +303,10 @@ async function sendEmail(mailingList, subject, mailBody) {
   }
 
   try {
-    await resend.emails.send(mail);
+    var result = await resend.emails.send(mail);
+    console.log("Email sent successfully, id:", result.data ? result.data.id : result);
   } catch (err) {
-    console.log(err);
+    console.log("Email send failed:", err);
   }
 }
 
