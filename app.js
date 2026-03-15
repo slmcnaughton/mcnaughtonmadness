@@ -42,6 +42,17 @@ mongoose.connect(process.env.DATABASE_URL_PROD, {
   useUnifiedTopology: true,
 });
 
+// Force HTTPS on Heroku (load balancer sets x-forwarded-proto)
+app.use(function (req, res, next) {
+  if (
+    req.headers["x-forwarded-proto"] &&
+    req.headers["x-forwarded-proto"] !== "https"
+  ) {
+    return res.redirect(301, "https://" + req.hostname + req.originalUrl);
+  }
+  next();
+});
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
