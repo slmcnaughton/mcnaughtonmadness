@@ -313,7 +313,7 @@ var advanceWinners = function (matchUpdates, done) {
               [
                 function (callback) {
                   updatedMatch.winner = matchUpdate.winningTeam;
-                  if (updatedMatch.winner.id === updatedMatch.topTeam.id) {
+                  if (matchUpdate.winningTeam._id.equals(updatedMatch.topTeam._id)) {
                     updatedMatch.bottomTeam.lost++;
                     updatedMatch.bottomTeam.save();
                   } else {

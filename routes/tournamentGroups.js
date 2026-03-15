@@ -5,6 +5,7 @@ var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
+var Team = require("../models/team");
 var emailHelper = require("../middleware/emailHelper");
 
 //SendRoundSummaryTest
@@ -300,8 +301,9 @@ router.get("/:groupName/bracket", function (req, res) {
       } else {
         foundTournamentGroup.bonusAggregates.sort(compareBonusAggregates);
 
+        var bonusAggregates;
         if (foundTournamentGroup.bonusAggregates.length > 0) {
-          var bonusAggregates = [[], [], [], [], []];
+          bonusAggregates = [[], [], [], [], []];
 
           for (
             var i = 0;
@@ -315,10 +317,25 @@ router.get("/:groupName/bracket", function (req, res) {
           }
         }
 
-        res.render("tournamentGroups/showBracket", {
-          tournamentGroup: foundTournamentGroup,
-          bonAgg: bonusAggregates,
-          page: "tournamentGroups",
+        // Build team lost lookup (team.id populate doesn't work due to
+        // Mongoose "id" virtual conflict, so query Teams directly)
+        var teamIds = foundTournamentGroup.bonusAggregates.map(function (a) {
+          return a.team.id;
+        });
+        Team.find({ _id: { $in: teamIds } }).exec(function (err, teams) {
+          var teamLostMap = {};
+          if (teams) {
+            teams.forEach(function (t) {
+              teamLostMap[String(t._id)] = t.lost || 0;
+            });
+          }
+
+          res.render("tournamentGroups/showBracket", {
+            tournamentGroup: foundTournamentGroup,
+            bonAgg: bonusAggregates,
+            teamLostMap: teamLostMap,
+            page: "tournamentGroups",
+          });
         });
       }
     });

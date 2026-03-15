@@ -383,7 +383,7 @@
                         <div class="grid">
                     <% } %>
                             <% for (var j = 0; j < bonAgg[4].length; j++) { %>
-                                <% if (bonAgg[4][j].team.id.lost > 0) { %>
+                                <% if (teamLostMap[String(bonAgg[4][j].team.id)] > 0) { %>
                                     <div class="grid-item lost">
                                         <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>').html());">
                                     </div>
@@ -433,7 +433,7 @@
                     <div class="grid">
     
                         <% for (var j = 0; j < bonAgg[i].length; j++) { %>
-                            <% if (bonAgg[i][j].team.id.lost > 0) { %>
+                            <% if (teamLostMap[String(bonAgg[i][j].team.id)] > 0) { %>
                                 <div class="grid-item lost">
                                     <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>').html());">
                                 </div>
