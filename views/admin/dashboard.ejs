@@ -26,6 +26,13 @@
     </a>
   </div>
 </div>
+<div class="row" style="margin-bottom: 20px;">
+  <div class="col-sm-4">
+    <a href="/admin/merge" class="btn btn-default btn-block">
+      <i class="fas fa-compress-arrows-alt"></i> Merge Accounts
+    </a>
+  </div>
+</div>
 
 <!-- ── Scrape Trigger ──────────────────────────────────────────────── -->
 <div class="row" style="margin-bottom: 20px;">
@@ -48,6 +55,57 @@
     </div>
   </div>
 </div>
+
+<!-- ── Pending Name Changes ──────────────────────────────────────── -->
+<%
+  var pendingUsers = users.filter(function(u) { return u.pendingFirstName || u.pendingLastName; });
+%>
+<% if(pendingUsers.length > 0) { %>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-warning">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-user-edit"></i> Pending Name Changes (<%= pendingUsers.length %>)</h3>
+      </div>
+      <div class="panel-body">
+        <table class="table table-condensed">
+          <thead>
+            <tr>
+              <th>Current Name</th>
+              <th>Requested Name</th>
+              <th>Username</th>
+              <th>Requested</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% pendingUsers.forEach(function(u) { %>
+              <tr>
+                <td><%= u.firstName %> <%= u.lastName %></td>
+                <td><strong><%= u.pendingFirstName %> <%= u.pendingLastName %></strong></td>
+                <td><%= u.username %></td>
+                <td><%= u.nameChangeRequestedAt ? u.nameChangeRequestedAt.toLocaleDateString() : '' %></td>
+                <td>
+                  <form action="/admin/users/<%= u._id %>/approve-name" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-xs btn-success" onclick="return confirm('Approve name change to <%= u.pendingFirstName %> <%= u.pendingLastName %>?');">
+                      <i class="fas fa-check"></i> Approve
+                    </button>
+                  </form>
+                  <form action="/admin/users/<%= u._id %>/reject-name" method="POST" style="display: inline; margin-left: 4px;">
+                    <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Reject name change request?');">
+                      <i class="fas fa-times"></i> Reject
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
 
 <!-- ── User Management ───────────────────────────────────────────── -->
 <div class="row">
@@ -91,7 +149,7 @@
                 <% groups.forEach(function(g) { %>
                   <th class="text-center" title="<%= g.groupName %>"><%= g.groupName.substring(0, 12) %></th>
                 <% }); %>
-                <th>Reset Password</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -146,10 +204,18 @@
                       <% } %>
                     </td>
                   <% }); %>
-                  <td>
+                  <td style="white-space: nowrap;">
                     <% if(!user.isAdmin) { %>
-                      <form action="/admin/users/<%= user.username %>/resetPassword" method="POST" style="display: inline-flex; gap: 5px; align-items: center;">
-                        <input type="password" name="newPassword" placeholder="New password" class="form-control input-sm" style="width: 140px;" minlength="6" required>
+                      <button type="button" class="btn btn-xs btn-info btn-edit-user"
+                        data-id="<%= user._id %>"
+                        data-firstname="<%= user.firstName %>"
+                        data-lastname="<%= user.lastName %>"
+                        data-email="<%= user.email %>"
+                        title="Edit profile">
+                        <i class="fas fa-pencil-alt"></i>
+                      </button>
+                      <form action="/admin/users/<%= user.username %>/resetPassword" method="POST" style="display: inline-flex; gap: 5px; align-items: center; margin-left: 4px;">
+                        <input type="password" name="newPassword" placeholder="New pw" class="form-control input-sm" style="width: 100px;" minlength="6" required>
                         <button type="submit" class="btn btn-xs btn-warning" onclick="return confirm('Reset password for <%= user.firstName %> <%= user.lastName %>?');">
                           Reset
                         </button>
@@ -283,6 +349,39 @@
   </div>
 </div>
 
+<!-- ── Edit User Modal ─────────────────────────────────────────────── -->
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form id="editUserForm" method="POST">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+          <h4 class="modal-title"><i class="fas fa-pencil-alt"></i> Edit User Profile</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="editFirstName">First Name</label>
+            <input type="text" class="form-control" id="editFirstName" name="firstName" required>
+          </div>
+          <div class="form-group">
+            <label for="editLastName">Last Name</label>
+            <input type="text" class="form-control" id="editLastName" name="lastName" required>
+          </div>
+          <div class="form-group">
+            <label for="editEmail">Email</label>
+            <input type="email" class="form-control" id="editEmail" name="email" required>
+          </div>
+          <p class="text-muted"><small><i class="fas fa-info-circle"></i> Name changes will be propagated to all tournament records, picks, and comments.</small></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <% include ../partials/footer %>
 
 <!-- ── Admin JS (after footer so jQuery is loaded) ───────────────── -->
@@ -373,6 +472,21 @@ $(document).ready(function () {
       $inputs.append('<input type="hidden" name="userIds" value="' + $(this).val() + '">');
     });
     $('#bulkDeleteForm').submit();
+  });
+
+  // Edit user profile
+  $('.btn-edit-user').on('click', function () {
+    var $btn = $(this);
+    var userId = $btn.data('id');
+    var firstName = $btn.data('firstname');
+    var lastName = $btn.data('lastname');
+    var email = $btn.data('email');
+
+    $('#editFirstName').val(firstName);
+    $('#editLastName').val(lastName);
+    $('#editEmail').val(email);
+    $('#editUserForm').attr('action', '/admin/users/' + userId + '/update-profile');
+    $('#editUserModal').modal('show');
   });
 });
 </script>

@@ -56,7 +56,7 @@
             						        <li><a href="/tournamentGroups/<%= currentUser.tournamentGroups[i].groupName %>" ><%= currentUser.tournamentGroups[i].groupName %></a></li>
             						    <% } %>
             						<% } %>
-            						<!--<li><a href="#">Edit Profile</a></li>-->
+            						<li><a href="/users/<%= currentUser.username %>/edit">Edit Profile</a></li>
             						<% if(currentUser.isAdmin) { %>
             						  <li role="separator" class="divider"></li>
             						  <li><a href="/admin"><i class="fas fa-cog"></i> Admin</a></li>

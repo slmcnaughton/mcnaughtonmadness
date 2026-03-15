@@ -72,26 +72,43 @@ router.post("/register", function (req, res) {
   var username = req.body.username;
   var firstName = req.body.firstName;
   var lastName = req.body.lastName;
-  var newUser = new User({
-    username: username,
-    firstName: firstName,
-    lastName: lastName,
-    email: req.body.email,
-  });
+  var email = req.body.email;
 
-  User.register(newUser, req.body.password, function (err, user) {
-    if (err) {
-      req.flash("error", err.message);
+  // Check if email is already registered
+  User.findOne({ email: email }, function (err, existingUser) {
+    if (err) console.log(err);
+    if (existingUser) {
+      req.flash(
+        "error",
+        "An account with email " + email + " already exists " +
+        "(registered to " + existingUser.firstName + " " + existingUser.lastName + "). " +
+        "Did you mean to reset your password or recover your username? " +
+        "Use the links below the sign up form.",
+      );
       return res.redirect("/register");
     }
-    addPastTrophies(user);
-    //once the user is registered, log them in
-    passport.authenticate("local")(req, res, function () {
-      req.flash(
-        "success",
-        "Welcome to McNaughton Madness, " + user.firstName + "!",
-      );
-      res.redirect("/users/" + user.username);
+
+    var newUser = new User({
+      username: username,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+    });
+
+    User.register(newUser, req.body.password, function (err, user) {
+      if (err) {
+        req.flash("error", err.message);
+        return res.redirect("/register");
+      }
+      addPastTrophies(user);
+      //once the user is registered, log them in
+      passport.authenticate("local")(req, res, function () {
+        req.flash(
+          "success",
+          "Welcome to McNaughton Madness, " + user.firstName + "!",
+        );
+        res.redirect("/users/" + user.username);
+      });
     });
   });
 });
@@ -166,6 +183,69 @@ router.get("/users/:username", function (req, res) {
           });
       }
     });
+});
+
+// ─── Edit Profile ──────────────────────────────────────────────────────────
+
+router.get("/users/:username/edit", middleware.isLoggedIn, function (req, res) {
+  if (req.user.username !== req.params.username) {
+    req.flash("error", "You can only edit your own profile.");
+    return res.redirect("/users/" + req.params.username);
+  }
+  res.render("users/edit", { user: req.user, page: "profile" });
+});
+
+router.put("/users/:username", middleware.isLoggedIn, function (req, res) {
+  if (req.user.username !== req.params.username) {
+    req.flash("error", "You can only edit your own profile.");
+    return res.redirect("/users/" + req.params.username);
+  }
+
+  User.findById(req.user._id, function (err, user) {
+    if (err || !user) {
+      req.flash("error", "User not found.");
+      return res.redirect("/users/" + req.params.username);
+    }
+
+    var newEmail = (req.body.email || "").trim();
+    var requestedFirstName = (req.body.firstName || "").trim();
+    var requestedLastName = (req.body.lastName || "").trim();
+
+    // Update email immediately (not visible to other players)
+    var emailChanged = newEmail && newEmail !== user.email;
+    if (emailChanged) {
+      user.email = newEmail;
+    }
+
+    // Name changes require admin approval
+    var nameChanged =
+      (requestedFirstName && requestedFirstName !== user.firstName) ||
+      (requestedLastName && requestedLastName !== user.lastName);
+
+    if (nameChanged) {
+      user.pendingFirstName = requestedFirstName || user.firstName;
+      user.pendingLastName = requestedLastName || user.lastName;
+      user.nameChangeRequestedAt = new Date();
+    }
+
+    user.save(function (err) {
+      if (err) {
+        console.log(err);
+        req.flash("error", "Error saving profile.");
+        return res.redirect("/users/" + req.params.username + "/edit");
+      }
+
+      var messages = [];
+      if (emailChanged) messages.push("Email updated!");
+      if (nameChanged) {
+        emailHelper.sendNameChangeNotification(user);
+        messages.push("Name change request submitted for admin approval.");
+      }
+
+      req.flash("success", messages.length > 0 ? messages.join(" ") : "No changes detected.");
+      res.redirect("/users/" + req.params.username);
+    });
+  });
 });
 
 router.get("/forgotPassword", function (req, res) {

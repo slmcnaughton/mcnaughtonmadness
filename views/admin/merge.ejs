@@ -1,0 +1,132 @@
+<% include ../partials/header %>
+
+<div class="row">
+  <div class="col-lg-12">
+    <h2><i class="fas fa-compress-arrows-alt"></i> Merge Accounts</h2>
+    <p class="text-muted">Transfer all tournament data from one account into another, then delete the source account.</p>
+    <a href="/admin" class="btn btn-default btn-sm"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    <hr>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8 col-md-offset-2">
+    <div class="panel panel-danger">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-exclamation-triangle"></i> Merge Accounts</h3>
+      </div>
+      <div class="panel-body">
+        <div class="alert alert-warning">
+          <strong>Warning:</strong> This action cannot be undone. The source account will be permanently deleted.
+          All trophies, tournament groups, picks, and comments will be transferred to the target account.
+          If both accounts are in the same tournament group, the target's picks will be kept and the source's will be removed.
+        </div>
+
+        <form action="/admin/merge" method="POST" id="mergeForm">
+          <div class="form-group">
+            <label for="sourceUserId">
+              <i class="fas fa-arrow-right text-danger"></i>
+              Source Account (will be DELETED)
+            </label>
+            <select name="sourceUserId" id="sourceUserId" class="form-control" required>
+              <option value="">-- Select source account --</option>
+              <% users.forEach(function(u) { %>
+                <% if(!u.isAdmin) { %>
+                  <option value="<%= u._id %>"
+                    data-groups="<%= u.tournamentGroups.map(function(g) { return g.groupName + ' (' + g.year + ')'; }).join(', ') || 'None' %>"
+                    data-trophies="<%= u.trophies.length %>">
+                    <%= u.lastName %>, <%= u.firstName %> (<%= u.username %>) &mdash; <%= u.email %>
+                  </option>
+                <% } %>
+              <% }); %>
+            </select>
+          </div>
+
+          <div id="sourceInfo" style="display: none; margin-bottom: 15px;" class="well well-sm">
+            <strong>Source details:</strong><br>
+            Groups: <span id="sourceGroups"></span><br>
+            Trophies: <span id="sourceTrophies"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="targetUserId">
+              <i class="fas fa-arrow-left text-success"></i>
+              Target Account (will be KEPT)
+            </label>
+            <select name="targetUserId" id="targetUserId" class="form-control" required>
+              <option value="">-- Select target account --</option>
+              <% users.forEach(function(u) { %>
+                <option value="<%= u._id %>"
+                  data-groups="<%= u.tournamentGroups.map(function(g) { return g.groupName + ' (' + g.year + ')'; }).join(', ') || 'None' %>"
+                  data-trophies="<%= u.trophies.length %>">
+                  <%= u.lastName %>, <%= u.firstName %> (<%= u.username %>) &mdash; <%= u.email %>
+                </option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div id="targetInfo" style="display: none; margin-bottom: 15px;" class="well well-sm">
+            <strong>Target details:</strong><br>
+            Groups: <span id="targetGroups"></span><br>
+            Trophies: <span id="targetTrophies"></span>
+          </div>
+
+          <button type="submit" class="btn btn-danger btn-lg btn-block" id="mergeBtn" disabled>
+            <i class="fas fa-compress-arrows-alt"></i> Merge Accounts
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% include ../partials/footer %>
+
+<script>
+$(document).ready(function () {
+  function updateInfo(selectId, infoId, groupsId, trophiesId) {
+    var $select = $(selectId);
+    var $info = $(infoId);
+    var $option = $select.find('option:selected');
+
+    if ($option.val()) {
+      $(groupsId).text($option.data('groups'));
+      $(trophiesId).text($option.data('trophies'));
+      $info.show();
+    } else {
+      $info.hide();
+    }
+  }
+
+  function validateForm() {
+    var source = $('#sourceUserId').val();
+    var target = $('#targetUserId').val();
+    $('#mergeBtn').prop('disabled', !source || !target || source === target);
+  }
+
+  $('#sourceUserId').on('change', function () {
+    updateInfo('#sourceUserId', '#sourceInfo', '#sourceGroups', '#sourceTrophies');
+    validateForm();
+  });
+
+  $('#targetUserId').on('change', function () {
+    updateInfo('#targetUserId', '#targetInfo', '#targetGroups', '#targetTrophies');
+    validateForm();
+  });
+
+  $('#mergeForm').on('submit', function (e) {
+    var sourceName = $('#sourceUserId option:selected').text().trim();
+    var targetName = $('#targetUserId option:selected').text().trim();
+
+    if (!confirm(
+      'MERGE ACCOUNTS\n\n' +
+      'Source (DELETE): ' + sourceName + '\n' +
+      'Target (KEEP): ' + targetName + '\n\n' +
+      'All tournament data will be transferred and the source account will be permanently deleted.\n\n' +
+      'Are you sure?'
+    )) {
+      e.preventDefault();
+    }
+  });
+});
+</script>

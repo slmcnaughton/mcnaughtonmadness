@@ -127,6 +127,188 @@ router.post("/users/:username/resetPassword", function (req, res) {
   });
 });
 
+// ─── Update User Profile (Admin) ─────────────────────────────────────────────
+
+router.post("/users/:userId/update-profile", function (req, res) {
+  var newEmail = (req.body.email || "").trim();
+  var newFirstName = (req.body.firstName || "").trim();
+  var newLastName = (req.body.lastName || "").trim();
+
+  if (!newEmail || !newFirstName || !newLastName) {
+    req.flash("error", "All fields are required.");
+    return res.redirect("/admin");
+  }
+
+  User.findById(req.params.userId, function (err, user) {
+    if (err || !user) {
+      req.flash("error", "User not found.");
+      return res.redirect("/admin");
+    }
+
+    var oldFirstName = user.firstName;
+    var oldLastName = user.lastName;
+    var nameChanged =
+      oldFirstName !== newFirstName || oldLastName !== newLastName;
+
+    user.email = newEmail;
+    user.firstName = newFirstName;
+    user.lastName = newLastName;
+
+    user.save(function (err) {
+      if (err) {
+        console.log(err);
+        req.flash("error", "Error saving user.");
+        return res.redirect("/admin");
+      }
+
+      if (nameChanged) {
+        propagateNameChange(user._id, newFirstName, newLastName, function (err) {
+          if (err) console.log("Error propagating name change:", err);
+          console.log(
+            "[ADMIN] Updated " + oldFirstName + " " + oldLastName +
+            " → " + newFirstName + " " + newLastName,
+          );
+          req.flash(
+            "success",
+            "Updated profile for " + newFirstName + " " + newLastName +
+            " (name change propagated to all records).",
+          );
+          res.redirect("/admin");
+        });
+      } else {
+        req.flash(
+          "success",
+          "Updated profile for " + newFirstName + " " + newLastName + ".",
+        );
+        res.redirect("/admin");
+      }
+    });
+  });
+});
+
+// ─── Propagate Name Change Helper ────────────────────────────────────────────
+// Updates all denormalized copies of a user's name across collections.
+
+function propagateNameChange(userId, newFirstName, newLastName, done) {
+  async.parallel(
+    [
+      function (cb) {
+        UserTournament.updateMany(
+          { "user.id": userId },
+          { $set: { "user.firstName": newFirstName, "user.lastName": newLastName } },
+          cb,
+        );
+      },
+      function (cb) {
+        UserRound.updateMany(
+          { "user.id": userId },
+          { $set: { "user.name": newFirstName } },
+          cb,
+        );
+      },
+      function (cb) {
+        UserMatchAggregate.updateMany(
+          { "topTeamPickers.id": userId },
+          { $set: { "topTeamPickers.$.firstName": newFirstName } },
+          cb,
+        );
+      },
+      function (cb) {
+        UserMatchAggregate.updateMany(
+          { "bottomTeamPickers.id": userId },
+          { $set: { "bottomTeamPickers.$.firstName": newFirstName } },
+          cb,
+        );
+      },
+      function (cb) {
+        Comment.updateMany(
+          { "author.id": userId },
+          { $set: { "author.firstName": newFirstName } },
+          cb,
+        );
+      },
+      function (cb) {
+        TournamentGroup.updateMany(
+          { "commissioner.id": userId },
+          { $set: { "commissioner.name": newFirstName } },
+          cb,
+        );
+      },
+    ],
+    function (err) {
+      if (err) console.log("propagateNameChange errors:", err);
+      done(err);
+    },
+  );
+}
+
+// ─── Approve Name Change ─────────────────────────────────────────────────────
+
+router.post("/users/:userId/approve-name", function (req, res) {
+  User.findById(req.params.userId, function (err, user) {
+    if (err || !user) {
+      req.flash("error", "User not found.");
+      return res.redirect("/admin");
+    }
+
+    if (!user.pendingFirstName && !user.pendingLastName) {
+      req.flash("error", "No pending name change for this user.");
+      return res.redirect("/admin");
+    }
+
+    var oldName = user.firstName + " " + user.lastName;
+    user.firstName = user.pendingFirstName || user.firstName;
+    user.lastName = user.pendingLastName || user.lastName;
+    user.pendingFirstName = undefined;
+    user.pendingLastName = undefined;
+    user.nameChangeRequestedAt = undefined;
+
+    user.save(function (err) {
+      if (err) {
+        console.log(err);
+        req.flash("error", "Error saving user.");
+        return res.redirect("/admin");
+      }
+
+      propagateNameChange(user._id, user.firstName, user.lastName, function (err) {
+        if (err) console.log("Error propagating name change:", err);
+        console.log(
+          "[ADMIN] Approved name change: " + oldName +
+          " → " + user.firstName + " " + user.lastName,
+        );
+        req.flash(
+          "success",
+          "Approved: " + oldName + " → " + user.firstName + " " + user.lastName,
+        );
+        res.redirect("/admin");
+      });
+    });
+  });
+});
+
+// ─── Reject Name Change ─────────────────────────────────────────────────────
+
+router.post("/users/:userId/reject-name", function (req, res) {
+  User.findById(req.params.userId, function (err, user) {
+    if (err || !user) {
+      req.flash("error", "User not found.");
+      return res.redirect("/admin");
+    }
+
+    var requestedName = (user.pendingFirstName || "") + " " + (user.pendingLastName || "");
+    user.pendingFirstName = undefined;
+    user.pendingLastName = undefined;
+    user.nameChangeRequestedAt = undefined;
+
+    user.save(function (err) {
+      if (err) console.log(err);
+      console.log("[ADMIN] Rejected name change request: " + requestedName + " for " + user.firstName + " " + user.lastName);
+      req.flash("success", "Rejected name change request from " + user.firstName + " " + user.lastName + ".");
+      res.redirect("/admin");
+    });
+  });
+});
+
 // ─── Delete User (helper) ────────────────────────────────────────────────────
 // Cascades through all related records for a single user.
 // Calls done(err) when finished.
@@ -562,6 +744,268 @@ router.post("/finalize-tournament", function (req, res) {
         },
       );
     });
+});
+
+// ─── Account Merge ──────────────────────────────────────────────────────────
+
+router.get("/merge", function (req, res) {
+  User.find({})
+    .sort({ lastName: 1, firstName: 1 })
+    .populate("trophies")
+    .exec(function (err, allUsers) {
+      if (err) {
+        console.log(err);
+        req.flash("error", "Error loading users.");
+        return res.redirect("/admin");
+      }
+      res.render("admin/merge", { page: "admin", users: allUsers });
+    });
+});
+
+router.post("/merge", function (req, res) {
+  var sourceId = req.body.sourceUserId;
+  var targetId = req.body.targetUserId;
+
+  if (!sourceId || !targetId) {
+    req.flash("error", "Please select both source and target accounts.");
+    return res.redirect("/admin/merge");
+  }
+
+  if (sourceId === targetId) {
+    req.flash("error", "Source and target cannot be the same account.");
+    return res.redirect("/admin/merge");
+  }
+
+  async.parallel(
+    {
+      source: function (cb) {
+        User.findById(sourceId).populate("trophies").exec(cb);
+      },
+      target: function (cb) {
+        User.findById(targetId).populate("trophies").exec(cb);
+      },
+    },
+    function (err, results) {
+      if (err || !results.source || !results.target) {
+        req.flash("error", "One or both users not found.");
+        return res.redirect("/admin/merge");
+      }
+
+      var source = results.source;
+      var target = results.target;
+
+      if (source.isAdmin) {
+        req.flash("error", "Cannot merge an admin account as source.");
+        return res.redirect("/admin/merge");
+      }
+
+      console.log(
+        "[ADMIN] Merging " + source.firstName + " " + source.lastName +
+        " (" + source.username + ") → " +
+        target.firstName + " " + target.lastName +
+        " (" + target.username + ")",
+      );
+
+      // Step 1: Transfer trophies from source to target (skip years target already has)
+      var targetTrophyYears = {};
+      target.trophies.forEach(function (t) {
+        targetTrophyYears[t.year] = true;
+      });
+      source.trophies.forEach(function (trophy) {
+        if (!targetTrophyYears[trophy.year]) {
+          target.trophies.addToSet(trophy._id || trophy);
+        } else {
+          console.log("[MERGE] Skipping duplicate trophy for year " + trophy.year);
+        }
+      });
+
+      // Step 2: Transfer tournament groups (skip duplicates by groupName+year)
+      source.tournamentGroups.forEach(function (sg) {
+        var isDuplicate = target.tournamentGroups.some(function (tg) {
+          return tg.groupName === sg.groupName && tg.year === sg.year;
+        });
+        if (!isDuplicate) {
+          target.tournamentGroups.push(sg);
+        }
+      });
+
+      target.save(function (err) {
+        if (err) {
+          console.log("Error saving target user:", err);
+          req.flash("error", "Error saving target user.");
+          return res.redirect("/admin/merge");
+        }
+
+        // Step 3: Check for duplicate UserTournaments in same group
+        // Find source's UserTournaments and check for conflicts
+        UserTournament.find({ "user.id": sourceId }, function (err, sourceUTs) {
+          if (err) console.log("Error finding source UTs:", err);
+
+          UserTournament.find({ "user.id": targetId }, function (err, targetUTs) {
+            if (err) console.log("Error finding target UTs:", err);
+
+            // Build set of target's group+year combos
+            var targetGroupKeys = {};
+            (targetUTs || []).forEach(function (ut) {
+              var key = String(ut.tournamentGroup.id) + "|" + ut.tournamentGroup.groupName;
+              targetGroupKeys[key] = true;
+            });
+
+            // Split source UTs into transferable vs conflicting
+            var toTransfer = [];
+            var toDelete = [];
+            (sourceUTs || []).forEach(function (ut) {
+              var key = String(ut.tournamentGroup.id) + "|" + ut.tournamentGroup.groupName;
+              if (targetGroupKeys[key]) {
+                toDelete.push(ut); // Conflict: target already in this group
+              } else {
+                toTransfer.push(ut);
+              }
+            });
+
+            // Delete conflicting UTs (and their cascade)
+            async.eachSeries(
+              toDelete,
+              function (ut, next) {
+                // Delete this UT's rounds and predictions
+                var urIds = ut.userRounds || [];
+                UserRound.find({ _id: { $in: urIds } }, function (err, rounds) {
+                  var umpIds = [];
+                  (rounds || []).forEach(function (ur) {
+                    (ur.userMatchPredictions || []).forEach(function (id) {
+                      umpIds.push(id);
+                    });
+                  });
+                  UserMatchPrediction.deleteMany({ _id: { $in: umpIds } }, function () {
+                    UserRound.deleteMany({ _id: { $in: urIds } }, function () {
+                      // Remove UT ref from tournament group
+                      TournamentGroup.updateMany(
+                        { userTournaments: ut._id },
+                        { $pull: { userTournaments: ut._id } },
+                        function () {
+                          UserTournament.deleteOne({ _id: ut._id }, next);
+                        },
+                      );
+                    });
+                  });
+                });
+              },
+              function () {
+                // Step 4: Re-point transferable UserTournaments to target
+                async.parallel(
+                  [
+                    function (cb) {
+                      if (toTransfer.length === 0) return cb();
+                      var transferIds = toTransfer.map(function (ut) { return ut._id; });
+                      UserTournament.updateMany(
+                        { _id: { $in: transferIds } },
+                        {
+                          $set: {
+                            "user.id": target._id,
+                            "user.username": target.username,
+                            "user.firstName": target.firstName,
+                            "user.lastName": target.lastName,
+                          },
+                        },
+                        cb,
+                      );
+                    },
+                    // Step 5: Re-point UserRounds
+                    function (cb) {
+                      UserRound.updateMany(
+                        { "user.id": sourceId },
+                        { $set: { "user.id": target._id, "user.name": target.firstName } },
+                        cb,
+                      );
+                    },
+                    // Step 6: Re-point UserMatchAggregate picker arrays
+                    function (cb) {
+                      UserMatchAggregate.updateMany(
+                        { "topTeamPickers.id": sourceId },
+                        {
+                          $set: {
+                            "topTeamPickers.$.id": target._id,
+                            "topTeamPickers.$.firstName": target.firstName,
+                          },
+                        },
+                        cb,
+                      );
+                    },
+                    function (cb) {
+                      UserMatchAggregate.updateMany(
+                        { "bottomTeamPickers.id": sourceId },
+                        {
+                          $set: {
+                            "bottomTeamPickers.$.id": target._id,
+                            "bottomTeamPickers.$.firstName": target.firstName,
+                          },
+                        },
+                        cb,
+                      );
+                    },
+                    // Step 7: Re-point Comments
+                    function (cb) {
+                      Comment.updateMany(
+                        { "author.id": sourceId },
+                        {
+                          $set: {
+                            "author.id": target._id,
+                            "author.username": target.username,
+                            "author.firstName": target.firstName,
+                          },
+                        },
+                        cb,
+                      );
+                    },
+                    // Step 8: Re-point TournamentGroup commissioner
+                    function (cb) {
+                      TournamentGroup.updateMany(
+                        { "commissioner.id": sourceId },
+                        {
+                          $set: {
+                            "commissioner.id": target._id,
+                            "commissioner.name": target.firstName,
+                          },
+                        },
+                        cb,
+                      );
+                    },
+                  ],
+                  function (err) {
+                    if (err) console.log("Error during merge re-pointing:", err);
+
+                    // Step 9: Clean up orphaned source trophies (duplicate years that weren't transferred)
+                    var orphanedTrophyIds = source.trophies
+                      .filter(function (t) { return targetTrophyYears[t.year]; })
+                      .map(function (t) { return t._id || t; });
+                    Trophy.deleteMany({ _id: { $in: orphanedTrophyIds } }, function (err) {
+                      if (err) console.log("Error cleaning up orphaned trophies:", err);
+
+                      // Step 10: Delete source user
+                      User.deleteOne({ _id: sourceId }, function (err) {
+                        if (err) console.log("Error deleting source user:", err);
+
+                        var mergeMsg =
+                          "Merged " + source.firstName + " " + source.lastName +
+                          " (" + source.username + ") into " +
+                          target.firstName + " " + target.lastName +
+                          " (" + target.username + "). " +
+                          toTransfer.length + " tournament(s) transferred, " +
+                          toDelete.length + " duplicate(s) removed.";
+                        console.log("[ADMIN] " + mergeMsg);
+                        req.flash("success", mergeMsg);
+                        res.redirect("/admin");
+                      });
+                    });
+                  },
+                );
+              },
+            );
+          });
+        });
+      });
+    },
+  );
 });
 
 module.exports = router;

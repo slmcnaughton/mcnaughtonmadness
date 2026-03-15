@@ -21,7 +21,18 @@
 
 <!-- ── Profile Header ── -->
 <div class="profile-header">
-    <h1 class="profile-name"><%= user.firstName %> <%= user.lastName %></h1>
+    <h1 class="profile-name"><%= user.firstName %> <%= user.lastName %>
+        <% if(isUser) { %>
+            <a href="/users/<%= user.username %>/edit" class="btn btn-default btn-sm" style="margin-left: 10px; vertical-align: middle;">
+                <i class="fas fa-pencil-alt"></i> Edit Profile
+            </a>
+        <% } %>
+        <% if(isUser && currentUser && currentUser.isAdmin) { %>
+            <a href="/admin" class="btn btn-warning btn-sm" style="margin-left: 6px; vertical-align: middle;">
+                <i class="fas fa-cog"></i> Admin
+            </a>
+        <% } %>
+    </h1>
 
     <% if(totalTournaments > 0) { %>
     <div class="profile-stats">
@@ -49,9 +60,12 @@
                 <p class="text-muted"><%= user.firstName %> hasn't joined any groups yet.</p>
             <% } %>
         <% } else { %>
-            <% for (var i = 0; i < user.tournamentGroups.length; i++) { %>
-                <a href="/tournamentGroups/<%= user.tournamentGroups[i].groupName %>" class="profile-group-badge">
-                    <i class="fas fa-users"></i> <%= user.tournamentGroups[i].groupName %>
+            <%
+              var sortedGroups = user.tournamentGroups.slice().sort(function(a, b) { return b.year - a.year; });
+            %>
+            <% for (var i = 0; i < sortedGroups.length; i++) { %>
+                <a href="/tournamentGroups/<%= sortedGroups[i].groupName %>" class="profile-group-badge">
+                    <i class="fas fa-users"></i> <%= sortedGroups[i].groupName %>
                 </a>
             <% } %>
         <% } %>

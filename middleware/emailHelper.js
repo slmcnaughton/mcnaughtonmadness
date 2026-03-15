@@ -286,6 +286,23 @@ emailObj.confirmPasswordChange = async function (req, user) {
   req.flash("success", "Success! Your password has been changed.");
 };
 
+emailObj.sendNameChangeNotification = async function (user) {
+  var adminEmail = "slmcnaughton@yahoo.com";
+  var subject = "Name Change Request - " + user.firstName + " " + user.lastName;
+  var mailBody = {
+    content:
+      "A name change request has been submitted.\n\n" +
+      "User: " + user.firstName + " " + user.lastName + " (" + user.username + ")\n" +
+      "Requested name: " + user.pendingFirstName + " " + user.pendingLastName + "\n\n" +
+      "Go to the admin dashboard to approve or reject: https://www.mcnaughtonmadness.com/admin",
+    contentType: "text",
+  };
+
+  sendEmail(adminEmail, subject, mailBody, function (err) {
+    if (err) console.log(err);
+  });
+};
+
 async function sendEmail(mailingList, subject, mailBody) {
   var recipients = Array.isArray(mailingList) ? mailingList : [mailingList];
   console.log("Sending email to " + recipients.length + " recipient(s): " + recipients.join(", "));

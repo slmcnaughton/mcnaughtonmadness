@@ -26,6 +26,9 @@ var UserSchema = new mongoose.Schema({
       year: Number,
     },
   ],
+  pendingFirstName: String,
+  pendingLastName: String,
+  nameChangeRequestedAt: Date,
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   //newUser.isAdmin = true;
