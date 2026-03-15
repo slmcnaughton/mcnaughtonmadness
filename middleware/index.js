@@ -185,6 +185,9 @@ middlewareObj.scrapeUpdateResults = function (parsedResults) {
             async.forEach(
               parsedResults,
               function (result, next) {
+                // Skip matches where teams haven't been set yet (e.g. later rounds)
+                if (!match.topTeam || !match.bottomTeam) return next();
+
                 var topAliases = match.topTeam.aliases || [];
                 var bottomAliases = match.bottomTeam.aliases || [];
 
@@ -307,62 +310,60 @@ var advanceWinners = function (matchUpdates, done) {
         .populate("topTeam")
         .populate("bottomTeam")
         .exec(function (err, updatedMatch) {
-          if (err || !updatedMatch) console.log(err);
-          else {
-            async.series(
-              [
-                function (callback) {
-                  updatedMatch.winner = matchUpdate.winningTeam;
-                  if (matchUpdate.winningTeam._id.equals(updatedMatch.topTeam._id)) {
-                    updatedMatch.bottomTeam.lost++;
-                    updatedMatch.bottomTeam.save();
-                  } else {
-                    updatedMatch.topTeam.lost++;
-                    updatedMatch.topTeam.save();
-                  }
-                  updatedMatch.save();
-                  callback();
-                },
-                function (callback) {
-                  //if not the championship game, advance winners
-                  if (nextRoundIndex < 6) {
-                    var currIndex = Number(matchUpdates[i].roundMatchIndex);
-                    var nextMatchIndex = Math.floor(currIndex / 2);
-                    var nextRoundMatch = nextRound.matches[nextMatchIndex];
-                    //decide whether to advance the winning team to the topTeam or bottomTeam of the next round
-                    if (currIndex % 2 === 0) {
-                      nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
-                    } else {
-                      nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
-                    }
-                    nextRound.matches[nextMatchIndex].save().then(callback());
-                  }
-                  //this is the championship game
-                  else {
-                    matchUpdates[0].tournament.champion =
-                      matchUpdates[i].winningTeam;
-                    callback();
-                  }
-                },
-              ],
-              function (err) {
-                if (err) console.log(err);
-                next();
-              },
-            );
+          if (err || !updatedMatch) {
+            console.log(err);
+            return next();
           }
+
+          // Set winner and mark losing team
+          updatedMatch.winner = matchUpdate.winningTeam;
+          var losingTeam;
+          if (matchUpdate.winningTeam._id.equals(updatedMatch.topTeam._id)) {
+            losingTeam = updatedMatch.bottomTeam;
+          } else {
+            losingTeam = updatedMatch.topTeam;
+          }
+          losingTeam.lost++;
+
+          // Save losingTeam, then match, then advance — all sequentially
+          // Each save MUST complete before the next starts to avoid ParallelSaveError
+          // (two R1 matches can feed the same R2 match)
+          losingTeam.save(function (err) {
+            if (err) console.log("Error saving losing team:", err);
+            updatedMatch.save(function (err) {
+              if (err) console.log("Error saving match:", err);
+
+              // Advance winner to next round
+              if (nextRoundIndex < 6) {
+                var currIndex = Number(matchUpdates[i].roundMatchIndex);
+                var nextMatchIndex = Math.floor(currIndex / 2);
+                var nextRoundMatch = nextRound.matches[nextMatchIndex];
+                if (currIndex % 2 === 0) {
+                  nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
+                } else {
+                  nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
+                }
+                // Must save the Match doc — Round only stores ObjectId refs
+                nextRoundMatch.save(function (err) {
+                  if (err) console.log("Error saving next round match:", err);
+                  next();
+                });
+              } else {
+                // Championship game
+                matchUpdates[0].tournament.champion =
+                  matchUpdates[i].winningTeam;
+                matchUpdates[0].tournament.save(function (err) {
+                  if (err) console.log("Error saving tournament:", err);
+                  next();
+                });
+              }
+            });
+          });
         });
     },
     function (err) {
       if (err) console.log(err);
-      else {
-        if (nextRound)
-          //nonchampionship rounds have a defined next round
-          nextRound.save().then(done());
-        else {
-          matchUpdates[0].tournament.save().then(done());
-        }
-      }
+      done();
     },
   );
 };
