@@ -1,52 +1,124 @@
 <% include ../partials/header %>
 
-<div class="row">
-    <div class="col-md-4">
-        <h1><%= user.firstName + " " + user.lastName%></h1>
-        
+<%
+  // Sort trophies by year descending (most recent first)
+  var sortedTrophies = user.trophies.slice().sort(function(a, b) { return b.year - a.year; });
+
+  // Stats calculations
+  var totalTournaments = sortedTrophies.length;
+  var wins = sortedTrophies.filter(function(t) { return t.userRank === 1; }).length;
+  var bestFinish = totalTournaments > 0
+    ? Math.min.apply(null, sortedTrophies.map(function(t) { return t.userRank; }))
+    : 0;
+
+  // Ordinal suffix helper
+  function ordinal(n) {
+    var s = ["th", "st", "nd", "rd"];
+    var v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+%>
+
+<!-- ── Profile Header ── -->
+<div class="profile-header">
+    <h1 class="profile-name"><%= user.firstName %> <%= user.lastName %></h1>
+
+    <% if(totalTournaments > 0) { %>
+    <div class="profile-stats">
+        <div class="profile-stat">
+            <span class="profile-stat-value"><%= totalTournaments %></span>
+            <span class="profile-stat-label">Tournament<%= totalTournaments !== 1 ? 's' : '' %></span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat-value"><%= wins %></span>
+            <span class="profile-stat-label">Win<%= wins !== 1 ? 's' : '' %></span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat-value"><%= ordinal(bestFinish) %></span>
+            <span class="profile-stat-label">Best Finish</span>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Group badges -->
+    <div class="profile-groups">
         <% if(user.tournamentGroups.length === 0) { %>
             <% if (isUser) { %>
-                <h4>You have not joined any groups yet.</h4>
-                <a href="/tournamentGroups/"> Go join one now!</a>
+                <p class="text-muted">You haven't joined any groups yet. <a href="/tournamentGroups/">Join one now!</a></p>
             <% } else { %>
-                <h4><%= user.firstName %> has not joined any groups yet.</h4>
+                <p class="text-muted"><%= user.firstName %> hasn't joined any groups yet.</p>
             <% } %>
         <% } else { %>
             <% for (var i = 0; i < user.tournamentGroups.length; i++) { %>
-                <a href="/tournamentGroups/<%= user.tournamentGroups[i].groupName%>"><i class="fas fa-table"></i> <%= user.tournamentGroups[i].groupName%></a>
+                <a href="/tournamentGroups/<%= user.tournamentGroups[i].groupName %>" class="profile-group-badge">
+                    <i class="fas fa-users"></i> <%= user.tournamentGroups[i].groupName %>
+                </a>
             <% } %>
         <% } %>
-        
     </div>
-    <div class="col-md-8">
-        <h3><%= user.firstName %>'s Trophies</h3>
-        <div class="row itemDisplay">
-            <% user.trophies.forEach(function(trophy) { %>
-                <div class="col-md-3 col-sm-6 thumbnail">
-                    <% if (trophy.userRank === 1) {%>
-                        <img class="trophyPic" src="/imgs/trophies/first-place-trophy.png" alt="First Place Trophy">
-                    <% } else if (trophy.userRank === 2) { %>
-                        <img class="trophyPic" src="/imgs/trophies/second-place-trophy.png" alt="Second Place Trophy">
-                    <% } else if (trophy.userRank === 3) { %>
-                        <img class="trophyPic" src="/imgs/trophies/third-place-trophy.png" alt="Third Place Trophy">
-                    <% } else if (trophy.userRank === trophy.totalPlayers) { %>
-                        <img width="50px" class="trophyPic" src="/imgs/trophies/toilet-trophy.png" alt="Last Place Trophy">
-                    <% } else { %>
-                        <img class="trophyPic" src="/imgs/trophies/participation-ribbon.png" alt="Participation Ribbon">
-                    <% } %>
-                
-                    <div class="caption text-center">
-                        <p><a href="#"><%= trophy.year %></a></p>
-                        <p>Score: <%= trophy.score %></p>
-                        Rank: <%= trophy.userRank %> / <%= trophy.totalPlayers %>
-                    </div>
-                    
-                </div>  
-            <% }) %>
-        </div>
-        
+</div>
 
+<!-- ── Trophy Case ── -->
+<div class="profile-trophies-section">
+    <h3 class="profile-trophies-title"><i class="fas fa-trophy" style="color: #FFA705;"></i> Trophy Case</h3>
+
+    <% if(sortedTrophies.length > 0) { %>
+    <div class="profile-trophy-grid">
+        <% sortedTrophies.forEach(function(trophy) { %>
+            <%
+                var isGold   = trophy.userRank === 1;
+                var isSilver = trophy.userRank === 2;
+                var isBronze = trophy.userRank === 3;
+                var isLast   = trophy.userRank === trophy.totalPlayers && trophy.totalPlayers > 3;
+                var cardClass = 'profile-trophy-card';
+                if (isGold)        cardClass += ' trophy-gold';
+                else if (isSilver) cardClass += ' trophy-silver';
+                else if (isBronze) cardClass += ' trophy-bronze';
+                else if (isLast)   cardClass += ' trophy-last';
+            %>
+            <div class="<%= cardClass %>">
+                <div class="profile-trophy-img-wrap">
+                    <% if (isGold) { %>
+                        <img src="/imgs/trophies/first-place-trophy.png" alt="1st Place Trophy">
+                    <% } else if (isSilver) { %>
+                        <img src="/imgs/trophies/second-place-trophy.png" alt="2nd Place Trophy">
+                    <% } else if (isBronze) { %>
+                        <img src="/imgs/trophies/third-place-trophy.png" alt="3rd Place Trophy">
+                    <% } else if (isLast) { %>
+                        <img src="/imgs/trophies/toilet-trophy.png" alt="Last Place Trophy">
+                    <% } else { %>
+                        <img src="/imgs/trophies/participation-ribbon.png" alt="Participation Ribbon">
+                    <% } %>
+                </div>
+                <div class="profile-trophy-info">
+                    <span class="profile-trophy-year"><%= trophy.year %></span>
+                    <span class="profile-trophy-rank">
+                        <% if (isGold) { %>
+                            <i class="fas fa-crown" style="color: #D4AF37;"></i> Champion
+                        <% } else if (isSilver) { %>
+                            2nd Place
+                        <% } else if (isBronze) { %>
+                            3rd Place
+                        <% } else if (isLast) { %>
+                            Last Place
+                        <% } else { %>
+                            <%= ordinal(trophy.userRank) %> of <%= trophy.totalPlayers %>
+                        <% } %>
+                    </span>
+                    <span class="profile-trophy-score"><%= trophy.score.toFixed(3) %> pts</span>
+                </div>
+            </div>
+        <% }) %>
     </div>
+    <% } else { %>
+    <p class="text-muted text-center" style="margin-top: 20px;">
+        <% if (isUser) { %>
+            No trophies yet. Complete a tournament to earn your first!
+        <% } else { %>
+            <%= user.firstName %> hasn't earned any trophies yet.
+        <% } %>
+    </p>
+    <% } %>
 </div>
 
 <% include ../partials/footer %>

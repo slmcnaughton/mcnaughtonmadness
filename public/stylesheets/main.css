@@ -263,13 +263,13 @@ input[type=radio],
 /*===========================================*/
 /*Basic Tournament Standings Table Styles*/
 /*===========================================*/
-table {  
+table {
     color: #333; /* Lighten up font color */
     background: #FAFAFA; /* Lighter grey background */
     font-family: Helvetica, Arial, sans-serif; /* Nicer font */
-    width: 400px; 
-    border-collapse:  collapse; 
-    border-spacing: 0; 
+    width: 100%;
+    border-collapse:  collapse;
+    border-spacing: 0;
 }
 
 td, th { 
@@ -1628,4 +1628,328 @@ footer {
     background-color: #fff;
 }
 
+
+/*===========================================*/
+/*         PROFILE PAGE                      */
+/*===========================================*/
+
+.profile-header {
+    text-align: center;
+    padding: 30px 0 20px;
+    margin-bottom: 10px;
+}
+
+.profile-name {
+    font-size: 2.5em;
+    margin: 0 0 15px;
+    color: #333;
+}
+
+.profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 20px;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: #004284;
+    line-height: 1.2;
+}
+
+.profile-stat-label {
+    font-size: 0.85em;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.profile-groups {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.profile-group-badge {
+    display: inline-block;
+    padding: 5px 14px;
+    background: #004284;
+    color: #fff;
+    border-radius: 20px;
+    font-size: 0.9em;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.profile-group-badge:hover {
+    background: #002851;
+    color: #fff;
+    text-decoration: none;
+}
+
+.profile-group-badge i {
+    margin-right: 4px;
+}
+
+.profile-trophies-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.profile-trophies-title {
+    text-align: center;
+    color: #333;
+    border-bottom: 2px solid #FFA705;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+}
+
+.profile-trophy-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.profile-trophy-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 15px 10px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.profile-trophy-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.trophy-gold {
+    border: 2px solid #D4AF37;
+    background: linear-gradient(135deg, #fff9e6 0%, #fff 100%);
+}
+
+.trophy-silver {
+    border: 2px solid #C0C0C0;
+    background: linear-gradient(135deg, #f5f5f5 0%, #fff 100%);
+}
+
+.trophy-bronze {
+    border: 2px solid #CD7F32;
+    background: linear-gradient(135deg, #fdf0e0 0%, #fff 100%);
+}
+
+.trophy-last {
+    border: 2px solid #8B4513;
+    background: linear-gradient(135deg, #f5efe8 0%, #fff 100%);
+}
+
+.profile-trophy-img-wrap img {
+    width: 70px;
+    height: auto;
+    margin-bottom: 8px;
+}
+
+.trophy-last .profile-trophy-img-wrap img {
+    width: 50px;
+}
+
+.profile-trophy-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.profile-trophy-year {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #333;
+}
+
+.profile-trophy-rank {
+    font-size: 0.9em;
+    color: #555;
+    font-weight: 600;
+}
+
+.profile-trophy-score {
+    font-size: 0.8em;
+    color: #888;
+}
+
+
+/*===========================================*/
+/*         MOBILE RESPONSIVE FIXES           */
+/*===========================================*/
+
+@media screen and (max-width: 767px) {
+
+    /* ── Hero section ── */
+    .hero h1 {
+        font-size: 2.2em;
+        letter-spacing: -1px;
+    }
+    .hero .year {
+        letter-spacing: 8px;
+        font-size: 1.5em;
+        margin: -30px 0 10px;
+    }
+    .hero .intro {
+        font-size: 1.6em;
+    }
+    .hero p {
+        letter-spacing: .2em;
+        font-size: 1em;
+    }
+    .jumbotron.hero {
+        padding: 15px 10px;
+    }
+
+    /* ── Forms ── */
+    .login-form,
+    .form-header {
+        width: 90%;
+    }
+    form {
+        max-width: 100%;
+    }
+
+    /* ── Sidebar nav → stacked on mobile ── */
+    .navbar-fixed-left + .container {
+        padding-left: 15px;
+    }
+    .navbar-fixed-left {
+        float: none;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .navbar-fixed-left .navbar-nav > li {
+        display: inline-block;
+        width: auto;
+    }
+    .navbar-center {
+        width: 100%;
+        left: 0;
+        margin: 10px 0;
+        position: relative;
+    }
+
+    /* ── Standings table ── */
+    #tournamentStandings {
+        font-size: 0.85em;
+    }
+    #tournamentStandings td,
+    #tournamentStandings th {
+        padding: 4px 3px;
+        white-space: nowrap;
+    }
+
+    /* ── Pick forms — bigger touch targets ── */
+    form.teamPicker {
+        font-size: 1.1em;
+    }
+    form.teamPicker label {
+        padding: 8px 4px;
+        display: block;
+    }
+    form.teamPicker input[type=radio] {
+        width: 20px;
+        height: 20px;
+        margin-top: 8px;
+    }
+    .matchPicker {
+        margin-bottom: 12px;
+    }
+
+    /* ── Bracket view ── */
+    .bracket {
+        font-size: 0.85em;
+    }
+    .teamTitle {
+        font-size: 0.75em;
+        line-height: 1.8em;
+    }
+
+    /* ── Group info ── */
+    .groupInformation {
+        padding: 8px;
+    }
+
+    /* ── Home page ── */
+    .introduction {
+        width: 100%;
+        font-size: 1em;
+        padding: 0 10px;
+    }
+    #bracketOptions {
+        padding: 15px;
+    }
+
+    /* ── Admin dashboard tables ── */
+    .table-condensed > thead > tr > th,
+    .table-condensed > tbody > tr > td {
+        padding: 3px 4px;
+        font-size: 0.85em;
+    }
+
+    /* ── Profile page ── */
+    .profile-name {
+        font-size: 1.8em;
+    }
+    .profile-stats {
+        gap: 20px;
+    }
+    .profile-stat-value {
+        font-size: 1.5em;
+    }
+    .profile-trophy-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .profile-trophy-card {
+        padding: 12px 8px;
+    }
+    .profile-trophy-img-wrap img {
+        width: 55px;
+    }
+    .trophy-last .profile-trophy-img-wrap img {
+        width: 40px;
+    }
+    .profile-trophy-year {
+        font-size: 1.2em;
+    }
+}
+
+/* Slightly wider tablets */
+@media screen and (min-width: 768px) and (max-width: 991px) {
+    .hero h1 {
+        font-size: 3em;
+    }
+    .hero .year {
+        letter-spacing: 12px;
+    }
+    .navbar-fixed-left + .container {
+        padding-left: 15px;
+    }
+    .login-form,
+    .form-header {
+        width: 60%;
+    }
+
+    /* ── Profile page ── */
+    .profile-trophy-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
 
