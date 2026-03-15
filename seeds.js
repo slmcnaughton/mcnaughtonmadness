@@ -46,8 +46,14 @@ function seedDB() {
 function deleteAllTournamentGroups(callback) {
   TournamentGroup.deleteMany({}, function (err) {
     if (err) console.log(err);
-    else console.log("removed all tournament groups");
-    callback();
+    else {
+      console.log("removed all tournament groups");
+      User.updateMany({}, { $set: { tournamentGroups: [] } }, function (err) {
+        if (err) console.log(err);
+        else console.log("cleared tournament group refs from all users");
+        callback();
+      });
+    }
   });
 }
 
