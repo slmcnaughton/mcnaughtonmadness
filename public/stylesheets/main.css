@@ -81,6 +81,11 @@
 form.teamPicker{
     max-width: 100%;
     font-size: 1.3em;
+    display: flex;
+    flex-wrap: wrap;
+}
+form.teamPicker > .form-group{
+    width: 100%;
 }
 
 

@@ -118,8 +118,8 @@
                                                                     <div class="aggregate loss" >
                                                                 <% } %>
                                                                         <div class="teamHeader">
-                                                                            <%var winScore = Math.round(agg.topWinScore * 10000)/10000 %>
-                                                                            <%var lossScore = Math.round(agg.topLossScore * 10000)/10000 %>
+                                                                            <%var winScore = Math.round(agg.topWinScore * 100)/100 %>
+                                                                            <%var lossScore = Math.round(agg.topLossScore * 100)/100 %>
                                                                             <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong></h5>
                                                                             <h6 style="display: inline-block; float: right;">(
                                                                                 <% if (!match.winner) { %> 
@@ -134,7 +134,7 @@
                                                                         <ul>
                                                                             <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
                                                                                 <li>
-                                                                                    <%= agg.topTeamPickers[k].firstName %>
+                                                                                    <strong><%= agg.topTeamPickers[k].firstName %></strong>
                                                                                     <% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0 ) { %>
                                                                                         <em>- <%= agg.topTeamPickers[k].comment %></em>
                                                                                     <% } %>
@@ -151,8 +151,8 @@
                                                                     <div class="aggregate loss" >
                                                                 <% } %>
                                                                         <div class="teamHeader">
-                                                                            <%var winScore = Math.round(agg.bottomWinScore * 10000)/10000 %>
-                                                                            <%var lossScore = Math.round(agg.bottomLossScore * 10000)/10000 %>
+                                                                            <%var winScore = Math.round(agg.bottomWinScore * 100)/100 %>
+                                                                            <%var lossScore = Math.round(agg.bottomLossScore * 100)/100 %>
                                                                             <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong></h5>
                                                                             <h6 style="display: inline-block; float: right;">(
                                                                                 <% if (!match.winner) { %> 
@@ -167,7 +167,7 @@
                                                                         <ul>
                                                                             <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
                                                                                 <li>
-                                                                                    <%= agg.bottomTeamPickers[k].firstName %>
+                                                                                    <strong><%= agg.bottomTeamPickers[k].firstName %></strong>
                                                                                     <% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0 ) { %>
                                                                                         <em>- <%= agg.bottomTeamPickers[k].comment %></em>
                                                                                     <% } %>

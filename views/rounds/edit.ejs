@@ -27,7 +27,7 @@
 
                     <label for="<%=idMaker%>top" style="display: block">
                         <div class="team">
-                            <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam ? match.topTeam._id : '' %>" required>
+                            <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam ? match.topTeam._id : '' %>">
                             <div class="teamTitle">
                                 <% if(match.topTeam) { %>
                                     <img class="pickerImage" src="<%= match.topTeam.image %>">
