@@ -1,44 +1,349 @@
 <% include ../partials/header %>
 
-<h1>All Tournaments</h1>
+<%
+  // Group tournaments by decade
+  var decades = {};
+  var allYears = [];
+  tournaments.forEach(function(t) {
+    var decade = Math.floor(t.year / 10) * 10;
+    if (!decades[decade]) decades[decade] = [];
+    decades[decade].push(t);
+    allYears.push(t.year);
+  });
+  var decadeKeys = Object.keys(decades).sort(function(a, b) { return b - a; });
 
-<div class="row">
-    <div class="col-lg-12">
-        <h3>Tournament History</h3>
-    </div>
-    <% tournaments.forEach(function(tournament) { %>
-        <div>
-            <h4><%= tournament.year %></h4>
-            <a href="/tournamentStandings/<%= tournament._id %>" class="btn btn-primary">More Info</a>
-        </div>
-        
-        <div>
-            <table class="tournamentStandings">
-                <tr>
-                    <th>Rank</th>
-                    <th>Score</th> 
-                    <th>Name</th>
-                </tr>
-                <% var tieCount = 0 %>
-                <% var rank = 0 %>
-                <% for(var i = 0; i < tournament.standings.length; i++) { %>
-                    <% var participant = tournament.standings[i]; %>
-                    <% if (i > 0 && tournament.standings[i].score === tournament.standings[i-1].score) { %>
-                        <% tieCount++ %>
-                    <% } else { %>
-                        <% rank += (1 + tieCount) %>
-                        <% tieCount = 0 %>
-                    <% } %>
-                    <tr>
-                        <td><%= rank %></td>
-                        <td><%= participant.score %></td> 
-                        <td><%= participant.firstName %> <%= participant.lastName %></td>
-                    </tr>
-                <% }; %>
-            </table>
-        </div>
+  // Ordinal suffix helper
+  function ordinal(n) {
+    var s = ["th", "st", "nd", "rd"];
+    var v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+%>
+
+<div class="history-page">
+
+  <!-- Page Title -->
+  <div class="history-title-section">
+    <h1 class="history-title"><i class="fas fa-trophy" style="color: #FFA705;"></i> Tournament History</h1>
+    <p class="history-subtitle"><%= allYears.length %> tournament<%= allYears.length !== 1 ? 's' : '' %> &middot; <%= allYears.length > 0 ? allYears[allYears.length - 1] : '' %>&ndash;<%= allYears.length > 0 ? allYears[0] : '' %></p>
+  </div>
+
+  <!-- Decade Navigation -->
+  <div class="history-decade-nav" id="decadeNav">
+    <button class="history-decade-btn active" data-decade="all">All Years</button>
+    <% decadeKeys.forEach(function(decade) { %>
+      <button class="history-decade-btn" data-decade="<%= decade %>"><%= decade %>s</button>
     <% }); %>
+  </div>
+
+  <!-- Year Quick-Jump Bar -->
+  <div class="history-year-nav" id="yearNav">
+    <% allYears.forEach(function(year) { %>
+      <a href="#year-<%= year %>" class="history-year-link"><%= year %></a>
+    <% }); %>
+  </div>
+
+  <!-- Tournament Sections -->
+  <% tournaments.forEach(function(tournament) { %>
+    <div class="history-year-section" id="year-<%= tournament.year %>" data-decade="<%= Math.floor(tournament.year / 10) * 10 %>">
+
+      <div class="history-year-header">
+        <h2 class="history-year-title"><%= tournament.year %></h2>
+        <span class="history-player-count"><%= tournament.standings.length %> player<%= tournament.standings.length !== 1 ? 's' : '' %></span>
+      </div>
+
+      <div class="history-table-wrap">
+        <table class="history-standings-table">
+          <thead>
+            <tr>
+              <th class="col-rank">Rank</th>
+              <th class="col-name">Name</th>
+              <th class="col-score">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%
+              var tieCount = 0;
+              var rank = 0;
+            %>
+            <% for (var i = 0; i < tournament.standings.length; i++) { %>
+              <%
+                var participant = tournament.standings[i];
+                if (i > 0 && tournament.standings[i].score === tournament.standings[i - 1].score) {
+                  tieCount++;
+                } else {
+                  rank += (1 + tieCount);
+                  tieCount = 0;
+                }
+                var rowClass = '';
+                if (rank === 1) rowClass = 'podium-gold';
+                else if (rank === 2) rowClass = 'podium-silver';
+                else if (rank === 3) rowClass = 'podium-bronze';
+              %>
+              <tr class="<%= rowClass %>">
+                <td class="col-rank"><%= ordinal(rank) %></td>
+                <td class="col-name"><%= participant.firstName %> <%= participant.lastName %></td>
+                <td class="col-score"><%= participant.score.toFixed(3) %></td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  <% }); %>
+
 </div>
 
+<style>
+  /* ── History Page Layout ── */
+  .history-page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 15px 60px;
+  }
+
+  .history-title-section {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .history-title {
+    font-size: 2em;
+    margin-bottom: 4px;
+  }
+  .history-subtitle {
+    color: #888;
+    font-size: 1em;
+    margin-top: 0;
+  }
+
+  /* ── Decade Nav ── */
+  .history-decade-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    padding: 10px 0;
+    z-index: 100;
+    border-bottom: 1px solid #eee;
+  }
+  .history-decade-btn {
+    border: 2px solid #004284;
+    background: #fff;
+    color: #004284;
+    padding: 6px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .history-decade-btn:hover {
+    background: #e8f0fe;
+  }
+  .history-decade-btn.active {
+    background: #004284;
+    color: #fff;
+  }
+
+  /* ── Year Quick-Jump Bar ── */
+  .history-year-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 24px;
+  }
+  .history-year-link {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 13px;
+    color: #004284;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .history-year-link:hover {
+    background: #e8f0fe;
+    text-decoration: none;
+    color: #004284;
+  }
+
+  /* ── Year Sections ── */
+  .history-year-section {
+    margin-bottom: 32px;
+    scroll-margin-top: 70px; /* offset for sticky nav */
+  }
+  .history-year-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+    border-bottom: 3px solid #FFA705;
+    padding-bottom: 6px;
+  }
+  .history-year-title {
+    font-size: 1.6em;
+    margin: 0;
+    color: #222;
+  }
+  .history-player-count {
+    font-size: 0.9em;
+    color: #999;
+  }
+
+  /* ── Table ── */
+  .history-table-wrap {
+    overflow-x: auto;
+  }
+  .history-standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+  .history-standings-table thead th {
+    background: #004284;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .history-standings-table th.col-rank,
+  .history-standings-table td.col-rank {
+    text-align: center;
+    width: 80px;
+  }
+  .history-standings-table th.col-score,
+  .history-standings-table td.col-score {
+    text-align: right;
+    width: 90px;
+    font-variant-numeric: tabular-nums;
+  }
+  .history-standings-table tbody tr {
+    border-bottom: 1px solid #eee;
+  }
+  .history-standings-table tbody td {
+    padding: 7px 12px;
+  }
+  .history-standings-table tbody tr:hover {
+    background: #f5f8ff;
+  }
+
+  /* Podium row accents */
+  .podium-gold {
+    background: #FFF9E6;
+    font-weight: 600;
+  }
+  .podium-gold td:first-child { color: #B8860B; }
+  .podium-silver {
+    background: #F4F4F4;
+    font-weight: 600;
+  }
+  .podium-silver td:first-child { color: #808080; }
+  .podium-bronze {
+    background: #FDF3EB;
+    font-weight: 600;
+  }
+  .podium-bronze td:first-child { color: #A0522D; }
+
+  /* Hidden by decade filter */
+  .history-year-section.hidden-decade {
+    display: none;
+  }
+  .history-year-link.hidden-decade {
+    display: none;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 600px) {
+    .history-title { font-size: 1.5em; }
+    .history-decade-btn { padding: 5px 12px; font-size: 13px; }
+    .history-year-link { font-size: 12px; padding: 2px 5px; }
+    .history-standings-table { font-size: 14px; }
+    .history-standings-table thead th { padding: 6px 8px; }
+    .history-standings-table tbody td { padding: 5px 8px; }
+    .history-standings-table th.col-rank,
+    .history-standings-table td.col-rank { width: 60px; }
+  }
+</style>
+
+<script>
+$(function() {
+  // Decade filter
+  $('.history-decade-btn').on('click', function() {
+    var decade = $(this).data('decade');
+
+    // Update active button
+    $('.history-decade-btn').removeClass('active');
+    $(this).addClass('active');
+
+    if (decade === 'all') {
+      // Show everything
+      $('.history-year-section').removeClass('hidden-decade');
+      $('.history-year-link').removeClass('hidden-decade');
+    } else {
+      // Show only matching decade
+      $('.history-year-section').each(function() {
+        if ($(this).data('decade') == decade) {
+          $(this).removeClass('hidden-decade');
+        } else {
+          $(this).addClass('hidden-decade');
+        }
+      });
+      // Update year nav links too
+      $('.history-year-link').each(function() {
+        var linkYear = parseInt($(this).text());
+        var linkDecade = Math.floor(linkYear / 10) * 10;
+        if (linkDecade == decade) {
+          $(this).removeClass('hidden-decade');
+        } else {
+          $(this).addClass('hidden-decade');
+        }
+      });
+    }
+  });
+
+  // Smooth scroll for year links
+  $('.history-year-link').on('click', function(e) {
+    e.preventDefault();
+    var target = $(this).attr('href');
+    var $target = $(target);
+    if ($target.length) {
+      $('html, body').animate({
+        scrollTop: $target.offset().top - 65
+      }, 400);
+      // Brief highlight
+      $target.css('background', '#fffde6');
+      setTimeout(function() {
+        $target.css('background', '');
+      }, 1500);
+    }
+  });
+
+  // If URL has a hash, scroll to it on load
+  if (window.location.hash && window.location.hash.indexOf('year-') !== -1) {
+    var hash = window.location.hash;
+    setTimeout(function() {
+      var $target = $(hash);
+      if ($target.length) {
+        $('html, body').animate({
+          scrollTop: $target.offset().top - 65
+        }, 400);
+        $target.css('background', '#fffde6');
+        setTimeout(function() {
+          $target.css('background', '');
+        }, 1500);
+      }
+    }, 300);
+  }
+});
+</script>
 
 <% include ../partials/footer %>

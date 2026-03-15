@@ -18,6 +18,24 @@ router.get("/", function (req, res) {
   });
 });
 
+// SHOW by year — e.g. /tournamentStandings/year/2019
+router.get("/year/:year", function (req, res) {
+  TournamentStanding.findOne(
+    { year: parseInt(req.params.year) },
+    function (err, foundTournamentStanding) {
+      if (err || !foundTournamentStanding) {
+        req.flash("error", "Tournament standings not found for " + req.params.year);
+        res.redirect("/tournamentStandings");
+      } else {
+        res.render("tournamentStandings/show", {
+          tournament: foundTournamentStanding,
+          page: "about",
+        });
+      }
+    },
+  );
+});
+
 //SHOW - shows more information about a particular Tournament Standing
 router.get("/:id", function (req, res) {
   //find the TournamentStanding with provided ID, populate the comments array

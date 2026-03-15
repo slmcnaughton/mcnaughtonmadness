@@ -577,9 +577,9 @@ router.post("/groups/:groupName/toggle-official", function (req, res) {
 router.post("/finalize-tournament", function (req, res) {
   var year = new Date().getFullYear();
 
-  // 1. Find all official groups for this year
+  // 1. Find all official groups for this year (include userRounds for madeAllPicks check)
   TournamentGroup.find({ year: year, isOfficial: true })
-    .populate({ path: "userTournaments", populate: "user" })
+    .populate({ path: "userTournaments", populate: ["user", "userRounds"] })
     .exec(function (err, officialGroups) {
       if (err) {
         console.log(err);
@@ -596,21 +596,29 @@ router.post("/finalize-tournament", function (req, res) {
       }
 
       // 2. Collect standings from all official groups, deduplicate by name
-      var standingsMap = {}; // key: "firstName|lastName" → { firstName, lastName, score }
+      var standingsMap = {}; // key: "firstName|lastName" → { firstName, lastName, score, roundCount }
 
       officialGroups.forEach(function (group) {
         if (!group.userTournaments) return;
         group.userTournaments.forEach(function (ut) {
           var key = ut.user.firstName + "|" + ut.user.lastName;
           var score = Math.round(ut.score * 1000) / 1000;
+          var roundCount = ut.userRounds ? ut.userRounds.length : 0;
           if (!standingsMap[key] || score > standingsMap[key].score) {
             standingsMap[key] = {
               firstName: ut.user.firstName,
               lastName: ut.user.lastName,
               score: score,
+              roundCount: Math.max(roundCount, standingsMap[key] ? standingsMap[key].roundCount : 0),
             };
           }
         });
+      });
+
+      // Determine max rounds any participant completed (expected total)
+      var maxRounds = 0;
+      Object.keys(standingsMap).forEach(function (key) {
+        if (standingsMap[key].roundCount > maxRounds) maxRounds = standingsMap[key].roundCount;
       });
 
       var standings = Object.keys(standingsMap).map(function (key) {
@@ -692,13 +700,14 @@ router.post("/finalize-tournament", function (req, res) {
                       return next();
                     }
 
-                    // Create trophy
+                    // Create trophy (madeAllPicks = completed same # of rounds as the top participant)
                     Trophy.create(
                       {
                         year: year,
                         userRank: rank,
                         totalPlayers: totalPlayers,
                         score: entry.score,
+                        madeAllPicks: entry.roundCount >= maxRounds,
                       },
                       function (err, trophy) {
                         if (err) {

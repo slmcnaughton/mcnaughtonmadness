@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <!-- Medal/ribbon for top 50% finishers -->
+  <!-- Ribbon tails -->
+  <polygon points="70,90 55,180 85,155 100,190 100,90" fill="#27AE60"/>
+  <polygon points="130,90 145,180 115,155 100,190 100,90" fill="#2ECC71"/>
+  <!-- Ribbon overlap shadow -->
+  <polygon points="85,155 100,190 100,140" fill="#1E8449" opacity="0.3"/>
+  <!-- Medal circle -->
+  <circle cx="100" cy="80" r="55" fill="#2ECC71" stroke="#27AE60" stroke-width="4"/>
+  <!-- Medal inner circle -->
+  <circle cx="100" cy="80" r="42" fill="#fff" stroke="#27AE60" stroke-width="2"/>
+  <!-- Medal inner fill -->
+  <circle cx="100" cy="80" r="38" fill="#E8F8F0"/>
+  <!-- Percentage symbol -->
+  <text x="100" y="78" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#27AE60">TOP</text>
+  <text x="100" y="102" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#27AE60">50%</text>
+  <!-- Medal shine -->
+  <ellipse cx="80" cy="55" rx="15" ry="8" fill="#fff" opacity="0.3" transform="rotate(-30 80 55)"/>
+</svg>

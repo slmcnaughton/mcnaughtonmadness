@@ -5,6 +5,7 @@ var trophySchema = new mongoose.Schema({
   userRank: Number,
   totalPlayers: Number,
   score: Number,
+  madeAllPicks: { type: Boolean, default: null }, // null = unknown (historical), true/false = verified
 });
 
 module.exports = mongoose.model("Trophy", trophySchema);

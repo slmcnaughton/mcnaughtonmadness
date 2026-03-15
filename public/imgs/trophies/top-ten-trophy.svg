@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <!-- Star trophy for top 10 finishers -->
+  <!-- Base/pedestal -->
+  <rect x="60" y="180" width="80" height="16" rx="4" fill="#3A7BD5"/>
+  <rect x="70" y="170" width="60" height="14" rx="3" fill="#4A8BE0"/>
+  <!-- Trophy cup body -->
+  <path d="M55 70 Q55 150 100 160 Q145 150 145 70 Z" fill="#4A8BE0" stroke="#3A7BD5" stroke-width="3"/>
+  <!-- Inner shine -->
+  <path d="M70 80 Q70 140 100 148 Q110 145 115 135" fill="#6AA3F0" opacity="0.4"/>
+  <!-- Stem -->
+  <rect x="90" y="155" width="20" height="18" rx="3" fill="#3A7BD5"/>
+  <!-- Star -->
+  <polygon points="100,25 112,60 150,60 120,82 130,118 100,97 70,118 80,82 50,60 88,60" fill="#FFD700" stroke="#DAA520" stroke-width="2"/>
+  <!-- Inner star shine -->
+  <polygon points="100,38 108,58 130,58 112,72 118,93 100,80 82,93 88,72 70,58 92,58" fill="#FFEC80" opacity="0.5"/>
+  <!-- "TOP 10" text on cup -->
+  <text x="100" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff">TOP</text>
+  <text x="100" y="143" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#fff">10</text>
+</svg>

@@ -1738,6 +1738,7 @@ footer {
 .profile-trophy-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
 }
 
 .trophy-gold {
@@ -1755,19 +1756,10 @@ footer {
     background: linear-gradient(135deg, #fdf0e0 0%, #fff 100%);
 }
 
-.trophy-last {
-    border: 2px solid #8B4513;
-    background: linear-gradient(135deg, #f5efe8 0%, #fff 100%);
-}
-
 .profile-trophy-img-wrap img {
     width: 70px;
     height: auto;
     margin-bottom: 8px;
-}
-
-.trophy-last .profile-trophy-img-wrap img {
-    width: 50px;
 }
 
 .profile-trophy-info {
@@ -1927,9 +1919,6 @@ footer {
     }
     .profile-trophy-img-wrap img {
         width: 55px;
-    }
-    .trophy-last .profile-trophy-img-wrap img {
-        width: 40px;
     }
     .profile-trophy-year {
         font-size: 1.2em;

@@ -10,12 +10,34 @@
   var bestFinish = totalTournaments > 0
     ? Math.min.apply(null, sortedTrophies.map(function(t) { return t.userRank; }))
     : 0;
+  var top3Count = sortedTrophies.filter(function(t) { return t.userRank <= 3; }).length;
+  var top10Count = sortedTrophies.filter(function(t) { return t.userRank <= 10; }).length;
+  var top50Count = sortedTrophies.filter(function(t) {
+    return t.userRank <= Math.ceil(t.totalPlayers / 2);
+  }).length;
 
   // Ordinal suffix helper
   function ordinal(n) {
     var s = ["th", "st", "nd", "rd"];
     var v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  // Trophy tier helper — determines tier from rank, totalPlayers, and madeAllPicks
+  function getTrophyTier(trophy) {
+    if (trophy.userRank === 1) return 'gold';
+    if (trophy.userRank === 2) return 'silver';
+    if (trophy.userRank === 3) return 'bronze';
+    if (trophy.userRank <= 10) return 'top10';
+    if (trophy.userRank <= Math.ceil(trophy.totalPlayers / 2)) return 'top50';
+    // Last place logic: distinguish pick-misser from true last
+    if (trophy.userRank === trophy.totalPlayers && trophy.totalPlayers > 3) {
+      if (trophy.madeAllPicks === false) return 'misser';
+      return 'last';
+    }
+    // Second-to-last could also be a misser
+    if (trophy.madeAllPicks === false) return 'misser';
+    return 'participation';
   }
 %>
 
@@ -47,6 +69,18 @@
         <div class="profile-stat">
             <span class="profile-stat-value"><%= ordinal(bestFinish) %></span>
             <span class="profile-stat-label">Best Finish</span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat-value"><%= top3Count %></span>
+            <span class="profile-stat-label">Top 3</span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat-value"><%= top10Count %></span>
+            <span class="profile-stat-label">Top 10</span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat-value"><%= top50Count %></span>
+            <span class="profile-stat-label">Top 50%</span>
         </div>
     </div>
     <% } %>
@@ -80,26 +114,29 @@
     <div class="profile-trophy-grid">
         <% sortedTrophies.forEach(function(trophy) { %>
             <%
-                var isGold   = trophy.userRank === 1;
-                var isSilver = trophy.userRank === 2;
-                var isBronze = trophy.userRank === 3;
-                var isLast   = trophy.userRank === trophy.totalPlayers && trophy.totalPlayers > 3;
+                var tier = getTrophyTier(trophy);
+                // Only podium trophies (gold/silver/bronze) get special card borders
                 var cardClass = 'profile-trophy-card';
-                if (isGold)        cardClass += ' trophy-gold';
-                else if (isSilver) cardClass += ' trophy-silver';
-                else if (isBronze) cardClass += ' trophy-bronze';
-                else if (isLast)   cardClass += ' trophy-last';
+                if (tier === 'gold')          cardClass += ' trophy-gold';
+                else if (tier === 'silver')   cardClass += ' trophy-silver';
+                else if (tier === 'bronze')   cardClass += ' trophy-bronze';
             %>
-            <div class="<%= cardClass %>">
+            <a href="/tournamentStandings#year-<%= trophy.year %>" class="<%= cardClass %>" style="text-decoration: none; color: inherit; display: block;">
                 <div class="profile-trophy-img-wrap">
-                    <% if (isGold) { %>
+                    <% if (tier === 'gold') { %>
                         <img src="/imgs/trophies/first-place-trophy.png" alt="1st Place Trophy">
-                    <% } else if (isSilver) { %>
+                    <% } else if (tier === 'silver') { %>
                         <img src="/imgs/trophies/second-place-trophy.png" alt="2nd Place Trophy">
-                    <% } else if (isBronze) { %>
+                    <% } else if (tier === 'bronze') { %>
                         <img src="/imgs/trophies/third-place-trophy.png" alt="3rd Place Trophy">
-                    <% } else if (isLast) { %>
+                    <% } else if (tier === 'top10') { %>
+                        <img src="/imgs/trophies/top-ten-trophy.svg" alt="Top 10 Trophy">
+                    <% } else if (tier === 'top50') { %>
+                        <img src="/imgs/trophies/top-fifty-trophy.svg" alt="Top 50% Medal">
+                    <% } else if (tier === 'last') { %>
                         <img src="/imgs/trophies/toilet-trophy.png" alt="Last Place Trophy">
+                    <% } else if (tier === 'misser') { %>
+                        <img src="/imgs/trophies/pick-misser-trophy.svg" alt="Pick Misser">
                     <% } else { %>
                         <img src="/imgs/trophies/participation-ribbon.png" alt="Participation Ribbon">
                     <% } %>
@@ -107,21 +144,27 @@
                 <div class="profile-trophy-info">
                     <span class="profile-trophy-year"><%= trophy.year %></span>
                     <span class="profile-trophy-rank">
-                        <% if (isGold) { %>
+                        <% if (tier === 'gold') { %>
                             <i class="fas fa-crown" style="color: #D4AF37;"></i> Champion
-                        <% } else if (isSilver) { %>
-                            2nd Place
-                        <% } else if (isBronze) { %>
+                        <% } else if (tier === 'silver') { %>
+                            Runner-Up
+                        <% } else if (tier === 'bronze') { %>
                             3rd Place
-                        <% } else if (isLast) { %>
+                        <% } else if (tier === 'top10') { %>
+                            Top 10
+                        <% } else if (tier === 'top50') { %>
+                            Top 50%
+                        <% } else if (tier === 'last') { %>
                             Last Place
+                        <% } else if (tier === 'misser') { %>
+                            Pick Misser
                         <% } else { %>
-                            <%= ordinal(trophy.userRank) %> of <%= trophy.totalPlayers %>
+                            Participation
                         <% } %>
                     </span>
-                    <span class="profile-trophy-score"><%= trophy.score.toFixed(3) %> pts</span>
+                    <span class="profile-trophy-score"><%= ordinal(trophy.userRank) %> of <%= trophy.totalPlayers %> &middot; <%= trophy.score.toFixed(3) %> pts</span>
                 </div>
-            </div>
+            </a>
         <% }) %>
     </div>
     <% } else { %>
