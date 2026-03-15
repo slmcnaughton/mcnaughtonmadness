@@ -215,7 +215,7 @@
                         <i class="fas fa-pencil-alt"></i>
                       </button>
                       <form action="/admin/users/<%= user.username %>/resetPassword" method="POST" style="display: inline-flex; gap: 5px; align-items: center; margin-left: 4px;">
-                        <input type="password" name="newPassword" placeholder="New pw" class="form-control input-sm" style="width: 100px;" minlength="6" required>
+                        <input type="password" name="newPassword" placeholder="New password" class="form-control input-sm" style="width: 100px;" minlength="6" required>
                         <button type="submit" class="btn btn-xs btn-warning" onclick="return confirm('Reset password for <%= user.firstName %> <%= user.lastName %>?');">
                           Reset
                         </button>

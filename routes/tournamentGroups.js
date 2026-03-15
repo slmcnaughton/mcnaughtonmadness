@@ -8,8 +8,8 @@ var UserTournament = require("../models/userTournament");
 var Team = require("../models/team");
 var emailHelper = require("../middleware/emailHelper");
 
-//SendRoundSummaryTest
-router.post("/:groupName/testRoundSummary", function (req, res) {
+//SendRoundSummaryTest — always sends only to the logged-in user's email
+router.post("/:groupName/testRoundSummary", middleware.isLoggedIn, function (req, res) {
   var groupName = req.params.groupName;
   TournamentGroup.findOne({ groupName: groupName })
     .populate({
@@ -21,7 +21,8 @@ router.post("/:groupName/testRoundSummary", function (req, res) {
         console.log(err);
         res.redirect("/tournamentGroups");
       } else {
-        emailHelper.sendRoundSummary(foundTournamentGroup);
+        emailHelper.sendRoundSummary(foundTournamentGroup, req.user.email);
+        req.flash("success", "Test email sent to " + req.user.email);
         res.redirect("back");
       }
     });

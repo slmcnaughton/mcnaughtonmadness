@@ -10,30 +10,59 @@ var resend = new Resend(process.env.RESEND_API_KEY);
 
 var emailObj = {};
 
-emailObj.sendRoundSummary = async function (tournamentGroup) {
-  tournamentGroup.userTournaments.sort(compareUserTournaments);
-  async.waterfall(
-    [
-      async.apply(createMailingList, tournamentGroup),
-      async function (emailList) {
-        const mail = {
+emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
+  // Re-populate with userMatchPredictions so we can count correct/incorrect picks
+  TournamentGroup.findById(tournamentGroup._id)
+    .populate({
+      path: "userTournaments",
+      populate: {
+        path: "userRounds",
+        populate: ["round", "userMatchPredictions"],
+      },
+    })
+    .exec(function (err, populatedGroup) {
+      if (err || !populatedGroup) {
+        console.log("Error populating group for email:", err);
+        return;
+      }
+
+      populatedGroup.userTournaments.sort(compareUserTournaments);
+      var completedRound = populatedGroup.currentRound - 1;
+
+      function sendIt(emailList) {
+        var mail = {
           subject:
-            "End of Round " + (tournamentGroup.currentRound - 1) + " Summary",
+            (testEmail ? "[TEST] " : "") +
+            populatedGroup.groupName + " — End of Round " + completedRound + " Summary",
           to: emailList,
           body: {
-            content: buildGroupScoreTableHtml(tournamentGroup),
+            content: buildGroupScoreTableHtml(populatedGroup, completedRound),
             contentType: "html",
           },
         };
         sendEmail(mail.to, mail.subject, mail.body, function (err) {
           if (err) console.log(err);
         });
-      },
-    ],
-    function (err) {
-      if (err) console.log(err);
-    },
-  );
+      }
+
+      if (testEmail) {
+        // Test mode: send only to the specified email
+        console.log("[EMAIL TEST] Sending round summary to " + testEmail + " only (skipping full mailing list)");
+        sendIt([testEmail]);
+      } else {
+        async.waterfall(
+          [
+            async.apply(createMailingList, populatedGroup),
+            async function (emailList) {
+              sendIt(emailList);
+            },
+          ],
+          function (err) {
+            if (err) console.log(err);
+          },
+        );
+      }
+    });
 };
 
 emailObj.sendPickReminderEmail = function () {
@@ -84,108 +113,331 @@ function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
   );
 }
 
-function buildGroupScoreTableHtml(tournamentGroup) {
-  var intro =
-    "<div><p>Round complete! Below is the end of round summary.</p> </div>";
+function buildGroupScoreTableHtml(tournamentGroup, completedRound) {
+  var groupName = tournamentGroup.groupName;
+  var groupLink = "https://www.mcnaughtonmadness.com/tournamentGroups/" + groupName;
+  var participants = tournamentGroup.userTournaments;
 
-  var tableHead =
-    "<html>" +
-    "<head>" +
-    "<style>" +
-    "table {  " +
-    "color: #333;" +
-    "background: #FAFAFA;" +
-    "font-family: Helvetica, Arial, sans-serif;" +
-    "width: 800px; " +
-    "border-collapse:  collapse; " +
-    "border-spacing: 0; " +
-    "}" +
-    "" +
-    "td, th { " +
-    "height: 30px; " +
-    "text-align: center;" +
-    'width="9%"; ' +
-    "}" +
-    "th {  " +
-    "background: #F3F3F3;" +
-    "font-weight: bold;" +
-    "}" +
-    "</style>" +
-    "</head>" +
-    "<body>" +
-    '<div class="table-responsive">' +
-    '<table class="table table-striped table-bordered table-hover table-condensed" id="tournamentStandings" style="color: #333;background: #FAFAFA;font-family: Helvetica, Arial, sans-serif;width: 800px;border-collapse: collapse;border-spacing: 0;">' +
-    "<thead>" +
-    "<tr>" +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Rank</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Total</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Name</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Round 1</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Round 2</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Round 3</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Round 4</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Round 5</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Round 6</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Final Four Bonus</th>' +
-    '<th style="height: 30px;background: #F3F3F3;font-weight: bold;text-align: center; width="9%";">Champion Bonus</th>' +
-    "</tr>" +
-    "</thead>";
-  var tableBody = "<tbody>";
+  // ── Compute stats per participant ──────────────────────────────────────────
+  var stats = [];
+  for (var i = 0; i < participants.length; i++) {
+    var p = participants[i];
+    var thisRoundScore = 0;
+    var correctPicks = 0;
+    var totalPicks = 0;
+    var prevRoundTotal = 0; // score before this round (for rank change)
+
+    for (var k = 0; k < p.userRounds.length; k++) {
+      var ur = p.userRounds[k];
+      if (ur.round.numRound === completedRound) {
+        thisRoundScore = ur.roundScore || 0;
+        // Count correct/incorrect from predictions
+        if (ur.userMatchPredictions) {
+          for (var m = 0; m < ur.userMatchPredictions.length; m++) {
+            var pred = ur.userMatchPredictions[m];
+            if (pred.score !== undefined && pred.score !== null) {
+              totalPicks++;
+              if (pred.score > 0) correctPicks++;
+            }
+          }
+        }
+      }
+    }
+
+    prevRoundTotal = (p.score || 0) - thisRoundScore;
+
+    stats.push({
+      firstName: p.user.firstName,
+      totalScore: p.score || 0,
+      thisRoundScore: thisRoundScore,
+      correctPicks: correctPicks,
+      totalPicks: totalPicks,
+      prevRoundTotal: prevRoundTotal,
+      userRounds: p.userRounds,
+    });
+  }
+
+  // ── Compute current rank and previous rank ─────────────────────────────────
+  // Current rank (already sorted by total score descending)
   var tieCount = 0;
   var rank = 0;
-  for (var i = 0; i < tournamentGroup.userTournaments.length; i++) {
-    var participant = tournamentGroup.userTournaments[i];
-    if (
-      i > 0 &&
-      participant.score === tournamentGroup.userTournaments[i - 1].score
-    ) {
+  for (var i = 0; i < stats.length; i++) {
+    if (i > 0 && stats[i].totalScore === stats[i - 1].totalScore) {
       tieCount++;
     } else {
       rank += 1 + tieCount;
       tieCount = 0;
     }
-    tableBody += "<tr>";
-    tableBody +=
-      '<td style="height: 30px; text-align: center; width="9%";">' +
-      rank +
-      "</td>";
-    var score = participant.score;
-    var rounded = Math.round(score * Math.pow(10, 3)) / Math.pow(10, 3);
-    tableBody +=
-      '<td style="height: 30px; text-align: center; width="9%";">' +
-      rounded +
-      "</td>";
-    tableBody +=
-      '<td style="height: 30px; text-align: center; width="9%";">' +
-      participant.user.firstName +
-      "</td>";
-    //Loop through all 8 potential rounds
-    for (var j = 1; j < 9; j++) {
-      var found = false;
-      for (var k = 0; k < participant.userRounds.length; k++) {
-        if (participant.userRounds[k].round.numRound === j) {
-          var roundScore = participant.userRounds[k].roundScore;
-          var roundScoreRounded =
-            Math.round(roundScore * Math.pow(10, 3)) / Math.pow(10, 3);
-          tableBody +=
-            '<td style="height: 30px; text-align: center; width="9%";">' +
-            roundScoreRounded +
-            "</td>";
-          found = true;
+    stats[i].currentRank = rank;
+  }
+
+  // Previous rank (by prevRoundTotal)
+  if (completedRound > 1) {
+    var prevSorted = stats.slice().sort(function (a, b) {
+      return b.prevRoundTotal - a.prevRoundTotal;
+    });
+    tieCount = 0;
+    rank = 0;
+    for (var i = 0; i < prevSorted.length; i++) {
+      if (i > 0 && prevSorted[i].prevRoundTotal === prevSorted[i - 1].prevRoundTotal) {
+        tieCount++;
+      } else {
+        rank += 1 + tieCount;
+        tieCount = 0;
+      }
+      prevSorted[i].prevRank = rank;
+    }
+    // Map prevRank back to stats by firstName
+    var prevRankMap = {};
+    for (var i = 0; i < prevSorted.length; i++) {
+      prevRankMap[prevSorted[i].firstName] = prevSorted[i].prevRank;
+    }
+    for (var i = 0; i < stats.length; i++) {
+      stats[i].prevRank = prevRankMap[stats[i].firstName];
+    }
+  }
+
+  // ── Find highlights (tie-aware) ─────────────────────────────────────────────
+  var bestRoundScore = stats[0].thisRoundScore;
+  var worstRoundScore = stats[0].thisRoundScore;
+  var mostCorrectPicks = stats[0].correctPicks;
+  var bestMovement = 0;
+
+  // First pass: find the best/worst values
+  for (var i = 0; i < stats.length; i++) {
+    if (stats[i].thisRoundScore > bestRoundScore) bestRoundScore = stats[i].thisRoundScore;
+    if (stats[i].thisRoundScore < worstRoundScore) worstRoundScore = stats[i].thisRoundScore;
+    if (stats[i].correctPicks > mostCorrectPicks) mostCorrectPicks = stats[i].correctPicks;
+    if (completedRound > 1 && stats[i].prevRank) {
+      var movement = stats[i].prevRank - stats[i].currentRank;
+      if (movement > bestMovement) bestMovement = movement;
+    }
+  }
+
+  // Second pass: collect all tied winners
+  var bestRoundPeople = [];
+  var worstRoundPeople = [];
+  var sharpShooters = [];
+  var biggestMovers = [];
+  var leaders = [];
+  for (var i = 0; i < stats.length; i++) {
+    if (stats[i].currentRank === 1) leaders.push(stats[i]);
+    if (stats[i].thisRoundScore === bestRoundScore) bestRoundPeople.push(stats[i]);
+    if (stats[i].thisRoundScore === worstRoundScore) worstRoundPeople.push(stats[i]);
+    if (stats[i].correctPicks === mostCorrectPicks) sharpShooters.push(stats[i]);
+    if (completedRound > 1 && stats[i].prevRank && bestMovement > 0) {
+      if (stats[i].prevRank - stats[i].currentRank === bestMovement) biggestMovers.push(stats[i]);
+    }
+  }
+
+  // Helper: join names with commas + "and"
+  function joinNames(arr) {
+    var names = arr.map(function (s) { return s.firstName; });
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return names[0] + ' &amp; ' + names[1];
+    return names.slice(0, -1).join(', ') + ', &amp; ' + names[names.length - 1];
+  }
+
+  // ── Shared inline styles (email clients ignore <style> blocks) ─────────────
+  var headerCellStyle = 'style="padding: 8px 6px; text-align: center; background: #1B3A5C; color: #fff; font-size: 13px; font-weight: bold;"';
+
+  // Podium row backgrounds (subtle accents)
+  var podiumBg = { 1: '#FFF9E6', 2: '#F4F4F4', 3: '#FDF3EB' }; // gold, silver, bronze
+  function cellStyleForRank(rank, altRow) {
+    var bg = podiumBg[rank] || (altRow ? '#f9f9f9' : '#ffffff');
+    var bold = rank <= 3 ? ' font-weight: bold;' : '';
+    return 'style="padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; font-size: 14px; background: ' + bg + ';' + bold + '"';
+  }
+
+  // ── Build HTML ─────────────────────────────────────────────────────────────
+  var html = "";
+  html += '<html><head></head><body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background: #f4f4f4;">';
+  html += '<div style="max-width: 700px; margin: 0 auto; background: #ffffff; padding: 0;">';
+
+  // Header banner
+  html += '<div style="background: #1B3A5C; color: #ffffff; padding: 20px 24px; text-align: center;">';
+  html += '<h1 style="margin: 0; font-size: 22px; font-weight: bold;">&#127936; ' + groupName + '</h1>';
+  html += '<p style="margin: 6px 0 0; font-size: 16px; color: #FFA705;">Round ' + completedRound + ' Complete</p>';
+  html += '</div>';
+
+  // Highlights section
+  html += '<div style="padding: 16px 24px; background: #FFF9E6; border-bottom: 2px solid #FFA705;">';
+
+  // Leader (tie-aware)
+  html += '<div style="margin-bottom: 8px;">';
+  html += '<strong>&#127942; Leader:</strong> ' + joinNames(leaders);
+  html += ' (' + roundNum(leaders[0].totalScore) + ' pts)';
+  html += '</div>';
+
+  // Best round score (tie-aware)
+  if (bestRoundScore > 0) {
+    html += '<div style="margin-bottom: 8px;">';
+    html += '<strong>&#128293; Best Round ' + completedRound + ':</strong> ' + joinNames(bestRoundPeople);
+    html += ' (+' + roundNum(bestRoundScore) + ' pts)';
+    html += '</div>';
+  }
+
+  // Biggest mover (round 2+, tie-aware)
+  if (biggestMovers.length > 0) {
+    html += '<div style="margin-bottom: 8px;">';
+    html += '<strong>&#128640; Biggest Mover:</strong> ' + joinNames(biggestMovers);
+    if (biggestMovers.length === 1) {
+      html += ' (' + ordinalSuffix(biggestMovers[0].prevRank) + ' &#8594; ' + ordinalSuffix(biggestMovers[0].currentRank) + ')';
+    } else {
+      html += ' (up ' + bestMovement + ')';
+    }
+    html += '</div>';
+  }
+
+  // Sharp Shooter — most correct picks (skip if same group as best round people)
+  var sharpShooterNames = joinNames(sharpShooters);
+  var bestRoundNames = joinNames(bestRoundPeople);
+  if (mostCorrectPicks > 0 && sharpShooterNames !== bestRoundNames) {
+    html += '<div style="margin-bottom: 8px;">';
+    html += '<strong>&#127919; Sharp Shooter:</strong> ' + sharpShooterNames;
+    html += ' (' + mostCorrectPicks + '/' + sharpShooters[0].totalPicks + ' correct)';
+    html += '</div>';
+  }
+
+  // Rough round — worst round score (only show if someone actually went negative)
+  if (worstRoundScore < 0) {
+    html += '<div style="margin-bottom: 8px;">';
+    html += '<strong>&#128556; Rough Round:</strong> ' + joinNames(worstRoundPeople);
+    html += ' (' + roundNum(worstRoundScore) + ' pts)';
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  // Standings table
+  html += '<div style="padding: 16px 24px;">';
+  html += '<table style="width: 100%; border-collapse: collapse; font-family: Helvetica, Arial, sans-serif;">';
+
+  // Table header — only show columns through the completed round
+  html += '<thead><tr>';
+  html += '<th ' + headerCellStyle + '>#</th>';
+  if (completedRound > 1) {
+    html += '<th ' + headerCellStyle + '>+/-</th>';
+  }
+  html += '<th ' + headerCellStyle + '>Name</th>';
+  html += '<th ' + headerCellStyle + '>Total</th>';
+
+  var roundLabels = ["R1", "R2", "R3", "R4", "R5", "R6", "FF", "Champ"];
+  var roundNums = [1, 2, 3, 4, 5, 6, 7, 8];
+  for (var j = 0; j < roundNums.length; j++) {
+    // R1-R6: show when that round is completed
+    // FF (R7): show after R4 completes (FF picks overlap with R4)
+    // Champ (R8): show after R6 completes (Champ picks overlap with R6)
+    var showCol = roundNums[j] <= 6 ? roundNums[j] <= completedRound
+      : roundNums[j] === 7 ? completedRound >= 4
+      : completedRound >= 6;
+    if (showCol) {
+      html += '<th ' + headerCellStyle + '>' + roundLabels[j] + '</th>';
+    }
+  }
+
+  html += '<th ' + headerCellStyle + '>R' + completedRound + ' Picks</th>';
+  html += '</tr></thead>';
+
+  // Table body
+  html += '<tbody>';
+  for (var i = 0; i < stats.length; i++) {
+    var s = stats[i];
+    var cs = cellStyleForRank(s.currentRank, i % 2 !== 0);
+
+    html += '<tr>';
+
+    // Rank
+    html += '<td ' + cs + '>' + s.currentRank + '</td>';
+
+    // Rank change (round 2+)
+    if (completedRound > 1) {
+      var change = (s.prevRank || s.currentRank) - s.currentRank;
+      var changeStr = '';
+      if (change > 0) {
+        changeStr = '<span style="color: #27ae60;">&#9650;' + change + '</span>';
+      } else if (change < 0) {
+        changeStr = '<span style="color: #e74c3c;">&#9660;' + Math.abs(change) + '</span>';
+      } else {
+        changeStr = '<span style="color: #999;">&mdash;</span>';
+      }
+      html += '<td ' + cs + '>' + changeStr + '</td>';
+    }
+
+    // Name
+    html += '<td ' + cs + '><strong>' + s.firstName + '</strong></td>';
+
+    // Total
+    html += '<td ' + cs + '>' + roundNum(s.totalScore) + '</td>';
+
+    // Per-round scores (same visibility logic as header)
+    for (var j = 0; j < roundNums.length; j++) {
+      var showCol = roundNums[j] <= 6 ? roundNums[j] <= completedRound
+        : roundNums[j] === 7 ? completedRound >= 4
+        : completedRound >= 6;
+      if (showCol) {
+        var found = false;
+        for (var k = 0; k < s.userRounds.length; k++) {
+          if (s.userRounds[k].round.numRound === roundNums[j]) {
+            html += '<td ' + cs + '>' + roundNum(s.userRounds[k].roundScore || 0) + '</td>';
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          html += '<td ' + cs + '>0</td>';
         }
       }
-      if (found === false) {
-        tableBody +=
-          '<td style="height: 30px; text-align: center; width="9%";">0</td>';
-      }
     }
-    tableBody += "</tr>";
+
+    // Correct picks this round
+    if (s.totalPicks > 0) {
+      html += '<td ' + cs + '>' + s.correctPicks + '/' + s.totalPicks + '</td>';
+    } else {
+      html += '<td ' + cs + '>&mdash;</td>';
+    }
+
+    html += '</tr>';
   }
-  tableBody += "</tbody></table></div>";
+  html += '</tbody></table>';
+  html += '</div>';
 
-  var htmlEnd = "</body></html>";
+  // CTA link
+  html += '<div style="padding: 16px 24px; text-align: center; border-top: 1px solid #eee;">';
+  html += '<a href="' + groupLink + '" style="display: inline-block; padding: 12px 28px; background: #FFA705; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">View Full Standings & Bracket</a>';
+  html += '</div>';
 
-  return intro + tableHead + tableBody + htmlEnd;
+  // Next round info — only show for rounds 1-5 (picks can't be made after R6;
+  // FF and Championship bonus picks are made during R4 and R6 respectively)
+  var nextRound = completedRound + 1;
+  if (nextRound <= 6) {
+    html += '<div style="padding: 12px 24px; text-align: center; color: #666; font-size: 14px;">';
+    html += '&#128227; <strong>Round ' + nextRound + '</strong> is up next &mdash; make sure your picks are in!';
+    html += '</div>';
+  } else if (completedRound >= 6) {
+    html += '<div style="padding: 12px 24px; text-align: center; color: #666; font-size: 14px;">';
+    html += '&#127942; That\'s a wrap! Thanks for playing this year.';
+    html += '</div>';
+  }
+
+  // Footer
+  html += '<div style="padding: 12px 24px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;">';
+  html += '<a href="https://www.mcnaughtonmadness.com" style="color: #999;">McNaughton Madness</a>';
+  html += '</div>';
+
+  html += '</div></body></html>';
+
+  return html;
+}
+
+function roundNum(n) {
+  return Math.round(n * 1000) / 1000;
+}
+
+function ordinalSuffix(n) {
+  var s = ["th", "st", "nd", "rd"];
+  var v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 function buildPickReminderContent(tournamentGroup) {
@@ -309,6 +561,7 @@ async function sendEmail(mailingList, subject, mailBody) {
 
   var mail = {
     from: "McNaughton Madness <seth@mcnaughtonmadness.com>",
+    reply_to: "slmcnaughton@yahoo.com",
     to: recipients,
     subject: subject,
   };
