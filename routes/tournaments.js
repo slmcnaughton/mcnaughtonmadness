@@ -40,22 +40,13 @@ router.get("/new", middleware.isLoggedIn, function (req, res) {
 //CREATE -
 router.post("/", middleware.isLoggedIn, function (req, res) {
   var year = 2026;
-  var regions = ["East", "West", "South", "Midwest"];
-  // var year = Math.floor((Math.random()*100+2000));
 
-  //march month is actually 2
-  var startDay = moment.tz([2026, 02, 19], "America/New_York");
-
-  //[year, month, day, hour, minute, second, millisecond]
-  // console.log(startDay.format("dddd, MMMM Do YYYY, h:mm:ss a"));
-
-  //   teamNames sample data below
-
-  // var regions = req.body.regions;
-  // var year = req.body.year;
-  // var teamNames = req.body.teams;
-  // console.log(req.body.teams);
-
+  var regions = ["East", "South", "West", "Midwest"];
+  // ── TEST MODE: round 1 starts 10 min from now ──────────────────────
+  // var startDay = moment().add(10, "minutes");
+  // ── PRODUCTION: uncomment for actual tournament start ──────────────
+  // the month of March is actually 2
+  var startDay = moment.tz([2026, 2, 19], "America/New_York");
   var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
   var numRounds = Math.log(teamNames.length) / Math.log(2); //the number of rounds needed for a 64 team tournament is logbase2(64) = 6
 
@@ -85,14 +76,11 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                 {
                   numRound: 1,
                   matches: [],
+                  // TEST MODE: use startDay directly (10 min from now)
+                  // startTime: startDay.toDate(),
+                  // PRODUCTION: uncomment for actual tournament start
                   startTime: moment.tz(
-                    [
-                      startDay.year(),
-                      startDay.month(),
-                      startDay.date(),
-                      12,
-                      15,
-                    ],
+                    [startDay.year(), startDay.month(), startDay.date(), 12, 15],
                     "America/New_York",
                   ),
                 },
@@ -591,144 +579,77 @@ function compareTeams(a, b) {
 }
 
 var teamNames = [
-  "UConn",
-  "Stetson",
-  "FAU",
-  "Northwestern",
-  "San Diego St.",
-  "UAB",
-  "Auburn",
-  "Yale",
-  "BYU",
-  "Duquesne",
-  "Illinois",
-  "Morehead St.",
-  "Washington St.",
-  "Drake",
-  "Iowa St.",
-  "S. Dak. St.",
-
-  "N. Carolina",
-  "Howard/Wagner",
-  "Miss. St.",
-  "Michigan St.",
-  "Saint Mary's",
-  "Grand Canyon",
-  "Alabama",
-  "Charleston",
-  "Clemson",
-  "New Mexico",
-  "Baylor",
-  "Colgate",
-  "Dayton",
-  "Nevada",
-  "Arizona",
-  "LBSU",
-
-  "Houston",
-  "Longwood",
-  "Nebraska",
-  "Texas A&M",
-  "Wisconsin",
-  "James Madison",
+  // ── East (1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15) ──
   "Duke",
-  "Vermont",
-  "Texas Tech",
-  "NC State",
-  "Kentucky",
-  "Oakland",
-  "Florida",
-  "Boise St./Colorado",
-  "Marquette",
-  "W. Kentucky",
-
-  "Purdue",
-  "Montana St. / Grambling",
-  "Utah St.",
+  "Siena",
+  "Ohio St.",
   "TCU",
-  "Gonzaga",
-  "McNeese",
+  "St. John's",
+  "N. Iowa",
   "Kansas",
-  "Samford",
-  "South Carolina",
-  "Oregon",
-  "Creighton",
+  "Cal Baptist",
+  "Louisville",
+  "South Florida",
+  "Michigan St.",
+  "N. Dakota St.",
+  "UCLA",
+  "UCF",
+  "UConn",
+  "Furman",
+
+  // ── South ──
+  "Florida",
+  "Prairie View/Lehigh",
+  "Clemson",
+  "Iowa",
+  "Vanderbilt",
+  "McNeese",
+  "Nebraska",
+  "Troy",
+  "N. Carolina",
+  "VCU",
+  "Illinois",
+  "Penn",
+  "Saint Mary's",
+  "Texas A&M",
+  "Houston",
+  "Idaho",
+
+  // ── West ──
+  "Arizona",
+  "LIU",
+  "Villanova",
+  "Utah St.",
+  "Wisconsin",
+  "High Point",
+  "Arkansas",
+  "Hawaii",
+  "BYU",
+  "Texas/NC State",
+  "Gonzaga",
+  "Kennesaw St.",
+  "Miami",
+  "Missouri",
+  "Purdue",
+  "Queens",
+
+  // ── Midwest ──
+  "Michigan",
+  "UMBC/Howard",
+  "Georgia",
+  "Saint Louis",
+  "Texas Tech",
   "Akron",
-  "Texas",
-  "Virginia / Colorado St.",
+  "Alabama",
+  "Hofstra",
   "Tennessee",
-  "St. Peter's",
+  "Miami (Ohio)/SMU",
+  "Virginia",
+  "Wright St.",
+  "Kentucky",
+  "Santa Clara",
+  "Iowa St.",
+  "Tennessee St.",
 ];
-
-// var teamNames = [
-//         "Virginia",
-//         "UMBC",
-//         "Creighton",
-//         "Kansas State",
-//         "Kentucky",
-//         "Davidson",
-//         "Arizona",
-//         "Buffalo",
-//         "Miami (Fla.)",
-//         "Loyola-Chi.",
-//         "Tennessee",
-//         "Wright State",
-//         "Nevada",
-//         "Texas",
-//         "Cincinnati",
-//         "Georgia State",
-
-//         "Xavier",
-//         "Texas So.",
-//         "Missouri",
-//         "Florida State",
-//         "Ohio State",
-//         "S. Dak. St.",
-//         "Gonzaga",
-//         "NC-Greensboro",
-//         "Houston",
-//         "San Diego St",
-//         "Michigan",
-//         "Montana",
-//         "Texas A&M",
-//         "Providence",
-//         "North Carolina",
-//         "Lipscomb",
-
-//         "Villanova",
-//         "Radford",
-//         "Virginia Tech",
-//         "Alabama",
-//         "West Virginia",
-//         "Murray St.",
-//         "Wichita State",
-//         "Marshall",
-//         "Florida",
-//         "St. Bona.",
-//         "Texas Tech",
-//         "SF Austin",
-//         "Arkansas",
-//         "Butler",
-//         "Purdue",
-//         "CSFullerton",
-
-//         "Kansas",
-//         "Pennsylvania",
-//         "Seton Hall",
-//         "NC State",
-//         "Clemson",
-//         "New Mex. St.",
-//         "Auburn",
-//         "Charleston",
-//         "TCU",
-//         "Syracuse",
-//         "Michigan State",
-//         "Bucknell",
-//         "Rhode Island",
-//         "Oklahoma",
-//         "Duke",
-//         "Iona"
-
-//     ];
 
 module.exports = router;

@@ -7,8 +7,7 @@ var teamSchema = new mongoose.Schema({
   firstMatchNum: Number,
   image: {
     type: String,
-    default:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Basketball.png/170px-Basketball.png",
+    default: "/imgs/basketball-default.svg",
   },
   lost: Number,
   aliases: [String],
