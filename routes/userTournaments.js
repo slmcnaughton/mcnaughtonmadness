@@ -129,48 +129,78 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
 
 //SHOW - shows more information about a particular userTournament
 router.get("/:username", middleware.isLoggedIn, function (req, res) {
-  UserTournament.findOne({
-    "user.username": req.params.username,
-    "tournamentGroup.groupName": req.params.groupName,
-  })
-    .populate({ path: "userRounds", populate: { path: "round.id" } })
-    .populate({
-      path: "userRounds",
-      populate: { path: "userMatchPredictions", populate: { path: "winner" } },
+  // Allow viewing your own bracket or if admin; otherwise check pick status
+  var isOwnBracket = req.user.username === req.params.username;
+  var isAdmin = req.user.isAdmin;
+
+  function renderBracket() {
+    UserTournament.findOne({
+      "user.username": req.params.username,
+      "tournamentGroup.groupName": req.params.groupName,
     })
-    .populate({
-      path: "userRounds",
-      populate: {
-        path: "userMatchPredictions",
-        populate: { path: "match.id" },
+      .populate({ path: "userRounds", populate: { path: "round.id" } })
+      .populate({
+        path: "userRounds",
+        populate: {
+          path: "userMatchPredictions",
+          populate: { path: "winner" },
+        },
+      })
+      .populate({
+        path: "userRounds",
+        populate: {
+          path: "userMatchPredictions",
+          populate: { path: "match.id" },
+        },
+      })
+      .populate({
+        path: "tournamentReference.id",
+        populate: {
+          path: "rounds",
+          populate: { path: "matches", populate: { path: "topTeam" } },
+        },
+      })
+      .populate({
+        path: "tournamentReference.id",
+        populate: {
+          path: "rounds",
+          populate: { path: "matches", populate: { path: "bottomTeam" } },
+        },
+      })
+      .exec(function (err, foundUserTournament) {
+        if (err || !foundUserTournament) {
+          req.flash("error", "User Tournament not found");
+          return res.redirect("/tournamentGroups");
+        } else {
+          foundUserTournament.userRounds.sort(compare);
+          res.render("userTournaments/show", {
+            userTournament: foundUserTournament,
+            page: "tournamentGroups",
+          });
+        }
+      });
+  }
+
+  if (isOwnBracket || isAdmin) {
+    renderBracket();
+  } else {
+    middleware.checkUserPickStatus(
+      req.user._id,
+      req.params.groupName,
+      function (err, result) {
+        if (result && result.shouldHide) {
+          req.flash(
+            "error",
+            "Make your picks before viewing others' brackets!",
+          );
+          return res.redirect(
+            "/tournamentGroups/" + req.params.groupName,
+          );
+        }
+        renderBracket();
       },
-    })
-    .populate({
-      path: "tournamentReference.id",
-      populate: {
-        path: "rounds",
-        populate: { path: "matches", populate: { path: "topTeam" } },
-      },
-    })
-    .populate({
-      path: "tournamentReference.id",
-      populate: {
-        path: "rounds",
-        populate: { path: "matches", populate: { path: "bottomTeam" } },
-      },
-    })
-    .exec(function (err, foundUserTournament) {
-      if (err || !foundUserTournament) {
-        req.flash("error", "User Tournament not found");
-        return res.redirect("/tournamentGroups");
-      } else {
-        foundUserTournament.userRounds.sort(compare);
-        res.render("userTournaments/show", {
-          userTournament: foundUserTournament,
-          page: "tournamentGroups",
-        });
-      }
-    });
+    );
+  }
 });
 
 // router.get("/:commentId/edit", middleware.isLoggedIn, function(req, res){

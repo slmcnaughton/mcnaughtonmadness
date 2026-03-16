@@ -9,6 +9,7 @@ var UserRound = require("../models/userRound");
 var UserMatchPrediction = require("../models/userMatchPrediction");
 var Team = require("../models/team");
 var middleware = require("../middleware");
+var scoring = require("../helpers/scoring");
 
 //EDIT - render edit userRound form (aka...makePicks)
 ///tournamentGroups/McNaughton%20Family%20Group%202024/userTournaments/<USERNAME>/2/edit
@@ -44,6 +45,7 @@ router.get(
                   username: req.params.username,
                   targetFirstName: req.targetUserFirstName,
                   page: "tournamentGroups",
+                  calculateScores: scoring.calculateAggregateScores,
                 });
               } else if (numRound === 7) {
                 res.render("userRounds/editFinalFour.ejs", {

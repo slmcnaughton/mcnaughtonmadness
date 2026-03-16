@@ -1,6 +1,13 @@
 <% include ../partials/header %>
 
-<% var numRound = round.numRound %>
+<%
+  var numRound = round.numRound;
+  // Format a score: trim trailing zeros, prefix + for positives
+  function fmtPts(n) {
+    var v = parseFloat(n.toFixed(2));
+    return (v >= 0 ? '+' : '') + v;
+  }
+%>
 <h1 style="text-align: left;">
     <% if (numRound < 7) { %>
         <% if (targetFirstName) { %><%= targetFirstName %>'s <% } %>Round <%= numRound %> Picks:
@@ -11,8 +18,7 @@
     <% } %>
 </h1>
 
-
-
+<p class="scoring-note"><i class="fas fa-info-circle"></i> Points shown as +win / -loss for picking each team. <a href="/rules">How scoring works</a></p>
 
 <!--=======================================================-->
 <!--UPDATE FORM ACTION AND LOCATION-->
@@ -34,11 +40,12 @@
                     <% var match = tournament.rounds[numRound - 1].matches[j]; %>
                 
                     <% if (!match.winner) { %>
-                    
+                        <% var scores = calculateScores(match.topTeam.seed, match.bottomTeam.seed, numRound) %>
+
                         <div class="form-group matchPicker">
                             <% var matchNum = match.matchNumber %>
                             <% var idMaker = tournament.year + "m" + match.matchNumber %>
-                            
+
                             <label for="<%=idMaker%>top" style="display: block">
                                 <div class="team" >
                                     <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam._id %>" required>
@@ -47,6 +54,7 @@
                                             <img class="pickerImage" src="<%= match.topTeam.image %>">
                                             <span class="seed"><%=match.topTeam.seed%></span>
                                             <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
+                                            <span class="pick-scores"><%=fmtPts(scores.topWinScore)%> / <%=fmtPts(scores.topLossScore)%></span>
                                         <% } else { %>
                                             &nbsp
                                         <% } %>
@@ -62,12 +70,13 @@
                                             <img class="pickerImage"  src="<%= match.bottomTeam.image %>">
                                             <span class="seed"><%=match.bottomTeam.seed%></span>
                                             <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
+                                            <span class="pick-scores"><%=fmtPts(scores.bottomWinScore)%> / <%=fmtPts(scores.bottomLossScore)%></span>
                                         <% } else { %>
                                             &nbsp
                                         <% } %>
                                     </div>
                                 </div>
-                            </label> 
+                            </label>
                             
                             <div class="form-group">
                                 <input class="form-control" type="text" name="<%=matchNum%>" placeholder="Optional comment">

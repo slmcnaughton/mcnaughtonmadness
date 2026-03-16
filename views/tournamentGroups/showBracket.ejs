@@ -131,6 +131,7 @@
                                                                                 <% } %>
                                                                             )</h6>
                                                                         </div>
+                                                                        <% if (!hidePickerNames) { %>
                                                                         <ul>
                                                                             <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
                                                                                 <li>
@@ -141,6 +142,9 @@
                                                                                 </li>
                                                                             <% } %>
                                                                         </ul>
+                                                                        <% } else { %>
+                                                                        <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
+                                                                        <% } %>
                                                                     </div>
                                                                
                                                                  <% if (!match.winner) { %> 
@@ -164,6 +168,7 @@
                                                                                 <% } %>
                                                                             )</h6>
                                                                         </div>
+                                                                        <% if (!hidePickerNames) { %>
                                                                         <ul>
                                                                             <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
                                                                                 <li>
@@ -174,6 +179,9 @@
                                                                                 </li>
                                                                             <% } %>
                                                                         </ul>
+                                                                        <% } else { %>
+                                                                        <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
+                                                                        <% } %>
                                                                 </div>
                                                                 
                                                             <% } %>
@@ -310,6 +318,7 @@
                                                                     <% } %>
                                                                 )</h6>
                                                             </div>
+                                                            <% if (!hidePickerNames) { %>
                                                             <ul>
                                                                 <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
                                                                     <li>
@@ -320,6 +329,9 @@
                                                                     </li>
                                                                 <% } %>
                                                             </ul>
+                                                            <% } else { %>
+                                                            <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
+                                                            <% } %>
                                                     </div>
                                                     
                                                 <% } %>
@@ -406,6 +418,7 @@
                                             <div class="teamHeader">
                                                 <h5 style="display: inline-block; "><strong><%=bonAgg[4][j].team.name%></strong></h5>
                                             </div>
+                                            <% if (!hidePickerNames) { %>
                                             <ul>
                                                 <% for (var k = 0; k < bonAgg[4][j].teamPickers.length; k++) { %>
                                                     <li>
@@ -416,6 +429,9 @@
                                                     </li>
                                                 <% } %>
                                             </ul>
+                                            <% } else { %>
+                                            <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
+                                            <% } %>
                                         </div>
                                 </div>
                                 <!--end bonus aggregate popup-->
@@ -456,6 +472,7 @@
                                         <div class="teamHeader">
                                             <h5 style="display: inline-block; "><strong><%=bonAgg[i][j].team.name%></strong></h5>
                                         </div>
+                                        <% if (!hidePickerNames) { %>
                                         <ul>
                                             <% for (var k = 0; k < bonAgg[i][j].teamPickers.length; k++) { %>
                                                 <li>
@@ -466,6 +483,9 @@
                                                 </li>
                                             <% } %>
                                         </ul>
+                                        <% } else { %>
+                                        <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
+                                        <% } %>
                                     </div>
                             </div>
                             <!--end bonus aggregate popup-->

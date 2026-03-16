@@ -331,12 +331,41 @@ router.get("/:groupName/bracket", function (req, res) {
             });
           }
 
-          res.render("tournamentGroups/showBracket", {
-            tournamentGroup: foundTournamentGroup,
-            bonAgg: bonusAggregates,
-            teamLostMap: teamLostMap,
-            page: "tournamentGroups",
-          });
+          // Check if current user should see picker names
+          var currentUser = res.locals.currentUser;
+          if (!currentUser) {
+            // Not logged in — hide picker names
+            res.render("tournamentGroups/showBracket", {
+              tournamentGroup: foundTournamentGroup,
+              bonAgg: bonusAggregates,
+              teamLostMap: teamLostMap,
+              hidePickerNames: true,
+              page: "tournamentGroups",
+            });
+          } else if (currentUser.isAdmin) {
+            // Admin — always show
+            res.render("tournamentGroups/showBracket", {
+              tournamentGroup: foundTournamentGroup,
+              bonAgg: bonusAggregates,
+              teamLostMap: teamLostMap,
+              hidePickerNames: false,
+              page: "tournamentGroups",
+            });
+          } else {
+            middleware.checkUserPickStatus(
+              currentUser._id,
+              groupName,
+              function (err, result) {
+                res.render("tournamentGroups/showBracket", {
+                  tournamentGroup: foundTournamentGroup,
+                  bonAgg: bonusAggregates,
+                  teamLostMap: teamLostMap,
+                  hidePickerNames: result ? result.shouldHide : false,
+                  page: "tournamentGroups",
+                });
+              },
+            );
+          }
         });
       }
     });

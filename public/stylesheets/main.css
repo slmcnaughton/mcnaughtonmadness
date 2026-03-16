@@ -1947,3 +1947,23 @@ footer {
     }
 }
 
+/* ── Pick form point values ── */
+.pick-scores {
+    font-size: 12px;
+    color: #999;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+.scoring-note {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+.scoring-note i {
+    margin-right: 4px;
+}
+.scoring-note a {
+    color: #337ab7;
+}
+

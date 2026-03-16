@@ -14,6 +14,8 @@
 <!--UPDATE FORM ACTION AND LOCATION-->
 <!--=======================================================-->
 
+<p class="scoring-note"><i class="fas fa-info-circle"></i> 5 points for each correct Final Four pick, 0 for incorrect</p>
+
 <form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
     <% for(var i = 0; i < 4; i++) { %>
         <div class="form-group column">

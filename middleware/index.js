@@ -1140,4 +1140,67 @@ middlewareObj.isAdmin = function (req, res, next) {
   res.redirect("/");
 };
 
+// ─── Pick Visibility Helper ──────────────────────────────────────────────────
+// Checks whether a user should be blocked from seeing others' picks.
+// callback(err, { shouldHide: bool })
+// shouldHide = true when the user hasn't made their picks AND tipoff hasn't passed.
+
+middlewareObj.checkUserPickStatus = function (userId, groupName, callback) {
+  TournamentGroup.findOne({ groupName: groupName })
+    .populate({ path: "tournamentReference.id", populate: "rounds" })
+    .exec(function (err, group) {
+      if (err || !group) return callback(err, { shouldHide: false }); // fail open
+
+      var currentRound = group.currentRound;
+      var tournament = group.tournamentReference.id;
+
+      // Find the round's startTime to check if tipoff has passed
+      var roundForTipoff = null;
+      if (tournament && tournament.rounds) {
+        for (var i = 0; i < tournament.rounds.length; i++) {
+          var r = tournament.rounds[i];
+          var rNum = r.numRound || (i + 1);
+          if (rNum === currentRound) {
+            roundForTipoff = r;
+            break;
+          }
+        }
+      }
+
+      // If tipoff has passed, no need to hide — picks are locked
+      if (roundForTipoff && moment().isAfter(moment(roundForTipoff.startTime))) {
+        return callback(null, { shouldHide: false });
+      }
+
+      // Find the user's UserTournament in this group
+      UserTournament.findOne({
+        "user.id": userId,
+        "tournamentGroup.groupName": groupName,
+      })
+        .populate({ path: "userRounds", populate: "round.id" })
+        .exec(function (err, userTournament) {
+          if (err) return callback(err, { shouldHide: false }); // fail open
+
+          // User isn't in the group at all — hide picks
+          if (!userTournament) return callback(null, { shouldHide: true });
+
+          // Check if user has made picks for the current round
+          var hasCurrentRoundPicks = false;
+          for (var j = 0; j < userTournament.userRounds.length; j++) {
+            if (userTournament.userRounds[j].round.numRound === currentRound) {
+              hasCurrentRoundPicks = true;
+              break;
+            }
+          }
+
+          // Special case: Round 1 requires R1 + FF (R7) + Champ (R8) = 3 submissions
+          if (currentRound === 1 && userTournament.userRounds.length < 3) {
+            hasCurrentRoundPicks = false;
+          }
+
+          return callback(null, { shouldHide: !hasCurrentRoundPicks });
+        });
+    });
+};
+
 module.exports = middlewareObj;
