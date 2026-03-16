@@ -13,6 +13,7 @@ var Match = require("./models/match");
 var Team = require("./models/team");
 var TeamImage = require("./models/teamImage");
 var Scrape = require("./models/scrape");
+var Feedback = require("./models/feedback");
 var async = require("async");
 var data = require("./historicalStandings");
 
@@ -34,6 +35,7 @@ function seedDB() {
       // deleteAllRounds,
       // deleteAllTournaments,
       // deleteAllScrapes,
+      // deleteAllFeedback,
       // deleteAllUsers,
     ],
     function (err) {
@@ -133,6 +135,14 @@ function deleteAllScrapes(callback) {
   Scrape.deleteMany({}, function (err) {
     if (err) console.log(err);
     else console.log("removed all scrapes");
+    callback();
+  });
+}
+
+function deleteAllFeedback(callback) {
+  Feedback.deleteMany({}, function (err) {
+    if (err) console.log(err);
+    else console.log("removed all feedback");
     callback();
   });
 }

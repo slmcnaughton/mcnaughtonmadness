@@ -25,6 +25,7 @@ var express = require("express"),
 
 require("dotenv").config();
 mongoose.set("useCreateIndex", true);
+mongoose.set("useFindAndModify", false);
 
 //requiring routes
 var commentRoutes = require("./routes/comments"),
@@ -35,7 +36,8 @@ var commentRoutes = require("./routes/comments"),
   roundRoutes = require("./routes/rounds"),
   tournamentGroupRoutes = require("./routes/tournamentGroups"),
   userTournamentRoutes = require("./routes/userTournaments"),
-  userRoundRoutes = require("./routes/userRounds");
+  userRoundRoutes = require("./routes/userRounds"),
+  feedbackRoutes = require("./routes/feedback");
 
 mongoose.connect(process.env.DATABASE_URL_PROD, {
   useNewUrlParser: true,
@@ -94,6 +96,7 @@ app.use("/tournamentStandings", tournamentStandingsRoutes);
 app.use("/tournaments", tournamentRoutes);
 app.use("/tournaments/:year/rounds", roundRoutes);
 app.use("/tournamentGroups", tournamentGroupRoutes);
+app.use("/feedback", feedbackRoutes);
 app.use("/tournamentGroups/:groupName/userTournaments", userTournamentRoutes);
 app.use(
   "/tournamentGroups/:groupName/userTournaments/:username",

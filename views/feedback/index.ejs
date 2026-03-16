@@ -1,0 +1,81 @@
+<% include ../partials/header %>
+
+<h2><i class="fas fa-comment-dots"></i> Feedback & Suggestions</h2>
+<p class="text-muted">Found a bug? Have an idea for a new feature? Let us know below — we read every submission.</p>
+<hr>
+
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="fas fa-paper-plane"></i> Submit Feedback</h3>
+            </div>
+            <div class="panel-body">
+                <form action="/feedback" method="POST">
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" class="form-control">
+                            <option value="general">General Feedback</option>
+                            <option value="bug">Bug Report</option>
+                            <option value="feature">Feature Request</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" class="form-control" rows="4" placeholder="Tell us what's on your mind..." required></textarea>
+                    </div>
+                    <input type="hidden" name="pageContext" id="pageContext">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-paper-plane"></i> Submit Feedback
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<% if(submissions && submissions.length > 0) { %>
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <h3>Your Previous Submissions</h3>
+        <% submissions.forEach(function(fb) { %>
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
+                        <div>
+                            <% if(fb.category === 'bug') { %>
+                                <span class="label label-danger"><i class="fas fa-bug"></i> Bug Report</span>
+                            <% } else if(fb.category === 'feature') { %>
+                                <span class="label label-info"><i class="fas fa-lightbulb"></i> Feature Request</span>
+                            <% } else { %>
+                                <span class="label label-default"><i class="fas fa-comment"></i> General</span>
+                            <% } %>
+                            <% if(fb.status === 'new') { %>
+                                <span class="label label-warning">New</span>
+                            <% } else if(fb.status === 'read') { %>
+                                <span class="label label-primary">Read</span>
+                            <% } else if(fb.status === 'resolved') { %>
+                                <span class="label label-success">Resolved</span>
+                            <% } %>
+                        </div>
+                        <small class="text-muted"><%= fb.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></small>
+                    </div>
+                    <p style="margin-bottom: 0;"><%= fb.message %></p>
+                    <% if(fb.adminNotes) { %>
+                        <div style="margin-top: 8px; padding: 8px 12px; background: #f0f7fb; border-left: 3px solid #337ab7; border-radius: 2px;">
+                            <small><strong><i class="fas fa-reply"></i> Admin:</strong> <%= fb.adminNotes %></small>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        <% }); %>
+    </div>
+</div>
+<% } %>
+
+<script>
+    // Auto-capture the referring page so admin knows what page the user came from
+    document.getElementById('pageContext').value = document.referrer || '';
+</script>
+
+<% include ../partials/footer %>

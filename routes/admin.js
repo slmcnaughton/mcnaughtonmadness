@@ -13,6 +13,7 @@ var Comment = require("../models/comment");
 var Trophy = require("../models/trophy");
 var TournamentStanding = require("../models/tournamentStanding");
 var async = require("async");
+var Feedback = require("../models/feedback");
 var scrape = require("../scrape");
 
 // All admin routes require isAdmin
@@ -79,16 +80,66 @@ router.get("/", function (req, res) {
             });
           });
 
-          res.render("admin/dashboard", {
-            page: "admin",
-            users: allUsers,
-            groups: groups,
-            pickStatus: pickStatus,
-            year: year,
-          });
+          Feedback.find({})
+            .sort({ createdAt: -1 })
+            .exec(function (err, allFeedback) {
+              if (err) {
+                console.log(err);
+                allFeedback = [];
+              }
+
+              res.render("admin/dashboard", {
+                page: "admin",
+                users: allUsers,
+                groups: groups,
+                pickStatus: pickStatus,
+                year: year,
+                feedback: allFeedback,
+              });
+            });
         });
     });
 });
+
+// ─── Feedback Status Update ──────────────────────────────────────────────────
+
+router.post("/feedback/:feedbackId/status", function (req, res) {
+  var newStatus = req.body.status;
+  var adminNotes = (req.body.adminNotes || "").trim();
+
+  if (["new", "read", "resolved"].indexOf(newStatus) === -1) {
+    req.flash("error", "Invalid status.");
+    return res.redirect("/admin");
+  }
+
+  var update = { status: newStatus };
+  if (adminNotes) update.adminNotes = adminNotes;
+
+  Feedback.findByIdAndUpdate(req.params.feedbackId, { $set: update }, function (err) {
+    if (err) {
+      console.log(err);
+      req.flash("error", "Error updating feedback.");
+      return res.redirect("/admin");
+    }
+    req.flash("success", "Feedback marked as " + newStatus + ".");
+    res.redirect("/admin");
+  });
+});
+
+// ─── Feedback Delete ────────────────────────────────────────────────────────
+
+router.delete("/feedback/:feedbackId", function (req, res) {
+  Feedback.findByIdAndRemove(req.params.feedbackId, function (err) {
+    if (err) {
+      console.log(err);
+      req.flash("error", "Error deleting feedback.");
+      return res.redirect("/admin");
+    }
+    req.flash("success", "Feedback deleted.");
+    res.redirect("/admin");
+  });
+});
+
 
 // ─── Password Reset ─────────────────────────────────────────────────────────
 
@@ -234,6 +285,13 @@ function propagateNameChange(userId, newFirstName, newLastName, done) {
           cb,
         );
       },
+      function (cb) {
+        Feedback.updateMany(
+          { "author.id": userId },
+          { $set: { "author.firstName": newFirstName, "author.lastName": newLastName } },
+          cb,
+        );
+      },
     ],
     function (err) {
       if (err) console.log("propagateNameChange errors:", err);
@@ -369,8 +427,12 @@ function deleteUserCascade(userId, done) {
                     Comment.deleteMany({ "author.id": userId }, function (err) {
                       if (err) console.log("Error deleting comments:", err);
 
-                      User.deleteOne({ _id: userId }, function (err) {
-                        done(err);
+                      Feedback.deleteMany({ "author.id": userId }, function (err) {
+                        if (err) console.log("Error deleting feedback:", err);
+
+                        User.deleteOne({ _id: userId }, function (err) {
+                          done(err);
+                        });
                       });
                     });
                   },
@@ -974,6 +1036,21 @@ router.post("/merge", function (req, res) {
                           $set: {
                             "commissioner.id": target._id,
                             "commissioner.name": target.firstName,
+                          },
+                        },
+                        cb,
+                      );
+                    },
+                    // Step 8b: Re-point Feedback
+                    function (cb) {
+                      Feedback.updateMany(
+                        { "author.id": sourceId },
+                        {
+                          $set: {
+                            "author.id": target._id,
+                            "author.username": target.username,
+                            "author.firstName": target.firstName,
+                            "author.lastName": target.lastName,
                           },
                         },
                         cb,

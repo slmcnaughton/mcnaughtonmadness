@@ -512,16 +512,20 @@
 
 
 
-     <footer class="bracket">
-            
-            <!--<p>&nbsp</p>-->
+        <footer style="text-align: center; padding: 20px 0 10px; color: #999; font-size: 13px;">
+            <a href="/feedback" style="color: #999;"><i class="fas fa-comment-dots"></i> Feedback & Suggestions</a>
         </footer>
-        
+
         <!--Bootstrap JS CDN-->
-        <script 
-            src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
-            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
-            crossorigin="anonymous">
+        <script
+            src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+
+        <script>
+            jQuery('form').submit(function(){
+                $(this).find(':submit').attr( 'disabled','disabled' );
+            });
         </script>
     </body>
 </html>
