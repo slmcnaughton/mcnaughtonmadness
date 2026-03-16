@@ -9,7 +9,7 @@
         <link href='https://fonts.googleapis.com/css?family=Holtwood+One+SC' rel='stylesheet' type='text/css'>
         <link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="/stylesheets/main.css">
-        <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+        <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"></script>
         <script
             src="https://code.jquery.com/jquery-3.3.1.min.js"
             integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
@@ -503,7 +503,39 @@
             <% } %>
         </div>
     <% } %>
-   
+
+    <!-- ── Mobile Bonus Picks (visible < 992px only) ── -->
+    <% if (bonAgg) { %>
+    <div class="mobile-bonus-picks">
+        <h3><i class="fas fa-crown" style="color: #D4AF37;"></i> Champion Picks</h3>
+        <% for (var j = 0; j < bonAgg[4].length; j++) { %>
+            <div class="mobile-bonus-pick <%= teamLostMap[String(bonAgg[4][j].team.id)] > 0 ? 'lost' : '' %>">
+                <img src="<%= bonAgg[4][j].team.image %>">
+                <span class="mobile-bonus-pick-team"><%= bonAgg[4][j].team.name %></span>
+                <% if (!hidePickerNames) { %>
+                    <span class="mobile-bonus-pick-pickers">
+                        <%= bonAgg[4][j].teamPickers.map(function(p) { return p.firstName; }).join(', ') %>
+                    </span>
+                <% } %>
+            </div>
+        <% } %>
+
+        <% for (var i = 0; i < bonAgg.length - 1; i++) { %>
+            <h3><i class="fas fa-basketball-ball"></i> <%= tournament.regions[i] %> Picks</h3>
+            <% for (var j = 0; j < bonAgg[i].length; j++) { %>
+                <div class="mobile-bonus-pick <%= teamLostMap[String(bonAgg[i][j].team.id)] > 0 ? 'lost' : '' %>">
+                    <img src="<%= bonAgg[i][j].team.image %>">
+                    <span class="mobile-bonus-pick-team"><%= bonAgg[i][j].team.name %></span>
+                    <% if (!hidePickerNames) { %>
+                        <span class="mobile-bonus-pick-pickers">
+                            <%= bonAgg[i][j].teamPickers.map(function(p) { return p.firstName; }).join(', ') %>
+                        </span>
+                    <% } %>
+                </div>
+            <% } %>
+        <% } %>
+    </div>
+    <% } %>
 
 </main>
 <!--end tournament-->
@@ -526,6 +558,48 @@
             jQuery('form').submit(function(){
                 $(this).find(':submit').attr( 'disabled','disabled' );
             });
+
+            // Mobile: convert hover popups to tap-to-show overlay
+            if ('ontouchstart' in window) {
+                var $overlay = $('<div id="mobilePopup" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:300; background:rgba(0,0,0,0.5); overflow-y:auto; -webkit-overflow-scrolling:touch;">' +
+                    '<div style="margin:15% auto; max-width:320px; background:#fff; border-radius:8px; padding:15px; position:relative;">' +
+                    '<button type="button" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:20px; cursor:pointer;">&times;</button>' +
+                    '<div id="mobilePopupContent"></div>' +
+                    '</div></div>');
+                $('body').append($overlay);
+
+                // Intercept match taps
+                $('.match[id]').on('click', function(e) {
+                    e.stopPropagation();
+                    var matchNum = this.id.replace('match', '');
+                    var html = $('#matchAggregate' + matchNum).html();
+                    if (html) {
+                        $('#mobilePopupContent').html(html);
+                        $overlay.show();
+                    }
+                });
+
+                // Bonus pick image taps
+                $('.grid-item img[onmouseover], .gridIndividual img[onmouseover]').on('click', function(e) {
+                    e.stopPropagation();
+                    var attr = $(this).attr('onmouseover') || '';
+                    var idMatch = attr.match(/#([^'"\)]+)/);
+                    if (idMatch) {
+                        var html = $(idMatch[0]).html();
+                        if (html) {
+                            $('#mobilePopupContent').html(html);
+                            $overlay.show();
+                        }
+                    }
+                });
+
+                // Close on backdrop or X tap
+                $overlay.on('click', function(e) {
+                    if (e.target === this || $(e.target).closest('button').length) {
+                        $overlay.hide();
+                    }
+                });
+            }
         </script>
     </body>
 </html>

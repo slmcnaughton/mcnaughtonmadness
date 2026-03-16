@@ -96,11 +96,36 @@
         <% } else { %>
             <%
               var sortedGroups = user.tournamentGroups.slice().sort(function(a, b) { return b.year - a.year; });
+              var currentYear = new Date().getFullYear();
+              var recentGroups = sortedGroups.filter(function(g) { return g.year === currentYear; });
+              var olderGroups = sortedGroups.filter(function(g) { return g.year !== currentYear; });
             %>
-            <% for (var i = 0; i < sortedGroups.length; i++) { %>
-                <a href="/tournamentGroups/<%= sortedGroups[i].groupName %>" class="profile-group-badge">
-                    <i class="fas fa-users"></i> <%= sortedGroups[i].groupName %>
+            <% for (var i = 0; i < recentGroups.length; i++) { %>
+                <a href="/tournamentGroups/<%= recentGroups[i].groupName %>" class="profile-group-badge">
+                    <i class="fas fa-users"></i> <%= recentGroups[i].groupName %>
                 </a>
+            <% } %>
+            <% if (olderGroups.length > 0) { %>
+                <div id="olderGroups" style="display: none;">
+                    <% for (var i = 0; i < olderGroups.length; i++) { %>
+                        <a href="/tournamentGroups/<%= olderGroups[i].groupName %>" class="profile-group-badge" style="opacity: 0.7;">
+                            <i class="fas fa-users"></i> <%= olderGroups[i].groupName %>
+                        </a>
+                    <% } %>
+                </div>
+                <button type="button" class="btn btn-default btn-xs" id="toggleGroups" style="margin-top: 6px;">
+                    <i class="fas fa-chevron-down"></i> Show older groups (<%= olderGroups.length %>)
+                </button>
+                <script>
+                    document.getElementById('toggleGroups').addEventListener('click', function() {
+                        var older = document.getElementById('olderGroups');
+                        var visible = older.style.display !== 'none';
+                        older.style.display = visible ? 'none' : '';
+                        this.innerHTML = visible
+                            ? '<i class="fas fa-chevron-down"></i> Show older groups (<%= olderGroups.length %>)'
+                            : '<i class="fas fa-chevron-up"></i> Hide older groups';
+                    });
+                </script>
             <% } %>
         <% } %>
     </div>
@@ -110,58 +135,45 @@
 <div class="profile-trophies-section">
     <h3 class="profile-trophies-title"><i class="fas fa-trophy" style="color: #FFA705;"></i> Trophy Case</h3>
 
+    <%
+      function renderTrophyCard(trophy) {
+          var tier = getTrophyTier(trophy);
+          var cardClass = 'profile-trophy-card';
+          if (tier === 'gold')          cardClass += ' trophy-gold';
+          else if (tier === 'silver')   cardClass += ' trophy-silver';
+          else if (tier === 'bronze')   cardClass += ' trophy-bronze';
+
+          var imgMap = {
+              gold: '/imgs/trophies/first-place-trophy.png',
+              silver: '/imgs/trophies/second-place-trophy.png',
+              bronze: '/imgs/trophies/third-place-trophy.png',
+              top10: '/imgs/trophies/top-ten-trophy.svg',
+              top50: '/imgs/trophies/top-fifty-trophy.svg',
+              last: '/imgs/trophies/toilet-trophy.png',
+              misser: '/imgs/trophies/pick-misser-trophy.svg',
+              participation: '/imgs/trophies/participation-ribbon.png'
+          };
+          var labelMap = {
+              gold: '<i class="fas fa-crown" style="color: #D4AF37;"></i> Champion',
+              silver: 'Runner-Up', bronze: '3rd Place', top10: 'Top 10',
+              top50: 'Top 50%', last: 'Last Place', misser: 'Pick Misser',
+              participation: 'Participation'
+          };
+
+          return { cardClass: cardClass, imgSrc: imgMap[tier] || imgMap.participation, label: labelMap[tier] || labelMap.participation };
+      }
+    %>
     <% if(sortedTrophies.length > 0) { %>
     <div class="profile-trophy-grid">
         <% sortedTrophies.forEach(function(trophy) { %>
-            <%
-                var tier = getTrophyTier(trophy);
-                // Only podium trophies (gold/silver/bronze) get special card borders
-                var cardClass = 'profile-trophy-card';
-                if (tier === 'gold')          cardClass += ' trophy-gold';
-                else if (tier === 'silver')   cardClass += ' trophy-silver';
-                else if (tier === 'bronze')   cardClass += ' trophy-bronze';
-            %>
-            <a href="/tournamentStandings#year-<%= trophy.year %>" class="<%= cardClass %>" style="text-decoration: none; color: inherit; display: block;">
+            <% var tc = renderTrophyCard(trophy); %>
+            <a href="/tournamentStandings#year-<%= trophy.year %>" class="<%= tc.cardClass %>" style="text-decoration: none; color: inherit; display: block;">
                 <div class="profile-trophy-img-wrap">
-                    <% if (tier === 'gold') { %>
-                        <img src="/imgs/trophies/first-place-trophy.png" alt="1st Place Trophy">
-                    <% } else if (tier === 'silver') { %>
-                        <img src="/imgs/trophies/second-place-trophy.png" alt="2nd Place Trophy">
-                    <% } else if (tier === 'bronze') { %>
-                        <img src="/imgs/trophies/third-place-trophy.png" alt="3rd Place Trophy">
-                    <% } else if (tier === 'top10') { %>
-                        <img src="/imgs/trophies/top-ten-trophy.svg" alt="Top 10 Trophy">
-                    <% } else if (tier === 'top50') { %>
-                        <img src="/imgs/trophies/top-fifty-trophy.svg" alt="Top 50% Medal">
-                    <% } else if (tier === 'last') { %>
-                        <img src="/imgs/trophies/toilet-trophy.png" alt="Last Place Trophy">
-                    <% } else if (tier === 'misser') { %>
-                        <img src="/imgs/trophies/pick-misser-trophy.svg" alt="Pick Misser">
-                    <% } else { %>
-                        <img src="/imgs/trophies/participation-ribbon.png" alt="Participation Ribbon">
-                    <% } %>
+                    <img src="<%= tc.imgSrc %>" alt="Trophy">
                 </div>
                 <div class="profile-trophy-info">
                     <span class="profile-trophy-year"><%= trophy.year %></span>
-                    <span class="profile-trophy-rank">
-                        <% if (tier === 'gold') { %>
-                            <i class="fas fa-crown" style="color: #D4AF37;"></i> Champion
-                        <% } else if (tier === 'silver') { %>
-                            Runner-Up
-                        <% } else if (tier === 'bronze') { %>
-                            3rd Place
-                        <% } else if (tier === 'top10') { %>
-                            Top 10
-                        <% } else if (tier === 'top50') { %>
-                            Top 50%
-                        <% } else if (tier === 'last') { %>
-                            Last Place
-                        <% } else if (tier === 'misser') { %>
-                            Pick Misser
-                        <% } else { %>
-                            Participation
-                        <% } %>
-                    </span>
+                    <span class="profile-trophy-rank"><%- tc.label %></span>
                     <span class="profile-trophy-score"><%= ordinal(trophy.userRank) %> of <%= trophy.totalPlayers %> &middot; <%= trophy.score.toFixed(3) %> pts</span>
                 </div>
             </a>

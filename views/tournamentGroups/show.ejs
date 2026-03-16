@@ -97,12 +97,22 @@
                     </div>
                     <div class="standingsInfo roundStartTimes col-xs-12 col-sm-5">
                         <h4>Round Tip Off Times:</h4>
+                        <%
+                            var now = moment();
+                            var foundNext = false;
+                        %>
                         <% for (var i=0; i < tournamentGroup.tournamentReference.id.rounds.length; i++) { %>
-                            <% var
-                                roundDateTime=moment(tournamentGroup.tournamentReference.id.rounds[i].startTime).tz("America/New_York").format('LLLL')
-                                %>
+                            <%
+                                var roundMoment = moment(tournamentGroup.tournamentReference.id.rounds[i].startTime);
+                                var roundDateTime = roundMoment.tz("America/New_York").format('LLLL');
+                                var isPast = roundMoment.isBefore(now);
+                                var isNext = !isPast && !foundNext;
+                                if (isNext) foundNext = true;
+                            %>
 
-                                <h6>Round <%=i + 1 %>: <%=roundDateTime%>
+                                <h6 class="<%= isPast ? 'round-past' : '' %> <%= isNext ? 'round-next' : '' %>">
+                                    <% if (isNext) { %><i class="fas fa-arrow-right" style="font-size: 0.85em;"></i> <% } %>
+                                    Round <%=i + 1 %>: <%=roundDateTime%>
                                 </h6>
                                 <% } %>
                     </div>
@@ -122,17 +132,17 @@
                         id="tournamentStandings">
                         <thead>
                             <tr>
-                                <th>Rank</th>
+                                <th>#</th>
                                 <th>Total</th>
                                 <th>Name</th>
-                                <th>Round 1</th>
-                                <th>Round 2</th>
-                                <th>Round 3</th>
-                                <th>Round 4</th>
-                                <th>Round 5</th>
-                                <th>Round 6</th>
-                                <th>Final Four Bonus</th>
-                                <th>Champion Bonus</th>
+                                <th>R1</th>
+                                <th>R2</th>
+                                <th>R3</th>
+                                <th>R4</th>
+                                <th>R5</th>
+                                <th>R6</th>
+                                <th>FF</th>
+                                <th>Champ</th>
                             </tr>
                         </thead>
                         <tbody>

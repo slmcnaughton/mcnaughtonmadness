@@ -137,15 +137,13 @@ input[type=radio],
 
 .homeBackground{
     width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: relative;
     background-size: cover;
     background-image: url("/imgs/wood-floor-compress.jpg");
     background-repeat: no-repeat;
-    z-index: 0;
     background-position: center center;
-
+    margin-top: -52px;   /* extend behind navbar */
+    padding-top: 52px;   /* offset content back down */
 }
 
 .introduction{
@@ -1585,6 +1583,15 @@ form > div > div {
     /*margin-right: 40px;*/
 }
 
+.round-past {
+    opacity: 0.45;
+}
+.round-next {
+    color: #1FA52F;
+    font-weight: 700;
+    font-size: 1.05em;
+}
+
 
 .navbar-fixed-left {
   /*width: 200px;*/
@@ -1631,6 +1638,8 @@ footer {
     margin-top: 100px;
     height: 150px;
     background-color: #fff;
+    position: relative;
+    z-index: 2;
 }
 
 
@@ -1822,7 +1831,7 @@ footer {
         max-width: 100%;
     }
 
-    /* ── Sidebar nav → stacked on mobile ── */
+    /* ── Sidebar nav → centered on mobile ── */
     .navbar-fixed-left + .container {
         padding-left: 15px;
     }
@@ -1830,16 +1839,48 @@ footer {
         float: none;
         width: 100%;
         margin-bottom: 15px;
+        text-align: center;
+        border-radius: 0;
+        min-height: 0;
+        border: none;
+    }
+    .navbar-fixed-left .navbar-nav {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 100%;
+        margin: 0;
     }
     .navbar-fixed-left .navbar-nav > li {
         display: inline-block;
         width: auto;
+        float: none;
+    }
+    .navbar-fixed-left .navbar-nav > li > a {
+        padding: 10px 14px;
+        font-size: 0.9em;
     }
     .navbar-center {
         width: 100%;
         left: 0;
         margin: 10px 0;
         position: relative;
+        min-height: 0;
+    }
+    .navbar-center .navbar-nav {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 100%;
+        margin: 0;
+    }
+    .navbar-center .navbar-nav > li {
+        float: none;
+        display: inline-block;
+    }
+    .navbar-center .navbar-nav > li > a {
+        padding: 10px 14px;
+        font-size: 0.9em;
     }
 
     /* ── Standings table ── */
@@ -1850,6 +1891,10 @@ footer {
     #tournamentStandings th {
         padding: 4px 3px;
         white-space: nowrap;
+    }
+    #tournamentStandings th {
+        padding-right: 18px !important;
+        font-size: 0.75em;
     }
 
     /* ── Pick forms — bigger touch targets ── */
@@ -2045,5 +2090,53 @@ footer {
         width: 24px;
         margin: 0 4px;
     }
+}
+
+/* ── Mobile bonus picks (bracket page) ── */
+.mobile-bonus-picks {
+    display: none;
+}
+@media screen and (max-width: 991px) {
+    .mobile-bonus-picks {
+        display: block;
+        padding: 15px 10px;
+        background: #fff;
+    }
+}
+.mobile-bonus-picks h3 {
+    text-align: center;
+    color: #333;
+    font-size: 1.2em;
+    margin: 18px 0 10px;
+    border-bottom: 2px solid #004284;
+    padding-bottom: 6px;
+}
+.mobile-bonus-picks h3:first-child {
+    margin-top: 0;
+}
+.mobile-bonus-pick {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #eee;
+    gap: 10px;
+}
+.mobile-bonus-pick img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.mobile-bonus-pick.lost {
+    opacity: 0.45;
+}
+.mobile-bonus-pick-team {
+    font-weight: 600;
+    font-size: 0.9em;
+    min-width: 90px;
+}
+.mobile-bonus-pick-pickers {
+    font-size: 0.8em;
+    color: #666;
 }
 

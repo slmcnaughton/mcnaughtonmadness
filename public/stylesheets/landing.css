@@ -178,3 +178,40 @@ body {
     font-size: 2em;
     margin: -50px 0px 0px -10px;
 }
+
+/* ── Footer fix: stack above slideshow ── */
+footer {
+    position: relative;
+    z-index: 2;
+}
+
+/* ── Mobile responsive ── */
+@media screen and (max-width: 767px) {
+    #landing-header {
+        padding-top: 25vh;
+    }
+    .hero h1 {
+        font-size: 2.5em;
+    }
+    .hero .intro {
+        font-size: 1.4em;
+        margin-bottom: -5px;
+    }
+    .hero .year {
+        letter-spacing: 8px;
+        font-size: 1.2em;
+        margin: -20px 0 10px;
+    }
+    .hero p {
+        font-size: 1em;
+        letter-spacing: .2em;
+    }
+    .icomoon {
+        font-size: 1.5em;
+    }
+    .btn-lg {
+        font-size: 14px;
+        padding: 8px 16px;
+        margin: 3px;
+    }
+}
