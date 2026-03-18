@@ -18,6 +18,16 @@ var FamilyMember = require("../models/familyMember");
 var FamilyRelationship = require("../models/familyRelationship");
 var scrape = require("../scrape");
 
+// Lazy-load so the app still starts if packages aren't installed
+var upload;
+try {
+  var cloudinaryConfig = require("../config/cloudinary");
+  upload = cloudinaryConfig.upload;
+} catch (e) {
+  console.log("[WARN] Cloudinary packages not installed. Photo uploads disabled.");
+  upload = { single: function () { return function (req, res, next) { next(); }; } };
+}
+
 // All admin routes require isAdmin
 router.use(middleware.isAdmin);
 
@@ -194,7 +204,7 @@ router.post("/users/:username/resetPassword", function (req, res) {
 
 // ─── Update User Profile (Admin) ─────────────────────────────────────────────
 
-router.post("/users/:userId/update-profile", function (req, res) {
+router.post("/users/:userId/update-profile", upload.single("image"), function (req, res) {
   var newEmail = (req.body.email || "").trim();
   var newFirstName = (req.body.firstName || "").trim();
   var newLastName = (req.body.lastName || "").trim();
@@ -219,11 +229,27 @@ router.post("/users/:userId/update-profile", function (req, res) {
     user.firstName = newFirstName;
     user.lastName = newLastName;
 
+    // If admin uploaded a new photo
+    if (req.file) {
+      user.image = req.file.path;
+    }
+
     user.save(function (err) {
       if (err) {
         console.log(err);
         req.flash("error", "Error saving user.");
         return res.redirect("/admin");
+      }
+
+      // Sync photo to linked FamilyMember if applicable
+      if (req.file && user.familyTreeId) {
+        FamilyMember.findByIdAndUpdate(
+          user.familyTreeId,
+          { $set: { image: req.file.path } },
+          function (err) {
+            if (err) console.log("Error syncing photo to family member:", err);
+          },
+        );
       }
 
       if (nameChanged) {

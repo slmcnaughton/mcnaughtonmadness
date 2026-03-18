@@ -133,7 +133,11 @@ router.post("/register", function (req, res) {
         if (!err && matchingMember) {
           matchingMember.user = user._id;
           matchingMember.save(function () {});
-          User.findByIdAndUpdate(user._id, { $set: { familyTreeId: matchingMember._id } }, function () {});
+          var autoLinkUpdate = { familyTreeId: matchingMember._id };
+          if (matchingMember.image) {
+            autoLinkUpdate.image = matchingMember.image;
+          }
+          User.findByIdAndUpdate(user._id, { $set: autoLinkUpdate }, function () {});
           console.log("[FAMILY TREE] Auto-linked new user " + user.firstName + " " + user.lastName + " to existing family member node");
         }
 

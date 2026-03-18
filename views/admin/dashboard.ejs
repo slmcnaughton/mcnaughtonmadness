@@ -340,6 +340,7 @@
                         data-firstname="<%= user.firstName %>"
                         data-lastname="<%= user.lastName %>"
                         data-email="<%= user.email %>"
+                        data-image="<%= user.image || '' %>"
                         title="Edit profile">
                         <i class="fas fa-pencil-alt"></i>
                       </button>
@@ -541,12 +542,16 @@
 <div class="modal fade" id="editUserModal" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <form id="editUserForm" method="POST">
+      <form id="editUserForm" method="POST" enctype="multipart/form-data">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
           <h4 class="modal-title"><i class="fas fa-pencil-alt"></i> Edit User Profile</h4>
         </div>
         <div class="modal-body">
+          <!-- Current photo preview -->
+          <div id="editUserPhotoPreview" style="text-align: center; margin-bottom: 15px; display: none;">
+            <img id="editUserPhotoImg" src="" alt="Current photo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #004284;">
+          </div>
           <div class="form-group">
             <label for="editFirstName">First Name</label>
             <input type="text" class="form-control" id="editFirstName" name="firstName" required>
@@ -558,6 +563,10 @@
           <div class="form-group">
             <label for="editEmail">Email</label>
             <input type="email" class="form-control" id="editEmail" name="email" required>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-camera"></i> Update Photo</label>
+            <input type="file" class="form-control" name="image" accept="image/*">
           </div>
           <p class="text-muted"><small><i class="fas fa-info-circle"></i> Name changes will be propagated to all tournament records, picks, and comments.</small></p>
         </div>
@@ -695,6 +704,14 @@ $(document).ready(function () {
     $('#editFirstName').val(firstName);
     $('#editLastName').val(lastName);
     $('#editEmail').val(email);
+    // Show current photo preview if user has one
+    var imageUrl = $btn.data('image');
+    if (imageUrl) {
+      $('#editUserPhotoImg').attr('src', imageUrl);
+      $('#editUserPhotoPreview').show();
+    } else {
+      $('#editUserPhotoPreview').hide();
+    }
     $('#editUserForm').attr('action', '/admin/users/' + userId + '/update-profile');
     $('#editUserModal').modal('show');
   });

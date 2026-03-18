@@ -5,6 +5,16 @@ var User = require("../models/user");
 var FamilyMember = require("../models/familyMember");
 var FamilyRelationship = require("../models/familyRelationship");
 
+// Lazy-load so the app still starts if packages aren't installed
+var upload;
+try {
+  var cloudinaryConfig = require("../config/cloudinary");
+  upload = cloudinaryConfig.upload;
+} catch (e) {
+  console.log("[WARN] Cloudinary packages not installed. Photo uploads disabled.");
+  upload = { single: function () { return function (req, res, next) { next(); }; } };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC ROUTE — View the family tree (approved members only)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -437,7 +447,7 @@ router.get("/admin", middleware.isAdmin, function (req, res) {
 });
 
 // Create a new FamilyMember
-router.post("/admin/member", middleware.isAdmin, function (req, res) {
+router.post("/admin/member", middleware.isAdmin, upload.single("image"), function (req, res) {
   var memberData = {
     firstName: (req.body.firstName || "").trim(),
     lastName: (req.body.lastName || "").trim(),
@@ -445,6 +455,11 @@ router.post("/admin/member", middleware.isAdmin, function (req, res) {
     approved: req.body.approved === "on",
     notes: (req.body.notes || "").trim(),
   };
+
+  // If an image was uploaded via Cloudinary
+  if (req.file) {
+    memberData.image = req.file.path;
+  }
 
   if (!memberData.firstName || !memberData.lastName) {
     req.flash("error", "First and last name are required.");
@@ -463,11 +478,15 @@ router.post("/admin/member", middleware.isAdmin, function (req, res) {
       return res.redirect("/family-tree/admin");
     }
 
-    // If linked to a user and approved, set their familyTreeId
+    // If linked to a user and approved, set their familyTreeId (and sync photo)
     if (member.user && member.approved) {
+      var userUpdate = { familyTreeId: member._id };
+      if (member.image) {
+        userUpdate.image = member.image;
+      }
       User.findByIdAndUpdate(
         member.user,
-        { $set: { familyTreeId: member._id } },
+        { $set: userUpdate },
         function (err) {
           if (err) console.log("Error setting familyTreeId:", err);
         },
@@ -502,13 +521,18 @@ router.post("/admin/member", middleware.isAdmin, function (req, res) {
 });
 
 // Edit a FamilyMember
-router.put("/admin/member/:id", middleware.isAdmin, function (req, res) {
+router.put("/admin/member/:id", middleware.isAdmin, upload.single("image"), function (req, res) {
   var update = {
     firstName: (req.body.firstName || "").trim(),
     lastName: (req.body.lastName || "").trim(),
     deceased: req.body.deceased === "on",
     notes: (req.body.notes || "").trim(),
   };
+
+  // If an image was uploaded via Cloudinary
+  if (req.file) {
+    update.image = req.file.path;
+  }
 
   FamilyMember.findByIdAndUpdate(
     req.params.id,
@@ -519,6 +543,18 @@ router.put("/admin/member/:id", middleware.isAdmin, function (req, res) {
         req.flash("error", "Error updating family member.");
         return res.redirect("/family-tree/admin");
       }
+
+      // If photo was updated and member is linked to a user, sync their profile photo too
+      if (req.file && member.user) {
+        User.findByIdAndUpdate(
+          member.user,
+          { $set: { image: req.file.path } },
+          function (err) {
+            if (err) console.log("Error syncing photo to user:", err);
+          },
+        );
+      }
+
       req.flash("success", "Updated " + member.firstName + " " + member.lastName + ".");
       res.redirect("/family-tree/admin");
     },

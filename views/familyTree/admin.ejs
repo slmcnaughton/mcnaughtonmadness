@@ -144,7 +144,7 @@
         <h3 class="panel-title"><i class="fas fa-user-plus"></i> Add Family Member</h3>
       </div>
       <div class="panel-body">
-        <form action="/family-tree/admin/member" method="POST" class="form-inline" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+        <form action="/family-tree/admin/member" method="POST" enctype="multipart/form-data" class="form-inline" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
           <div class="form-group">
             <label class="sr-only" for="addUserId">Link to User</label>
             <select class="form-control input-sm" id="addUserId" name="userId">
@@ -193,6 +193,10 @@
             <label class="sr-only" for="addNotes">Notes</label>
             <input type="text" class="form-control input-sm" id="addNotes" name="notes" placeholder="Notes (optional)">
           </div>
+          <label class="btn btn-sm btn-default" style="cursor: pointer; margin: 0;">
+            <i class="fas fa-camera"></i> Photo
+            <input type="file" name="image" accept="image/*" style="display: none;">
+          </label>
           <button type="submit" class="btn btn-sm btn-success">
             <i class="fas fa-plus"></i> Add
           </button>
@@ -275,6 +279,7 @@
                       data-lastname="<%= m.lastName %>"
                       data-deceased="<%= m.deceased %>"
                       data-notes="<%= m.notes || '' %>"
+                      data-image="<%= m.image || '' %>"
                       title="Edit">
                       <i class="fas fa-pencil-alt"></i>
                     </button>
@@ -423,13 +428,17 @@
 <div class="modal fade" id="editMemberModal" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <form id="editMemberForm" method="POST">
+      <form id="editMemberForm" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="_method" value="PUT">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
           <h4 class="modal-title"><i class="fas fa-pencil-alt"></i> Edit Family Member</h4>
         </div>
         <div class="modal-body">
+          <!-- Current photo preview -->
+          <div id="editMemberPhotoPreview" style="text-align: center; margin-bottom: 15px; display: none;">
+            <img id="editMemberPhotoImg" src="" alt="Current photo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #004284;">
+          </div>
           <div class="form-group">
             <label for="editMemberFirstName">First Name</label>
             <input type="text" class="form-control" id="editMemberFirstName" name="firstName" required>
@@ -444,6 +453,10 @@
           <div class="form-group">
             <label for="editMemberNotes">Notes</label>
             <input type="text" class="form-control" id="editMemberNotes" name="notes">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-camera"></i> Update Photo</label>
+            <input type="file" class="form-control" name="image" accept="image/*">
           </div>
         </div>
         <div class="modal-footer">
@@ -509,6 +522,14 @@ $(document).ready(function () {
     $('#editMemberLastName').val($btn.data('lastname'));
     $('#editMemberDeceased').prop('checked', $btn.data('deceased') === true || $btn.data('deceased') === 'true');
     $('#editMemberNotes').val($btn.data('notes'));
+    // Show current photo preview if member has one
+    var imageUrl = $btn.data('image');
+    if (imageUrl) {
+      $('#editMemberPhotoImg').attr('src', imageUrl);
+      $('#editMemberPhotoPreview').show();
+    } else {
+      $('#editMemberPhotoPreview').hide();
+    }
     $('#editMemberForm').attr('action', '/family-tree/admin/member/' + id + '?_method=PUT');
     $('#editMemberModal').modal('show');
   });
