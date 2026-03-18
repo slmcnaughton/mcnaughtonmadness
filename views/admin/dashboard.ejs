@@ -32,6 +32,11 @@
       <i class="fas fa-compress-arrows-alt"></i> Merge Accounts
     </a>
   </div>
+  <div class="col-sm-4">
+    <a href="/family-tree/admin" class="btn btn-default btn-block">
+      <i class="fas fa-tree"></i> Family Tree Admin
+    </a>
+  </div>
 </div>
 
 <!-- ── Scrape Trigger ──────────────────────────────────────────────── -->
@@ -234,12 +239,13 @@
 <div class="row">
   <div class="col-lg-12">
     <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title" style="display: inline-block;">
-          <i class="fas fa-user"></i> Users (<%= users.length %>)
+      <div class="panel-heading" style="cursor: pointer;" data-toggle="collapse" data-target="#userManagementBody">
+        <h3 class="panel-title" style="display: flex; align-items: center;">
+          <span><i class="fas fa-user"></i> Users (<%= users.length %>)</span>
+          <i class="fas fa-chevron-down" style="margin-left: auto; color: #999; transition: transform 0.2s;" id="userChevron"></i>
         </h3>
       </div>
-      <div class="panel-body">
+      <div class="panel-body collapse" id="userManagementBody">
         <!-- Toolbar -->
         <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <button type="button" id="btnFindSuspicious" class="btn btn-sm btn-warning">
@@ -437,6 +443,65 @@
   </div>
 <% } %>
 
+<!-- ── Manage Official Groups (All Years) ───────────────────────── -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading" style="cursor: pointer;" data-toggle="collapse" data-target="#officialGroupsBody">
+        <h3 class="panel-title" style="display: flex; align-items: center;">
+          <span>
+            <i class="fas fa-trophy"></i> Manage Official Groups (All Years)
+            <%
+              var officialCount = allGroups.filter(function(g) { return g.isOfficial; }).length;
+            %>
+            <span class="badge"><%= officialCount %> official</span>
+          </span>
+          <i class="fas fa-chevron-down" style="margin-left: auto; color: #999; transition: transform 0.2s;" id="officialChevron"></i>
+        </h3>
+      </div>
+      <div class="panel-body collapse" id="officialGroupsBody">
+        <p class="text-muted" style="margin-bottom: 12px;">
+          <small>Only members of <strong>official</strong> groups can see the Family Tree. Toggle the groups below to control access.</small>
+        </p>
+        <div style="overflow-x: auto;">
+          <table class="table table-condensed table-striped">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Group Name</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% allGroups.forEach(function(g) { %>
+                <tr>
+                  <td><%= g.year %></td>
+                  <td><%= g.groupName %></td>
+                  <td>
+                    <% if(g.isOfficial) { %>
+                      <span class="label label-success"><i class="fas fa-trophy"></i> Official</span>
+                    <% } else { %>
+                      <span class="text-muted">&#x2014;</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <form action="/admin/groups/<%= g.groupName %>/toggle-official" method="POST" style="display: inline;">
+                      <button type="submit" class="btn btn-xs <%= g.isOfficial ? 'btn-default' : 'btn-success' %>">
+                        <i class="fas fa-trophy"></i> <%= g.isOfficial ? 'Remove Official' : 'Make Official' %>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Finalize Tournament ───────────────────────────────────────── -->
 <div class="row" style="margin-top: 20px;">
   <div class="col-lg-12">
@@ -510,6 +575,18 @@
 <!-- ── Admin JS (after footer so jQuery is loaded) ───────────────── -->
 <script>
 $(document).ready(function () {
+  // Chevron rotation for collapsible sections
+  $('#userManagementBody').on('show.bs.collapse', function () {
+    $('#userChevron').css('transform', 'rotate(180deg)');
+  }).on('hide.bs.collapse', function () {
+    $('#userChevron').css('transform', 'rotate(0deg)');
+  });
+  $('#officialGroupsBody').on('show.bs.collapse', function () {
+    $('#officialChevron').css('transform', 'rotate(180deg)');
+  }).on('hide.bs.collapse', function () {
+    $('#officialChevron').css('transform', 'rotate(0deg)');
+  });
+
   var $checkboxes = $('.user-checkbox');
   var $selectAll = $('#selectAll');
   var $btnDelete = $('#btnBulkDelete');

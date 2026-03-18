@@ -9,6 +9,17 @@ var Trophy = require("../models/trophy");
 var crypto = require("crypto");
 var TeamImage = require("../models/teamImage");
 var emailHelper = require("../middleware/emailHelper");
+var FamilyMember = require("../models/familyMember");
+var FamilyRelationship = require("../models/familyRelationship");
+// Cloudinary — lazy-load so the app still starts if packages aren't installed
+var upload;
+try {
+  var cloudinaryConfig = require("../config/cloudinary");
+  upload = cloudinaryConfig.upload;
+} catch (e) {
+  console.log("[WARN] Cloudinary packages not installed. Profile photo uploads disabled.");
+  upload = { single: function () { return function (req, res, next) { next(); }; } };
+}
 
 //Root Route
 router.get("/", function (req, res) {
@@ -88,6 +99,9 @@ router.post("/register", function (req, res) {
       return res.redirect("/register");
     }
 
+    var connectionType = (req.body.connectionType || "").trim();
+    var connectionName = (req.body.connectionName || "").trim();
+
     var newUser = new User({
       username: username,
       firstName: firstName,
@@ -95,19 +109,43 @@ router.post("/register", function (req, res) {
       email: email,
     });
 
+    // Save optional family connection info for admin review
+    if (connectionType && connectionName) {
+      newUser.pendingConnectionType = connectionType;
+      newUser.pendingConnectionName = connectionName;
+    }
+
     User.register(newUser, req.body.password, function (err, user) {
       if (err) {
         req.flash("error", err.message);
         return res.redirect("/register");
       }
       addPastTrophies(user);
-      //once the user is registered, log them in
-      passport.authenticate("local")(req, res, function () {
-        req.flash(
-          "success",
-          "Welcome to McNaughton Madness, " + user.firstName + "!",
-        );
-        res.redirect("/users/" + user.username);
+
+      // Auto-link: check if there's an unlinked FamilyMember with matching name
+      // (Admin may have pre-created a node for this person before they signed up)
+      FamilyMember.findOne({
+        firstName: new RegExp("^" + user.firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+        lastName: new RegExp("^" + user.lastName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+        user: { $exists: false },
+        approved: true,
+      }, function (err, matchingMember) {
+        if (!err && matchingMember) {
+          matchingMember.user = user._id;
+          matchingMember.save(function () {});
+          User.findByIdAndUpdate(user._id, { $set: { familyTreeId: matchingMember._id } }, function () {});
+          console.log("[FAMILY TREE] Auto-linked new user " + user.firstName + " " + user.lastName + " to existing family member node");
+        }
+
+        //once the user is registered, log them in
+        passport.authenticate("local")(req, res, function () {
+          var welcomeMsg = "Welcome to McNaughton Madness, " + user.firstName + "!";
+          if (!err && matchingMember) {
+            welcomeMsg += " We found your spot on the family tree!";
+          }
+          req.flash("success", welcomeMsg);
+          res.redirect("/users/" + user.username);
+        });
       });
     });
   });
@@ -149,13 +187,20 @@ router.get("/logout", function (req, res) {
 //INDEX - show all users
 router.get("/users", function (req, res) {
   //get all users from db
-  User.find({}, function (err, allUsers) {
-    if (err) {
-      console.log(err);
-    } else {
-      res.render("users/index", { users: allUsers, page: "users" });
-    }
-  });
+  User.find({})
+    .populate("trophies")
+    .sort({ lastName: 1, firstName: 1 })
+    .exec(function (err, allUsers) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.render("users/index", {
+          users: allUsers,
+          page: "users",
+          currentYear: new Date().getFullYear(),
+        });
+      }
+    });
 });
 
 router.get("/users/:username", function (req, res) {
@@ -192,7 +237,36 @@ router.get("/users/:username/edit", middleware.isLoggedIn, function (req, res) {
     req.flash("error", "You can only edit your own profile.");
     return res.redirect("/users/" + req.params.username);
   }
-  res.render("users/edit", { user: req.user, page: "profile" });
+
+  var userFamilyId = req.user.familyTreeId ? req.user.familyTreeId.toString() : null;
+
+  if (userFamilyId) {
+    FamilyRelationship.find({
+      $or: [{ from: req.user.familyTreeId }, { to: req.user.familyTreeId }],
+    })
+      .populate("from to")
+      .exec(function (err, rels) {
+        if (err) rels = [];
+
+        var myPartnerRels = rels.filter(function (r) {
+          return ["spouse", "fiance", "dating"].indexOf(r.type) !== -1;
+        });
+
+        res.render("users/edit", {
+          user: req.user,
+          page: "profile",
+          myRelationships: myPartnerRels,
+          userFamilyId: userFamilyId,
+        });
+      });
+  } else {
+    res.render("users/edit", {
+      user: req.user,
+      page: "profile",
+      myRelationships: [],
+      userFamilyId: null,
+    });
+  }
 });
 
 router.put("/users/:username", middleware.isLoggedIn, function (req, res) {
@@ -244,6 +318,51 @@ router.put("/users/:username", middleware.isLoggedIn, function (req, res) {
 
       req.flash("success", messages.length > 0 ? messages.join(" ") : "No changes detected.");
       res.redirect("/users/" + req.params.username);
+    });
+  });
+});
+
+// ─── Profile Photo Upload ──────────────────────────────────────────────────
+
+router.post("/users/:username/photo", middleware.isLoggedIn, upload.single("image"), function (req, res) {
+  if (req.user.username !== req.params.username) {
+    req.flash("error", "You can only edit your own profile.");
+    return res.redirect("/users/" + req.params.username);
+  }
+
+  if (!req.file) {
+    req.flash("error", "No image selected.");
+    return res.redirect("/users/" + req.params.username + "/edit");
+  }
+
+  User.findById(req.user._id, function (err, user) {
+    if (err || !user) {
+      req.flash("error", "User not found.");
+      return res.redirect("/users/" + req.params.username + "/edit");
+    }
+
+    user.image = req.file.path;
+    user.save(function (err) {
+      if (err) {
+        console.log(err);
+        req.flash("error", "Error saving photo.");
+        return res.redirect("/users/" + req.params.username + "/edit");
+      }
+
+      // Also update FamilyMember image if linked
+      if (user.familyTreeId) {
+        var FamilyMember = require("../models/familyMember");
+        FamilyMember.findByIdAndUpdate(
+          user.familyTreeId,
+          { $set: { image: req.file.path } },
+          function (err) {
+            if (err) console.log("Error updating family member image:", err);
+          },
+        );
+      }
+
+      req.flash("success", "Profile photo updated!");
+      res.redirect("/users/" + req.params.username + "/edit");
     });
   });
 });

@@ -102,6 +102,7 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                       id: foundTournamentGroup._id,
                       groupName: foundTournamentGroup.groupName,
                       year: userTournament.tournamentReference.year,
+                      isOfficial: !!foundTournamentGroup.isOfficial,
                     });
                     req.user.tournamentGroups.sort(compareUserTournaments);
                     req.user.save();

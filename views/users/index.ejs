@@ -1,15 +1,169 @@
 <% include ../partials/header %>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js"></script>
 
+<%
+  // Trophy tier helper
+  function getTrophyTier(trophy) {
+    if (trophy.userRank === 1) return 'gold';
+    if (trophy.userRank === 2) return 'silver';
+    if (trophy.userRank === 3) return 'bronze';
+    if (trophy.userRank <= 10) return 'top10';
+    return 'participation';
+  }
+
+  function ordinal(n) {
+    var s = ["th", "st", "nd", "rd"];
+    var v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+%>
 
 <div class="row">
-    <div class="col-lg-12">
-        <h3>Our Users</h3>
+  <div class="col-lg-12">
+    <h2><i class="fas fa-users"></i> Players</h2>
+    <p class="text-muted"><%= users.length %> registered users</p>
+
+    <!-- Toggle: All vs Active This Year -->
+    <div style="margin-bottom: 15px;">
+      <button id="btnAllUsers" class="btn btn-sm btn-primary active">All Users</button>
+      <button id="btnActiveUsers" class="btn btn-sm btn-default">Active in <%= currentYear %></button>
     </div>
-    <% users.forEach(function(user) { %>
-        <h4><a href="/users/<%= user.username %>" class="btn btn-primary"><%= user.firstName %> <%= user.lastName %></a></h4>
-    <% }); %>
+
+    <div style="overflow-x: auto;">
+      <table class="table table-striped table-hover" id="usersTable" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Best Trophy</th>
+            <th>Tournaments</th>
+            <th>Top 3</th>
+            <th>Top 10</th>
+            <th>Best Finish</th>
+            <th>Last Played</th>
+            <th>Current Groups</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach(function(user) { %>
+            <%
+              var sortedTrophies = (user.trophies || []).slice().sort(function(a, b) { return b.year - a.year; });
+              var totalTournaments = sortedTrophies.length;
+              var bestFinish = totalTournaments > 0
+                ? Math.min.apply(null, sortedTrophies.map(function(t) { return t.userRank; }))
+                : 0;
+              var top3Count = sortedTrophies.filter(function(t) { return t.userRank <= 3; }).length;
+              var top10Count = sortedTrophies.filter(function(t) { return t.userRank <= 10; }).length;
+              var bestTrophy = null;
+              if (totalTournaments > 0) {
+                bestTrophy = sortedTrophies.reduce(function(best, t) {
+                  return t.userRank < best.userRank ? t : best;
+                }, sortedTrophies[0]);
+              }
+              var lastPlayed = totalTournaments > 0
+                ? Math.max.apply(null, sortedTrophies.map(function(t) { return t.year; }))
+                : 0;
+
+              // Current year groups
+              var currentGroups = (user.tournamentGroups || []).filter(function(g) {
+                return g.year === currentYear;
+              });
+              var isActive = currentGroups.length > 0;
+
+              // If user is active this year, their lastPlayed is at least this year
+              if (isActive && lastPlayed < currentYear) {
+                lastPlayed = currentYear;
+              }
+
+              var bestTier = bestTrophy ? getTrophyTier(bestTrophy) : '';
+            %>
+            <tr data-active="<%= isActive ? 'yes' : 'no' %>">
+              <td data-order="<%= user.lastName %>, <%= user.firstName %>">
+                <% if(user.image) { %>
+                  <img src="<%= user.image %>" alt="" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; margin-right: 6px; vertical-align: middle;">
+                <% } %>
+                <a href="/users/<%= user.username %>"><%= user.firstName %> <%= user.lastName %></a>
+              </td>
+              <td data-order="<%= bestFinish || 999 %>">
+                <% if(bestTier === 'gold') { %>
+                  <span class="label" style="background: #D4AF37; color: #fff;"><i class="fas fa-trophy"></i> Champion</span>
+                <% } else if(bestTier === 'silver') { %>
+                  <span class="label" style="background: #C0C0C0; color: #333;"><i class="fas fa-trophy"></i> 2nd</span>
+                <% } else if(bestTier === 'bronze') { %>
+                  <span class="label" style="background: #CD7F32; color: #fff;"><i class="fas fa-trophy"></i> 3rd</span>
+                <% } else if(bestTier === 'top10') { %>
+                  <span class="label label-info">Top 10</span>
+                <% } else if(totalTournaments > 0) { %>
+                  <span class="text-muted">&#x2014;</span>
+                <% } else { %>
+                  <span class="text-muted">New</span>
+                <% } %>
+              </td>
+              <td><%= totalTournaments || '' %></td>
+              <td><%= top3Count || '' %></td>
+              <td><%= top10Count || '' %></td>
+              <td data-order="<%= bestFinish || 999 %>">
+                <% if(bestFinish > 0) { %>
+                  <%= ordinal(bestFinish) %>
+                <% } %>
+              </td>
+              <td data-order="<%= lastPlayed || 0 %>">
+                <% if(lastPlayed > 0) { %>
+                  <%= lastPlayed %>
+                <% } %>
+              </td>
+              <td data-order="<%= isActive ? 1 : 0 %>">
+                <% if(currentGroups.length > 0) { %>
+                  <% currentGroups.forEach(function(g) { %>
+                    <a href="/tournamentGroups/<%= g.groupName %>" class="label label-primary" style="margin-right: 3px;"><%= g.groupName %></a>
+                  <% }); %>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-
-
 <% include ../partials/footer %>
+
+<script>
+$(document).ready(function () {
+  var table = $('#usersTable').DataTable({
+    "pageLength": 50,
+    "order": [[0, "asc"]],
+    "language": {
+      "search": "Search: ",
+      "emptyTable": "No users found",
+    },
+    "columnDefs": [
+      { "orderable": true, "targets": "_all" }
+    ]
+  });
+
+  var showActive = false;
+
+  $('#btnActiveUsers').on('click', function () {
+    showActive = true;
+    $(this).removeClass('btn-default').addClass('btn-primary active');
+    $('#btnAllUsers').removeClass('btn-primary active').addClass('btn-default');
+    table.draw();
+  });
+
+  $('#btnAllUsers').on('click', function () {
+    showActive = false;
+    $(this).removeClass('btn-default').addClass('btn-primary active');
+    $('#btnActiveUsers').removeClass('btn-primary active').addClass('btn-default');
+    table.draw();
+  });
+
+  // Custom filter for active/all toggle
+  $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+    if (!showActive) return true;
+    var row = table.row(dataIndex).node();
+    return $(row).data('active') === 'yes';
+  });
+});
+</script>

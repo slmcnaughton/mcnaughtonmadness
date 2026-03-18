@@ -37,7 +37,8 @@ var commentRoutes = require("./routes/comments"),
   tournamentGroupRoutes = require("./routes/tournamentGroups"),
   userTournamentRoutes = require("./routes/userTournaments"),
   userRoundRoutes = require("./routes/userRounds"),
-  feedbackRoutes = require("./routes/feedback");
+  feedbackRoutes = require("./routes/feedback"),
+  familyTreeRoutes = require("./routes/familyTree");
 
 mongoose.connect(process.env.DATABASE_URL_PROD, {
   useNewUrlParser: true,
@@ -97,6 +98,7 @@ app.use("/tournaments", tournamentRoutes);
 app.use("/tournaments/:year/rounds", roundRoutes);
 app.use("/tournamentGroups", tournamentGroupRoutes);
 app.use("/feedback", feedbackRoutes);
+app.use("/family-tree", familyTreeRoutes);
 app.use("/tournamentGroups/:groupName/userTournaments", userTournamentRoutes);
 app.use(
   "/tournamentGroups/:groupName/userTournaments/:username",

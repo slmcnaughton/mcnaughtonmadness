@@ -1,0 +1,226 @@
+<% include ../partials/header %>
+
+<div class="row">
+  <div class="col-lg-12" style="text-align: center; margin-bottom: 20px;">
+    <h2><i class="fas fa-tree"></i> The McNaughton Family</h2>
+  </div>
+</div>
+
+<% if(!userFamilyId) { %>
+<div class="row">
+  <div class="col-lg-8 col-lg-offset-2">
+    <% if(hasPendingConnection) { %>
+      <div class="alert alert-info text-center" style="margin-bottom: 20px;">
+        <i class="fas fa-clock"></i>
+        <strong>Your request to join the family tree is pending.</strong>
+        An admin will connect you soon!
+      </div>
+    <% } else { %>
+      <div class="panel panel-info" style="margin-bottom: 20px;">
+        <div class="panel-body text-center">
+          <p style="margin-bottom: 10px;">
+            <i class="fas fa-tree"></i>
+            <strong>Want to join the family tree?</strong>
+            Tell us how you're connected and an admin will add you.
+          </p>
+          <form action="/family-tree/request-join" method="POST" class="form-inline" style="display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center;">
+            <select name="connectionName" class="form-control input-sm" required>
+              <option value="">-- Who do you know? --</option>
+              <% members.forEach(function(m) { %>
+                <option value="<%= m.firstName %> <%= m.lastName %>"><%= m.firstName %> <%= m.lastName %></option>
+              <% }); %>
+            </select>
+            <select name="connectionType" class="form-control input-sm" required>
+              <option value="">-- How? --</option>
+              <option value="child">I am their child</option>
+              <option value="spouse">I am their spouse</option>
+              <option value="fiance">I am their fiance(e)</option>
+              <option value="dating">I am their boyfriend/girlfriend</option>
+              <option value="sibling">I am their sibling</option>
+              <option value="friend">I am their friend</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-info">
+              <i class="fas fa-paper-plane"></i> Request to Join
+            </button>
+          </form>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</div>
+<% } %>
+
+<div class="ft-tree-wrapper">
+  <% if(treeData && treeData.rootUnit) { %>
+    <div class="ft-tree">
+      <%
+        function getInitials(person) {
+          var f = (person.firstName || '').charAt(0).toUpperCase();
+          var l = (person.lastName || '').charAt(0).toUpperCase();
+          return f + l;
+        }
+
+        function getPartnerLabel(type) {
+          if (type === 'spouse') return 'Married';
+          if (type === 'fiance') return 'Engaged';
+          if (type === 'dating') return 'Dating';
+          return '';
+        }
+
+        function hashColor(name) {
+          var hash = 0;
+          for (var i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+          }
+          var colors = ['#004284', '#1a6b3c', '#8b4513', '#4a0e4e', '#b22222', '#2e4057', '#6b3fa0', '#c2571a', '#1e6e6e', '#7b3f00'];
+          return colors[Math.abs(hash) % colors.length];
+        }
+
+        function renderPerson(person, partnerType) {
+          var isDeceased = person.deceased;
+          var hasUser = person.user && person.user.username;
+          var classes = 'ft-person';
+          if (!hasUser) classes += ' ft-no-profile';
+          if (isDeceased) classes += ' ft-deceased';
+          if (hasUser) classes += ' ft-player';
+          if (partnerType === 'spouse') classes += ' ft-married';
+          else if (partnerType === 'fiance') classes += ' ft-engaged';
+          else if (partnerType === 'dating') classes += ' ft-dating';
+      %>
+          <div class="<%= classes %>">
+            <div class="ft-avatar" style="background-color: <%= hashColor(person.firstName + person.lastName) %>;">
+              <% if(person.image) { %>
+                <img src="<%= person.image %>" alt="<%= person.firstName %>">
+              <% } else { %>
+                <span class="ft-initials"><%= getInitials(person) %></span>
+              <% } %>
+            </div>
+            <div class="ft-name">
+              <% if(hasUser) { %>
+                <a href="/users/<%= person.user.username %>"><%= person.firstName %></a>
+              <% } else { %>
+                <%= person.firstName %>
+              <% } %>
+              <% if(isDeceased) { %><i class="fas fa-cross ft-deceased-icon" title="Deceased"></i><% } %>
+            </div>
+            <div class="ft-surname"><%= person.lastName %></div>
+          </div>
+      <%
+        }
+
+        function renderFamilyUnit(unit) {
+          if (!unit || !unit.person) return;
+          var partners = unit.partners || [];
+      %>
+          <div class="ft-family-unit">
+            <div class="ft-couple">
+              <% renderPerson(unit.person, null); %>
+              <% partners.forEach(function(p) { %>
+                <div class="ft-partner-line">
+                  <span class="ft-partner-label"><%= getPartnerLabel(p.type) %></span>
+                </div>
+                <% renderPerson(p.member, p.type); %>
+              <% }); %>
+            </div>
+            <% if(unit.children && unit.children.length > 0) { %>
+              <div class="ft-children-connector"></div>
+              <div class="ft-children">
+                <% unit.children.forEach(function(child) { %>
+                  <% renderFamilyUnit(child); %>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+      <%
+        }
+
+        renderFamilyUnit(treeData.rootUnit);
+      %>
+    </div>
+  <% } else { %>
+    <div class="text-center" style="padding: 40px;">
+      <i class="fas fa-tree" style="font-size: 3em; color: #ccc;"></i>
+      <p class="text-muted" style="margin-top: 10px;">The family tree hasn't been set up yet. Check back soon!</p>
+    </div>
+  <% } %>
+</div>
+
+<!-- ── Extended Family ──────────────────────────────────────────────── -->
+<% if(treeData && treeData.extendedFamily && treeData.extendedFamily.length > 0) { %>
+<div class="row" style="margin-top: 30px;">
+  <div class="col-lg-12 text-center">
+    <h3 style="color: #666;"><i class="fas fa-users"></i> Extended Family</h3>
+    <div class="ft-friends">
+      <% treeData.extendedFamily.forEach(function(f) { %>
+        <div class="ft-friend-card ft-extended-card">
+          <div class="ft-avatar ft-avatar-sm" style="background-color: <%= hashColor(f.person.firstName + f.person.lastName) %>;">
+            <% if(f.person.image) { %>
+              <img src="<%= f.person.image %>" alt="<%= f.person.firstName %>">
+            <% } else { %>
+              <span class="ft-initials"><%= getInitials(f.person) %></span>
+            <% } %>
+          </div>
+          <div class="ft-friend-name"><%= f.person.firstName %> <%= f.person.lastName %></div>
+          <div class="ft-friend-relation">
+            <% if(f.type === 'sibling') { %>
+              Sibling of <%= f.connectedTo.firstName %>
+            <% } else if(f.type === 'spouse') { %>
+              Married to <%= f.connectedTo.firstName %>
+            <% } else if(f.type === 'fiance') { %>
+              Engaged to <%= f.connectedTo.firstName %>
+            <% } else if(f.type === 'dating') { %>
+              Dating <%= f.connectedTo.firstName %>
+            <% } else { %>
+              <%= f.type %> of <%= f.connectedTo.firstName %>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- ── Friends of the Family ──────────────────────────────────────── -->
+<% if(treeData && treeData.friends && treeData.friends.length > 0) { %>
+<div class="row" style="margin-top: 30px;">
+  <div class="col-lg-12 text-center">
+    <h3 style="color: #666;"><i class="fas fa-handshake"></i> Friends of the Family</h3>
+    <div class="ft-friends">
+      <% treeData.friends.forEach(function(f) { %>
+        <div class="ft-friend-card">
+          <div class="ft-avatar ft-avatar-sm" style="background-color: <%= hashColor(f.person.firstName + f.person.lastName) %>;">
+            <% if(f.person.image) { %>
+              <img src="<%= f.person.image %>" alt="<%= f.person.firstName %>">
+            <% } else { %>
+              <span class="ft-initials"><%= getInitials(f.person) %></span>
+            <% } %>
+          </div>
+          <div class="ft-friend-name"><%= f.person.firstName %> <%= f.person.lastName %></div>
+          <div class="ft-friend-relation">
+            <% if(f.type === 'friend') { %>
+              Friend of <%= f.connectedTo.firstName %>
+            <% } else if(f.type === 'colleague') { %>
+              Colleague of <%= f.connectedTo.firstName %>
+            <% } else { %>
+              <%= f.type %> of <%= f.connectedTo.firstName %>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<% include ../partials/footer %>
+
+<script>
+// Auto-scroll tree wrapper to center the root couple in view
+(function() {
+  var wrapper = document.querySelector('.ft-tree-wrapper');
+  if (wrapper && wrapper.scrollWidth > wrapper.clientWidth) {
+    wrapper.scrollLeft = (wrapper.scrollWidth - wrapper.clientWidth) / 2;
+  }
+})();
+</script>

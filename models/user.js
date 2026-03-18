@@ -24,11 +24,18 @@ var UserSchema = new mongoose.Schema({
       },
       groupName: String,
       year: Number,
+      isOfficial: { type: Boolean, default: false },
     },
   ],
+  familyTreeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "FamilyMember",
+  },
   pendingFirstName: String,
   pendingLastName: String,
   nameChangeRequestedAt: Date,
+  pendingConnectionType: String,
+  pendingConnectionName: String,
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   //newUser.isAdmin = true;

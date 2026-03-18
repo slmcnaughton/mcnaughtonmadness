@@ -17,6 +17,9 @@
                     <ul class="nav navbar-nav">
                         <li class="<%= typeof page !== 'undefined' && page === 'home' ? 'active' : '' %>"><a href="/home">Home</a></li>
                         <li class="<%= typeof page !== 'undefined' && page === 'users' ? 'active' : '' %>"><a href="/users">Users</a></li>
+                        <% if(currentUser && (currentUser.familyTreeId || currentUser.isAdmin || (currentUser.tournamentGroups && currentUser.tournamentGroups.some(function(g) { return g.isOfficial; })))) { %>
+                            <li class="<%= typeof page !== 'undefined' && page === 'familyTree' ? 'active' : '' %>"><a href="/family-tree"><i class="fas fa-tree"></i> Family Tree</a></li>
+                        <% } %>
                         <li class="dropdown <%= typeof page !== 'undefined' && page === 'about' ? 'active' : '' %>">
         				  <a href="#" class="dropdown-toggle" data-toggle="dropdown">About<b class="caret"></b></a> 
         					<ul class="dropdown-menu">
@@ -61,6 +64,7 @@
             						<% if(currentUser.isAdmin) { %>
             						  <li role="separator" class="divider"></li>
             						  <li><a href="/admin"><i class="fas fa-cog"></i> Admin</a></li>
+            						  <li><a href="/family-tree/admin"><i class="fas fa-tree"></i> Family Tree Admin</a></li>
             						<% } %>
             						<li><a href="/logout">Log Out</a></li>
             					</ul>

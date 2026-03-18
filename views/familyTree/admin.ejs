@@ -1,0 +1,527 @@
+<% include ../partials/header %>
+
+<div class="row">
+  <div class="col-lg-12">
+    <h2><i class="fas fa-tree"></i> Family Tree Admin</h2>
+    <p class="text-muted">Manage family members and relationships</p>
+    <a href="/family-tree" class="btn btn-sm btn-default" style="margin-bottom: 10px;">
+      <i class="fas fa-eye"></i> View Family Tree
+    </a>
+    <a href="/admin" class="btn btn-sm btn-default" style="margin-bottom: 10px;">
+      <i class="fas fa-arrow-left"></i> Back to Admin
+    </a>
+    <hr>
+  </div>
+</div>
+
+<!-- ── Pending Connection Requests ──────────────────────────────────── -->
+<% if(pendingConnections.length > 0) { %>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          <i class="fas fa-link"></i> Pending Connection Requests
+          <span class="badge"><%= pendingConnections.length %></span>
+        </h3>
+      </div>
+      <div class="panel-body">
+        <table class="table table-condensed">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Connection Type</th>
+              <th>Connected To</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% pendingConnections.forEach(function(u) {
+              var typeLabel = u.pendingConnectionType === 'child' ? 'Child of' : u.pendingConnectionType === 'spouse' ? 'Spouse of' : u.pendingConnectionType === 'fiance' ? 'Fiance of' : u.pendingConnectionType === 'dating' ? 'Dating' : u.pendingConnectionType === 'sibling' ? 'Sibling of' : u.pendingConnectionType === 'friend' ? 'Friend of' : u.pendingConnectionType;
+            %>
+              <tr>
+                <td><a href="/users/<%= u.username %>"><%= u.firstName %> <%= u.lastName %></a></td>
+                <td><span class="label label-info"><%= typeLabel %></span></td>
+                <td><%= u.pendingConnectionName %></td>
+                <td>
+                  <form action="/family-tree/admin/connection/<%= u._id %>/approve" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-xs btn-success" title="Create family member, link user, and create relationship">
+                      <i class="fas fa-check"></i> Approve
+                    </button>
+                  </form>
+                  <form action="/family-tree/admin/connection/<%= u._id %>/dismiss" method="POST" style="display: inline; margin-left: 4px;">
+                    <button type="submit" class="btn btn-xs btn-default" title="Dismiss this request (no changes made)">
+                      <i class="fas fa-times"></i> Dismiss
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <p class="text-muted"><small><strong>Approve</strong> creates a family member for the user, links their account, and creates the relationship. <strong>Dismiss</strong> just clears the request.</small></p>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- ── Pending Relationship Updates ────────────────────────────────── -->
+<% if(pendingRelUpdates && pendingRelUpdates.length > 0) { %>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-warning">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          <i class="fas fa-heart"></i> Pending Relationship Updates
+          <span class="badge"><%= pendingRelUpdates.length %></span>
+        </h3>
+      </div>
+      <div class="panel-body">
+        <table class="table table-condensed">
+          <thead>
+            <tr>
+              <th>People</th>
+              <th>Current</th>
+              <th>Proposed</th>
+              <th>Requested By</th>
+              <th>When</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% pendingRelUpdates.forEach(function(r) {
+              var currentLabel = r.type === 'spouse' ? 'Married' : r.type === 'fiance' ? 'Engaged' : r.type === 'dating' ? 'Dating' : r.type;
+              var proposedLabel = r.pendingType === 'spouse' ? 'Married' : r.pendingType === 'fiance' ? 'Engaged' : r.pendingType === 'dating' ? 'Dating' : r.pendingType;
+            %>
+              <tr>
+                <td>
+                  <% if(r.from) { %><%= r.from.firstName %> <%= r.from.lastName %><% } %>
+                  &amp;
+                  <% if(r.to) { %><%= r.to.firstName %> <%= r.to.lastName %><% } %>
+                </td>
+                <td><span class="label label-default"><%= currentLabel %></span></td>
+                <td><span class="label label-info"><%= proposedLabel %></span></td>
+                <td>
+                  <% if(r.pendingRequestedBy) { %>
+                    <%= r.pendingRequestedBy.firstName %> <%= r.pendingRequestedBy.lastName %>
+                  <% } else { %>
+                    <span class="text-muted">Unknown</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if(r.pendingRequestedAt) { %>
+                    <small class="text-muted"><%= r.pendingRequestedAt.toLocaleDateString() %></small>
+                  <% } %>
+                </td>
+                <td style="white-space: nowrap;">
+                  <form action="/family-tree/admin/relationship/<%= r._id %>/approve-update" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-xs btn-success" title="Approve — changes relationship to proposed type">
+                      <i class="fas fa-check"></i> Approve
+                    </button>
+                  </form>
+                  <form action="/family-tree/admin/relationship/<%= r._id %>/reject-update" method="POST" style="display: inline; margin-left: 2px;">
+                    <button type="submit" class="btn btn-xs btn-danger" title="Reject — keeps current type">
+                      <i class="fas fa-times"></i> Reject
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- ── Add Member Form ─────────────────────────────────────────────── -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-success">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-user-plus"></i> Add Family Member</h3>
+      </div>
+      <div class="panel-body">
+        <form action="/family-tree/admin/member" method="POST" class="form-inline" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+          <div class="form-group">
+            <label class="sr-only" for="addUserId">Link to User</label>
+            <select class="form-control input-sm" id="addUserId" name="userId">
+              <option value="">-- No linked account --</option>
+              <% users.forEach(function(u) { %>
+                <option value="<%= u._id %>" data-first="<%= u.firstName %>" data-last="<%= u.lastName %>"><%= u.firstName %> <%= u.lastName %> (<%= u.username %>)</option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="sr-only" for="addFirstName">First Name</label>
+            <input type="text" class="form-control input-sm" id="addFirstName" name="firstName" placeholder="First name" required>
+          </div>
+          <div class="form-group">
+            <label class="sr-only" for="addLastName">Last Name</label>
+            <input type="text" class="form-control input-sm" id="addLastName" name="lastName" placeholder="Last name" required>
+          </div>
+          <div class="checkbox" style="margin: 0;">
+            <label><input type="checkbox" name="deceased"> Deceased</label>
+          </div>
+          <div class="checkbox" style="margin: 0;">
+            <label><input type="checkbox" name="approved" checked> Approved</label>
+          </div>
+          <!-- Optional: relate to an existing member -->
+          <div class="form-group">
+            <select class="form-control input-sm" name="relatedToId">
+              <option value="">-- Related to... --</option>
+              <% members.forEach(function(m) { %>
+                <option value="<%= m._id %>"><%= m.firstName %> <%= m.lastName %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="form-group">
+            <select class="form-control input-sm" name="relationshipType">
+              <option value="">-- How? --</option>
+              <option value="child">is child of</option>
+              <option value="parent">is parent of</option>
+              <option value="spouse">married to</option>
+              <option value="fiance">engaged to</option>
+              <option value="dating">dating</option>
+              <option value="sibling">sibling of</option>
+              <option value="friend">friend of</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="sr-only" for="addNotes">Notes</label>
+            <input type="text" class="form-control input-sm" id="addNotes" name="notes" placeholder="Notes (optional)">
+          </div>
+          <button type="submit" class="btn btn-sm btn-success">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Members Table ───────────────────────────────────────────────── -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-users"></i> Family Members (<%= members.length %>)</h3>
+      </div>
+      <div class="panel-body">
+        <div style="overflow-x: auto;">
+          <table class="table table-striped table-condensed" id="membersTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Profile</th>
+                <th>Deceased</th>
+                <th>Linked User</th>
+                <th>Approved</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% members.forEach(function(m) { %>
+                <tr class="<%= !m.approved ? 'warning' : (m.user ? 'success' : '') %>" style="<%= m.deceased ? 'opacity: 0.65;' : '' %>">
+                  <td>
+                    <strong><%= m.firstName %> <%= m.lastName %></strong>
+                    <% if(m.deceased) { %><i class="fas fa-cross" style="color: #999; margin-left: 4px;" title="Deceased"></i><% } %>
+                  </td>
+                  <td>
+                    <% if(!m.user) { %>
+                      <span class="label label-default">No Profile</span>
+                    <% } else { %>
+                      <span class="label label-primary">Has Profile</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(m.deceased) { %>
+                      <i class="fas fa-check text-muted"></i>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(m.user) { %>
+                      <a href="/users/<%= m.user.username %>"><%= m.user.firstName %> <%= m.user.lastName %></a>
+                    <% } else { %>
+                      <span class="text-muted">&#x2014;</span>
+                      <!-- Link form -->
+                      <button type="button" class="btn btn-xs btn-info btn-link-user"
+                        data-id="<%= m._id %>" data-name="<%= m.firstName %> <%= m.lastName %>" title="Link to user">
+                        <i class="fas fa-link"></i>
+                      </button>
+                    <% } %>
+                  </td>
+                  <td>
+                    <form action="/family-tree/admin/member/<%= m._id %>/approve" method="POST" style="display: inline;">
+                      <% if(m.approved) { %>
+                        <button type="submit" class="btn btn-xs btn-success" title="Click to unapprove">
+                          <i class="fas fa-check"></i> Yes
+                        </button>
+                      <% } else { %>
+                        <button type="submit" class="btn btn-xs btn-warning" title="Click to approve">
+                          <i class="fas fa-times"></i> No
+                        </button>
+                      <% } %>
+                    </form>
+                  </td>
+                  <td><small class="text-muted"><%= m.notes || '' %></small></td>
+                  <td style="white-space: nowrap;">
+                    <button type="button" class="btn btn-xs btn-info btn-edit-member"
+                      data-id="<%= m._id %>"
+                      data-firstname="<%= m.firstName %>"
+                      data-lastname="<%= m.lastName %>"
+                      data-deceased="<%= m.deceased %>"
+                      data-notes="<%= m.notes || '' %>"
+                      title="Edit">
+                      <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <form action="/family-tree/admin/member/<%= m._id %>?_method=DELETE" method="POST" style="display: inline; margin-left: 2px;">
+                      <button type="submit" class="btn btn-xs btn-danger" title="Delete"
+                        onclick="return confirm('Delete <%= m.firstName %> <%= m.lastName %> and all their relationships?');">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Relationship (between existing members) ─────────────────── -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-heart"></i> Add Relationship Between Existing Members</h3>
+      </div>
+      <div class="panel-body">
+        <form action="/family-tree/admin/relationship" method="POST" class="form-inline" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;">
+          <div class="form-group">
+            <label class="sr-only" for="relFrom">Person A</label>
+            <select class="form-control input-sm" id="relFrom" name="fromId" required>
+              <option value="">-- Person A --</option>
+              <% members.forEach(function(m) { %>
+                <option value="<%= m._id %>"><%= m.firstName %> <%= m.lastName %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="sr-only" for="relType">Relationship</label>
+            <select class="form-control input-sm" id="relType" name="type" required>
+              <option value="">-- Type --</option>
+              <option value="parent">Parent of &rarr;</option>
+              <option value="spouse">Married to</option>
+              <option value="fiance">Engaged to</option>
+              <option value="dating">Dating</option>
+              <option value="sibling">Sibling of</option>
+              <option value="friend">Friend of</option>
+              <option value="colleague">Colleague of</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="sr-only" for="relTo">Person B</label>
+            <select class="form-control input-sm" id="relTo" name="toId" required>
+              <option value="">-- Person B --</option>
+              <% members.forEach(function(m) { %>
+                <option value="<%= m._id %>"><%= m.firstName %> <%= m.lastName %></option>
+              <% }); %>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-sm btn-success">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </form>
+        <p class="text-muted" style="margin-top: 8px;">
+          <small><strong>Parent:</strong> Person A is parent of Person B (directional). <strong>Others:</strong> Non-directional (order doesn't matter).<br>
+          <strong>Siblings:</strong> Add both as children of the same parent &mdash; the tree shows them automatically.</small>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Relationships Table ─────────────────────────────────────────── -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-project-diagram"></i> Relationships (<%= relationships.length %>)</h3>
+      </div>
+      <div class="panel-body">
+        <div style="overflow-x: auto;">
+          <table class="table table-striped table-condensed">
+            <thead>
+              <tr>
+                <th>Person A</th>
+                <th>Relationship</th>
+                <th>Person B</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% relationships.forEach(function(r) { %>
+                <tr>
+                  <td>
+                    <% if(r.from) { %>
+                      <%= r.from.firstName %> <%= r.from.lastName %>
+                    <% } else { %>
+                      <span class="text-muted">(deleted)</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <form action="/family-tree/admin/relationship/<%= r._id %>?_method=PUT" method="POST" style="display: inline;">
+                      <select class="form-control input-sm" name="type" onchange="this.form.submit()" style="width: auto; display: inline; padding: 1px 4px; font-size: 11px;">
+                        <option value="parent" <%= r.type === 'parent' ? 'selected' : '' %>>Parent of &rarr;</option>
+                        <option value="spouse" <%= r.type === 'spouse' ? 'selected' : '' %>>Married</option>
+                        <option value="fiance" <%= r.type === 'fiance' ? 'selected' : '' %>>Engaged</option>
+                        <option value="dating" <%= r.type === 'dating' ? 'selected' : '' %>>Dating</option>
+                        <option value="sibling" <%= r.type === 'sibling' ? 'selected' : '' %>>Sibling</option>
+                        <option value="friend" <%= r.type === 'friend' ? 'selected' : '' %>>Friend</option>
+                        <option value="colleague" <%= r.type === 'colleague' ? 'selected' : '' %>>Colleague</option>
+                      </select>
+                    </form>
+                    <% if(r.pendingType) { %>
+                      <span class="label label-warning" style="margin-left: 4px; font-size: 10px;">
+                        <i class="fas fa-clock"></i> &rarr; <%= r.pendingType === 'spouse' ? 'Married' : r.pendingType === 'fiance' ? 'Engaged' : 'Dating' %>
+                      </span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(r.to) { %>
+                      <%= r.to.firstName %> <%= r.to.lastName %>
+                    <% } else { %>
+                      <span class="text-muted">(deleted)</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <form action="/family-tree/admin/relationship/<%= r._id %>?_method=DELETE" method="POST" style="display: inline;">
+                      <button type="submit" class="btn btn-xs btn-danger" title="Delete relationship"
+                        onclick="return confirm('Delete this relationship?');">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Member Modal ─────────────────────────────────────────── -->
+<div class="modal fade" id="editMemberModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form id="editMemberForm" method="POST">
+        <input type="hidden" name="_method" value="PUT">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+          <h4 class="modal-title"><i class="fas fa-pencil-alt"></i> Edit Family Member</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="editMemberFirstName">First Name</label>
+            <input type="text" class="form-control" id="editMemberFirstName" name="firstName" required>
+          </div>
+          <div class="form-group">
+            <label for="editMemberLastName">Last Name</label>
+            <input type="text" class="form-control" id="editMemberLastName" name="lastName" required>
+          </div>
+          <div class="checkbox">
+            <label><input type="checkbox" id="editMemberDeceased" name="deceased"> Deceased</label>
+          </div>
+          <div class="form-group">
+            <label for="editMemberNotes">Notes</label>
+            <input type="text" class="form-control" id="editMemberNotes" name="notes">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Link User Modal ─────────────────────────────────────────────── -->
+<div class="modal fade" id="linkUserModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form id="linkUserForm" method="POST">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+          <h4 class="modal-title"><i class="fas fa-link"></i> Link <span id="linkMemberName"></span> to User</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="linkUserId">Select User Account</label>
+            <select class="form-control" id="linkUserId" name="userId" required>
+              <option value="">-- Select a user --</option>
+              <% users.forEach(function(u) { %>
+                <option value="<%= u._id %>"><%= u.firstName %> <%= u.lastName %> (<%= u.username %>)</option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Link User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<% include ../partials/footer %>
+
+<!-- ── Admin JS ─────────────────────────────────────────────────────── -->
+<script>
+$(document).ready(function () {
+  // Auto-fill name from selected user profile
+  $('#addUserId').on('change', function () {
+    var $selected = $(this).find('option:selected');
+    if ($selected.val()) {
+      $('#addFirstName').val($selected.data('first'));
+      $('#addLastName').val($selected.data('last'));
+    } else {
+      $('#addFirstName').val('');
+      $('#addLastName').val('');
+    }
+  });
+
+  // Edit member
+  $('.btn-edit-member').on('click', function () {
+    var $btn = $(this);
+    var id = $btn.data('id');
+    $('#editMemberFirstName').val($btn.data('firstname'));
+    $('#editMemberLastName').val($btn.data('lastname'));
+    $('#editMemberDeceased').prop('checked', $btn.data('deceased') === true || $btn.data('deceased') === 'true');
+    $('#editMemberNotes').val($btn.data('notes'));
+    $('#editMemberForm').attr('action', '/family-tree/admin/member/' + id + '?_method=PUT');
+    $('#editMemberModal').modal('show');
+  });
+
+  // Link user
+  $('.btn-link-user').on('click', function () {
+    var $btn = $(this);
+    var id = $btn.data('id');
+    var name = $btn.data('name');
+    $('#linkMemberName').text(name);
+    $('#linkUserForm').attr('action', '/family-tree/admin/member/' + id + '/link');
+    $('#linkUserModal').modal('show');
+  });
+
+});
+</script>

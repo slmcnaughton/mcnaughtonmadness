@@ -14,6 +14,8 @@ var Team = require("./models/team");
 var TeamImage = require("./models/teamImage");
 var Scrape = require("./models/scrape");
 var Feedback = require("./models/feedback");
+var FamilyMember = require("./models/familyMember");
+var FamilyRelationship = require("./models/familyRelationship");
 var async = require("async");
 var data = require("./historicalStandings");
 
@@ -21,6 +23,7 @@ function seedDB() {
   // removeAndAddTournamentStandings(data);
   // removeAndAddTrophies();
   // removeBots();
+  // seedRootCouple();
 
   async.parallel(
     [
@@ -36,6 +39,7 @@ function seedDB() {
       // deleteAllTournaments,
       // deleteAllScrapes,
       // deleteAllFeedback,
+      // deleteAllFamilyData,
       // deleteAllUsers,
     ],
     function (err) {
@@ -316,6 +320,71 @@ var removeAndAddTournamentStandings = function (data) {
     }
   });
 };
+
+function deleteAllFamilyData(callback) {
+  async.parallel(
+    [
+      function (cb) {
+        FamilyMember.deleteMany({}, function (err) {
+          if (err) console.log(err);
+          else console.log("removed all family members");
+          cb();
+        });
+      },
+      function (cb) {
+        FamilyRelationship.deleteMany({}, function (err) {
+          if (err) console.log(err);
+          else console.log("removed all family relationships");
+          cb();
+        });
+      },
+      function (cb) {
+        User.updateMany({}, { $unset: { familyTreeId: "" } }, function (err) {
+          if (err) console.log(err);
+          else console.log("cleared familyTreeId from all users");
+          cb();
+        });
+      },
+    ],
+    function (err) {
+      if (err) console.log(err);
+      callback();
+    },
+  );
+}
+
+function seedRootCouple(callback) {
+  var eldon = new FamilyMember({
+    firstName: "Eldon",
+    lastName: "McNaughton",
+    deceased: true,
+  });
+
+  var katherine = new FamilyMember({
+    firstName: "Katherine",
+    lastName: "McNaughton",
+    deceased: true,
+  });
+
+  eldon.save(function (err, savedEldon) {
+    if (err) console.log(err);
+    katherine.save(function (err, savedKatherine) {
+      if (err) console.log(err);
+      FamilyRelationship.create(
+        {
+          from: savedEldon._id,
+          to: savedKatherine._id,
+          type: "spouse",
+        },
+        function (err) {
+          if (err) console.log(err);
+          else console.log("seeded root couple: Eldon & Katherine McNaughton");
+          if (callback) callback();
+        },
+      );
+    });
+  });
+}
 
 function deleteTeamImages() {
   TeamImage.deleteMany({}, function (err) {

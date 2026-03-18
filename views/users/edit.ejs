@@ -3,6 +3,22 @@
 <div class="row">
     <h1 style="text-align: center">Edit Profile</h1>
     <div class="login-form">
+        <!-- Profile Photo Upload (separate form for multipart) -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <% if(user.image) { %>
+                <img src="<%= user.image %>" alt="Profile photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #004284;">
+            <% } else { %>
+                <div style="width: 100px; height: 100px; border-radius: 50%; background: #004284; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 2em; font-weight: 600;">
+                    <%= (user.firstName || '').charAt(0).toUpperCase() %><%= (user.lastName || '').charAt(0).toUpperCase() %>
+                </div>
+            <% } %>
+            <form action="/users/<%= user.username %>/photo" method="POST" enctype="multipart/form-data" style="margin-top: 10px;">
+                <label class="btn btn-sm btn-default" style="cursor: pointer;">
+                    <i class="fas fa-camera"></i> Change Photo
+                    <input type="file" name="image" accept="image/*" style="display: none;" onchange="this.form.submit();">
+                </label>
+            </form>
+        </div>
         <form action="/users/<%= user.username %>?_method=PUT" method="POST">
             <div class="form-group">
                 <label for="email">Email</label>
@@ -32,5 +48,54 @@
         <a href="/users/<%= user.username %>">Cancel</a>
     </div>
 </div>
+
+<!-- ── My Relationships (self-service proposals) ──────────────────── -->
+<% if(myRelationships && myRelationships.length > 0) { %>
+<div class="row" style="margin-top: 30px;">
+  <div class="col-lg-8 col-lg-offset-2">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title" style="font-size: 14px;">
+          <i class="fas fa-heart"></i> My Relationships
+          <small class="text-muted" style="font-weight: normal; margin-left: 6px;">Propose an update for admin approval</small>
+        </h3>
+      </div>
+      <div class="panel-body" style="padding: 10px 15px;">
+        <% myRelationships.forEach(function(r) {
+          var otherPerson = r.from._id.toString() === userFamilyId ? r.to : r.from;
+          var currentLabel = r.type === 'spouse' ? 'Married to' : r.type === 'fiance' ? 'Engaged to' : r.type === 'dating' ? 'Dating' : r.type;
+        %>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+            <div style="flex: 1;">
+              <strong><%= otherPerson.firstName %> <%= otherPerson.lastName %></strong>
+              <span class="label label-<%= r.type === 'spouse' ? 'primary' : r.type === 'fiance' ? 'info' : 'default' %>" style="margin-left: 6px;">
+                <%= currentLabel %>
+              </span>
+              <% if(r.pendingType) { %>
+                <span class="label label-warning" style="margin-left: 4px;">
+                  <i class="fas fa-clock"></i> Pending: <%= r.pendingType === 'spouse' ? 'Married' : r.pendingType === 'fiance' ? 'Engaged' : 'Dating' %>
+                </span>
+              <% } %>
+            </div>
+            <% if(!r.pendingType) { %>
+              <form action="/family-tree/propose-update" method="POST" class="form-inline" style="display: flex; gap: 4px; align-items: center;">
+                <input type="hidden" name="relationshipId" value="<%= r._id %>">
+                <select name="proposedType" class="form-control input-sm" style="width: auto; font-size: 12px; padding: 2px 6px;">
+                  <% if(r.type !== 'dating') { %><option value="dating">Dating</option><% } %>
+                  <% if(r.type !== 'fiance') { %><option value="fiance">Engaged</option><% } %>
+                  <% if(r.type !== 'spouse') { %><option value="spouse">Married</option><% } %>
+                </select>
+                <button type="submit" class="btn btn-xs btn-primary" title="Propose this change">
+                  <i class="fas fa-paper-plane"></i> Propose
+                </button>
+              </form>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
 
 <% include ../partials/footer %>

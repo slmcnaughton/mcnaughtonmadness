@@ -14,6 +14,8 @@ var Trophy = require("../models/trophy");
 var TournamentStanding = require("../models/tournamentStanding");
 var async = require("async");
 var Feedback = require("../models/feedback");
+var FamilyMember = require("../models/familyMember");
+var FamilyRelationship = require("../models/familyRelationship");
 var scrape = require("../scrape");
 
 // All admin routes require isAdmin
@@ -80,22 +82,34 @@ router.get("/", function (req, res) {
             });
           });
 
-          Feedback.find({})
-            .sort({ createdAt: -1 })
-            .exec(function (err, allFeedback) {
+          // Load ALL groups (lightweight, no population) for historical official toggle
+          TournamentGroup.find({})
+            .select("groupName year isOfficial")
+            .sort({ year: -1, groupName: 1 })
+            .exec(function (err, allGroups) {
               if (err) {
                 console.log(err);
-                allFeedback = [];
+                allGroups = [];
               }
 
-              res.render("admin/dashboard", {
-                page: "admin",
-                users: allUsers,
-                groups: groups,
-                pickStatus: pickStatus,
-                year: year,
-                feedback: allFeedback,
-              });
+              Feedback.find({})
+                .sort({ createdAt: -1 })
+                .exec(function (err, allFeedback) {
+                  if (err) {
+                    console.log(err);
+                    allFeedback = [];
+                  }
+
+                  res.render("admin/dashboard", {
+                    page: "admin",
+                    users: allUsers,
+                    groups: groups,
+                    allGroups: allGroups,
+                    pickStatus: pickStatus,
+                    year: year,
+                    feedback: allFeedback,
+                  });
+                });
             });
         });
     });
@@ -292,6 +306,13 @@ function propagateNameChange(userId, newFirstName, newLastName, done) {
           cb,
         );
       },
+      function (cb) {
+        FamilyMember.updateMany(
+          { user: userId },
+          { $set: { firstName: newFirstName, lastName: newLastName } },
+          cb,
+        );
+      },
     ],
     function (err) {
       if (err) console.log("propagateNameChange errors:", err);
@@ -430,9 +451,18 @@ function deleteUserCascade(userId, done) {
                       Feedback.deleteMany({ "author.id": userId }, function (err) {
                         if (err) console.log("Error deleting feedback:", err);
 
-                        User.deleteOne({ _id: userId }, function (err) {
-                          done(err);
-                        });
+                        // Unlink FamilyMember instead of deleting (preserve tree structure)
+                        FamilyMember.updateMany(
+                          { user: userId },
+                          { $unset: { user: "" } },
+                          function (err) {
+                            if (err) console.log("Error unlinking family member:", err);
+
+                            User.deleteOne({ _id: userId }, function (err) {
+                              done(err);
+                            });
+                          },
+                        );
                       });
                     });
                   },
@@ -621,12 +651,39 @@ router.post("/groups/:groupName/toggle-official", function (req, res) {
       group.isOfficial = !group.isOfficial;
       group.save(function (err) {
         if (err) console.log(err);
+
+        // Backfill: update isOfficial on every user's embedded tournamentGroups entry
+        // that references this group (by matching the group's _id)
+        User.find({ "tournamentGroups.id": group._id }, function (err, users) {
+          if (err) {
+            console.log("Error backfilling isOfficial:", err);
+          } else {
+            var count = 0;
+            users.forEach(function (user) {
+              var changed = false;
+              user.tournamentGroups.forEach(function (tg) {
+                if (tg.id && tg.id.toString() === group._id.toString()) {
+                  tg.isOfficial = group.isOfficial;
+                  changed = true;
+                }
+              });
+              if (changed) {
+                user.save(function (err) {
+                  if (err) console.log("Error saving user backfill:", err);
+                });
+                count++;
+              }
+            });
+            console.log("[OFFICIAL TOGGLE] Backfilled isOfficial=" + group.isOfficial + " for " + count + " users in " + group.groupName);
+          }
+        });
+
         req.flash(
           "success",
           group.groupName +
             " is now " +
             (group.isOfficial ? "official" : "unofficial") +
-            ".",
+            ". Updated all members.",
         );
         res.redirect("/admin");
       });
@@ -1054,6 +1111,25 @@ router.post("/merge", function (req, res) {
                           },
                         },
                         cb,
+                      );
+                    },
+                    // Step 8c: Re-point FamilyMember
+                    function (cb) {
+                      FamilyMember.updateMany(
+                        { user: sourceId },
+                        { $set: { user: target._id } },
+                        function (err) {
+                          if (err) return cb(err);
+                          // Update target's familyTreeId if source had a family member
+                          FamilyMember.findOne({ user: target._id }, function (err, fm) {
+                            if (fm) {
+                              target.familyTreeId = fm._id;
+                              target.save(cb);
+                            } else {
+                              cb();
+                            }
+                          });
+                        },
                       );
                     },
                   ],

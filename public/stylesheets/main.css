@@ -2140,3 +2140,308 @@ footer {
     color: #666;
 }
 
+/*===========================================*/
+/*         FAMILY TREE                       */
+/*===========================================*/
+
+.ft-tree-wrapper {
+    overflow-x: auto;
+    padding: 20px 10px 40px;
+    -webkit-overflow-scrolling: touch;
+    /* Break out of Bootstrap .container to use full viewport width */
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    width: 100vw;
+}
+
+.ft-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: fit-content;
+}
+
+.ft-family-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ft-couple {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ft-partner-line {
+    width: 40px;
+    height: 2px;
+    background: #004284;
+    position: relative;
+    margin: 0 6px;
+}
+
+.ft-partner-label {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: #999;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.ft-person {
+    text-align: center;
+    padding: 8px;
+    min-width: 80px;
+    position: relative;
+}
+
+.ft-person.ft-no-profile {
+    opacity: 0.7;
+}
+
+.ft-person.ft-no-profile .ft-avatar {
+    border-style: dashed;
+}
+
+.ft-person.ft-deceased {
+    opacity: 0.55;
+}
+
+.ft-person.ft-player .ft-avatar {
+    border: 3px solid #004284;
+}
+
+/* Dating: faint single ring */
+.ft-person.ft-dating .ft-avatar {
+    border-color: #d4a0a8;
+}
+.ft-person.ft-dating.ft-player .ft-avatar {
+    border: 2px solid #d4a0a8;
+}
+
+/* Engaged: solid rose-gold ring */
+.ft-person.ft-engaged .ft-avatar {
+    border: 3px solid #b76e79;
+}
+.ft-person.ft-engaged.ft-player .ft-avatar {
+    border: 3px solid #b76e79;
+}
+
+/* Married: full double ring */
+.ft-person.ft-married .ft-avatar {
+    border-color: #b76e79;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #b76e79;
+}
+.ft-person.ft-married.ft-player .ft-avatar {
+    border: 3px solid #b76e79;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #b76e79;
+}
+
+.ft-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.2em;
+    border: 2px solid #ccc;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.ft-avatar:hover {
+    transform: scale(1.08);
+}
+
+.ft-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ft-avatar-sm {
+    width: 45px;
+    height: 45px;
+    font-size: 0.9em;
+}
+
+.ft-initials {
+    font-size: inherit;
+    line-height: 1;
+    user-select: none;
+}
+
+.ft-name {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.2;
+}
+
+.ft-name a {
+    color: #004284;
+    text-decoration: none;
+}
+
+.ft-name a:hover {
+    text-decoration: underline;
+}
+
+.ft-surname {
+    font-size: 0.7em;
+    color: #888;
+    line-height: 1.2;
+}
+
+.ft-deceased-icon {
+    font-size: 0.7em;
+    color: #999;
+    margin-left: 2px;
+}
+
+/* ── Children connector lines ── */
+
+.ft-children-connector {
+    width: 2px;
+    height: 30px;
+    background: #004284;
+}
+
+.ft-children {
+    display: flex;
+    gap: 25px;
+    position: relative;
+    padding-top: 30px;
+}
+
+/* Horizontal bar spanning all children */
+.ft-children::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    right: 50%;
+    height: 2px;
+    background: #004284;
+}
+
+/* Only expand the bar if there are multiple children */
+.ft-children:has(> .ft-family-unit:nth-child(2))::before {
+    left: calc(50% / var(--child-count, 1));
+    right: calc(50% / var(--child-count, 1));
+}
+
+/* Each child gets a vertical line from the horizontal bar */
+.ft-children > .ft-family-unit {
+    position: relative;
+}
+
+.ft-children > .ft-family-unit::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    width: 2px;
+    height: 30px;
+    background: #004284;
+    transform: translateX(-50%);
+}
+
+/* When there's only one child, just a straight line */
+.ft-children:has(> .ft-family-unit:only-child)::before {
+    display: none;
+}
+
+/* Multiple children: bar from first to last child center */
+.ft-children:has(> .ft-family-unit:nth-child(2))::before {
+    left: 0;
+    right: 0;
+}
+
+/* Adjust bar to span only between first and last child centers */
+.ft-children > .ft-family-unit:first-child ~ .ft-family-unit:last-child ~ .ft-children::before,
+.ft-children::before {
+    /* The bar spans full width; children's ::before connectors drop down from it */
+}
+
+/* ── Friends section ── */
+
+.ft-friends {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 15px 0;
+}
+
+.ft-friend-card {
+    text-align: center;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 10px;
+    border: 1px dashed #ccc;
+    min-width: 130px;
+}
+
+.ft-friend-name {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #333;
+    margin-top: 6px;
+}
+
+.ft-friend-relation {
+    font-size: 0.75em;
+    color: #999;
+    margin-top: 2px;
+}
+
+.ft-extended-card {
+    border-style: solid;
+    border-color: #b76e79;
+    background: #fdf6f7;
+}
+
+/* ── Family tree mobile ── */
+
+@media screen and (max-width: 767px) {
+    .ft-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 1em;
+    }
+    .ft-person {
+        min-width: 65px;
+        padding: 5px;
+    }
+    .ft-name {
+        font-size: 0.75em;
+    }
+    .ft-surname {
+        font-size: 0.6em;
+    }
+    .ft-children {
+        gap: 10px;
+    }
+    .ft-partner-line {
+        width: 24px;
+    }
+    .ft-partner-label {
+        font-size: 7px;
+    }
+    .ft-avatar-sm {
+        width: 36px;
+        height: 36px;
+        font-size: 0.75em;
+    }
+}
+
