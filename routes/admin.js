@@ -629,6 +629,9 @@ router.get("/teams", function (req, res) {
 });
 
 router.post("/teams/:teamId", function (req, res) {
+  var TeamImage = require("../models/teamImage");
+  var teamAliases = require("../helpers/teamAliases");
+
   var update = {};
 
   if (req.body.name) {
@@ -649,19 +652,40 @@ router.post("/teams/:teamId", function (req, res) {
     update.aliases = [];
   }
 
-  Team.findByIdAndUpdate(
-    req.params.teamId,
-    { $set: update },
-    function (err, team) {
-      if (err) {
-        console.log(err);
-        req.flash("error", "Error updating team.");
-        return res.redirect("/admin/teams");
+  // If the name changed, look up the correct team image
+  if (update.name) {
+    TeamImage.find({}, function (err, allTeamImages) {
+      allTeamImages = allTeamImages || [];
+      var matched = allTeamImages.find(function (ti) {
+        return teamAliases.teamsMatch(update.name, ti.name, update.aliases);
+      });
+      if (matched) {
+        update.image = matched.image;
+        console.log("[ADMIN] Team renamed to " + update.name + " — matched image from " + matched.name);
+      } else {
+        console.log("[ADMIN] Team renamed to " + update.name + " — no matching TeamImage found");
       }
-      req.flash("success", "Updated " + (update.name || "team") + ".");
-      res.redirect("/admin/teams");
-    },
-  );
+      saveTeam();
+    });
+  } else {
+    saveTeam();
+  }
+
+  function saveTeam() {
+    Team.findByIdAndUpdate(
+      req.params.teamId,
+      { $set: update },
+      function (err, team) {
+        if (err) {
+          console.log(err);
+          req.flash("error", "Error updating team.");
+          return res.redirect("/admin/teams");
+        }
+        req.flash("success", "Updated " + (update.name || "team") + ".");
+        res.redirect("/admin/teams");
+      },
+    );
+  }
 });
 
 // ─── Toggle Official Group ──────────────────────────────────────────────────
