@@ -44,6 +44,15 @@ mongoose.connect(process.env.DATABASE_URL_PROD, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
+mongoose.connection.on("error", function (err) {
+  console.error("[MongoDB] Connection error:", err.message);
+});
+// Promise that resolves to the MongoClient once connected (used by session store)
+var mongoClientPromise = new Promise(function (resolve) {
+  mongoose.connection.on("connected", function () {
+    resolve(mongoose.connection.getClient());
+  });
+});
 
 // Force HTTPS on Heroku (load balancer sets x-forwarded-proto)
 app.use(function (req, res, next) {
@@ -68,11 +77,18 @@ app.locals.moment = require("moment-timezone");
 // scrapeTeams();
 
 // PASSPORT CONFIGURATION
+var MongoStore = require("connect-mongo").MongoStore;
 app.use(
   require("express-session")({
     secret: process.env.SESSION_SECRET || "fallback-dev-secret",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      clientPromise: mongoClientPromise,
+    }),
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+    },
   }),
 );
 app.use(passport.initialize());
