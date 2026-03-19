@@ -848,15 +848,59 @@ middlewareObj.userRoundCreation = function (req, res, next) {
         res.redirect("back");
       } else {
         res.locals.userFirstName = foundUserTournament.user.firstName;
+        res.locals.targetUserId = foundUserTournament.user.id;
         var numRound = Number(req.params.numRound);
-        if (numRound === 7) {
-          numRound = 4;
-        } else if (numRound === 8) {
-          numRound = 6;
+        var actualRoundIndex = numRound;
+        if (actualRoundIndex === 7) {
+          actualRoundIndex = 4;
+        } else if (actualRoundIndex === 8) {
+          actualRoundIndex = 6;
         }
+
+        // Clean up any existing UserRound for this numRound (handles pick edits)
+        var oldUserRoundIds = [];
+        var oldPredictionIds = [];
+
+        UserRound.find({
+          _id: { $in: foundUserTournament.userRounds },
+          $or: [
+            { "round.numRound": req.params.numRound },
+            { "round.numRound": Number(req.params.numRound) },
+          ],
+        }).exec(function (err, oldUserRounds) {
+          if (err) console.log("[EDIT CLEANUP] Error finding old user rounds:", err);
+
+          if (oldUserRounds && oldUserRounds.length > 0) {
+            oldUserRounds.forEach(function (oldUR) {
+              oldUserRoundIds.push(oldUR._id);
+              oldUR.userMatchPredictions.forEach(function (pId) {
+                oldPredictionIds.push(pId);
+              });
+            });
+
+            // Remove old UserRound refs from the UserTournament
+            oldUserRoundIds.forEach(function (oldId) {
+              foundUserTournament.userRounds.pull(oldId);
+            });
+
+            // Delete old UserMatchPredictions and UserRounds, then create new one
+            console.log("[EDIT CLEANUP] Removing " + oldUserRoundIds.length + " old UserRound(s) for round " + req.params.numRound);
+            UserMatchPrediction.deleteMany({ _id: { $in: oldPredictionIds } }, function (err) {
+              if (err) console.log("[EDIT CLEANUP] Error deleting old predictions:", err);
+              UserRound.deleteMany({ _id: { $in: oldUserRoundIds } }, function (err) {
+                if (err) console.log("[EDIT CLEANUP] Error deleting old user rounds:", err);
+                createNewUserRound();
+              });
+            });
+          } else {
+            createNewUserRound();
+          }
+        });
+
+        function createNewUserRound() {
         //find the tournament round associated with this userRound
         Round.findById(
-          foundUserTournament.tournamentReference.id.rounds[numRound - 1],
+          foundUserTournament.tournamentReference.id.rounds[actualRoundIndex - 1],
         )
           .populate("matches")
           .exec(function (err, foundRound) {
@@ -928,6 +972,7 @@ middlewareObj.userRoundCreation = function (req, res, next) {
               });
             }
           });
+        } // end createNewUserRound
       }
     });
 };
@@ -961,8 +1006,15 @@ middlewareObj.updateUserMatchAggregates = function (req, res, next) {
     function (err, foundTournamentGroup) {
       if (err) console.log(err);
       else {
-        async.forEachSeries(
-          res.locals.newUserRound.userMatchPredictions,
+        // Clean up stale picker entries before adding new ones (handles pick edits)
+        // Use targetUserId (the user whose picks are being created/edited), NOT currentUser
+        // (currentUser could be an admin editing on behalf of someone else)
+        var userId = res.locals.targetUserId || res.locals.currentUser._id;
+        var groupId = foundTournamentGroup.id;
+
+        function cleanupThenProcess() {
+          async.forEachSeries(
+            res.locals.newUserRound.userMatchPredictions,
           function (userPrediction, next) {
             Match.findOne({ _id: userPrediction.match.id })
               .populate("topTeam")
@@ -1020,7 +1072,7 @@ middlewareObj.updateUserMatchAggregates = function (req, res, next) {
                               // If userMatchPrediction picks the topTeam…assign name and comments to topTeamPickerArray
                               // Otherwise assign name and comments to BottomPickerArray
                               var packedPrediction = {
-                                id: res.locals.currentUser._id,
+                                id: userId,
                                 firstName: res.locals.userFirstName,
                                 comment: userPrediction.comment,
                               };
@@ -1106,7 +1158,7 @@ middlewareObj.updateUserMatchAggregates = function (req, res, next) {
                                   function (callback) {
                                     //  Assign name and comments to teamPickers array
                                     var packedPrediction = {
-                                      id: userPrediction._id,
+                                      id: userId,
                                       firstName: res.locals.userFirstName,
                                       comment: userPrediction.comment,
                                     };
@@ -1142,6 +1194,45 @@ middlewareObj.updateUserMatchAggregates = function (req, res, next) {
             }
           },
         );
+        } // end cleanupThenProcess
+
+        // Determine which matches are being updated, then remove user from those aggregates first
+        var matchIds = res.locals.newUserRound.userMatchPredictions.map(function (p) {
+          return p.match.id;
+        });
+
+        if (req.params.numRound < 7) {
+          // Regular rounds: remove user from topTeamPickers and bottomTeamPickers
+          UserMatchAggregate.updateMany(
+            { tournamentGroup: groupId, matchReference: { $in: matchIds } },
+            {
+              $pull: {
+                topTeamPickers: { id: userId },
+                bottomTeamPickers: { id: userId },
+              },
+            },
+            function (err) {
+              if (err) console.log("[AGG CLEANUP] Error cleaning regular aggregates:", err);
+              cleanupThenProcess();
+            }
+          );
+        } else if (Number(req.params.numRound) === 7 || Number(req.params.numRound) === 8) {
+          // Bonus rounds: remove user from all BonusAggregate teamPickers for this group's matches
+          BonusAggregate.updateMany(
+            { tournamentGroup: groupId, matchReference: { $in: matchIds } },
+            {
+              $pull: {
+                teamPickers: { id: userId },
+              },
+            },
+            function (err) {
+              if (err) console.log("[AGG CLEANUP] Error cleaning bonus aggregates:", err);
+              cleanupThenProcess();
+            }
+          );
+        } else {
+          cleanupThenProcess();
+        }
       }
     },
   );
