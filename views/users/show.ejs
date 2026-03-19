@@ -1,11 +1,16 @@
 <% include ../partials/header %>
 
 <%
-  // Sort trophies by year descending (most recent first)
-  var sortedTrophies = user.trophies.slice().sort(function(a, b) { return b.year - a.year; });
+  // Sort trophies by year descending, then rank ascending within same year
+  var sortedTrophies = user.trophies.slice().sort(function(a, b) {
+    if (b.year !== a.year) return b.year - a.year;
+    return a.userRank - b.userRank;
+  });
 
-  // Stats calculations
-  var totalTournaments = sortedTrophies.length;
+  // Stats calculations — count unique years for "Tournaments" (a user in 3 groups gets 3 trophies per year)
+  var uniqueYears = {};
+  sortedTrophies.forEach(function(t) { uniqueYears[t.year] = true; });
+  var totalTournaments = Object.keys(uniqueYears).length;
   var wins = sortedTrophies.filter(function(t) { return t.userRank === 1; }).length;
   var bestFinish = totalTournaments > 0
     ? Math.min.apply(null, sortedTrophies.map(function(t) { return t.userRank; }))
@@ -21,6 +26,12 @@
     var s = ["th", "st", "nd", "rd"];
     var v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  // Group name display helper — strip trailing 4-digit year since trophy card already shows year
+  function displayGroupName(trophy) {
+    if (!trophy.groupName) return 'McNaughton Family Group';
+    return trophy.groupName.replace(/\s+\d{4}$/, '');
   }
 
   // Trophy tier helper — determines tier from rank, totalPlayers, and madeAllPicks
@@ -174,13 +185,15 @@
     <div class="profile-trophy-grid">
         <% sortedTrophies.forEach(function(trophy) { %>
             <% var tc = renderTrophyCard(trophy); %>
-            <a href="/tournamentStandings#year-<%= trophy.year %>" class="<%= tc.cardClass %>" style="text-decoration: none; color: inherit; display: block;">
+            <% var trophyHref = trophy.groupName ? '/tournamentGroups/' + encodeURIComponent(trophy.groupName) : '/tournamentStandings#year-' + trophy.year; %>
+            <a href="<%= trophyHref %>" class="<%= tc.cardClass %>" style="text-decoration: none; color: inherit; display: block;">
                 <div class="profile-trophy-img-wrap">
                     <img src="<%= tc.imgSrc %>" alt="Trophy">
                 </div>
                 <div class="profile-trophy-info">
                     <span class="profile-trophy-year"><%= trophy.year %></span>
                     <span class="profile-trophy-rank"><%- tc.label %></span>
+                    <span class="profile-trophy-group"><%= displayGroupName(trophy) %></span>
                     <span class="profile-trophy-score"><%= ordinal(trophy.userRank) %> of <%= trophy.totalPlayers %> &middot; <%= trophy.score.toFixed(3) %> pts</span>
                 </div>
             </a>

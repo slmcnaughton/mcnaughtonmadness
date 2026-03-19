@@ -48,7 +48,9 @@
           <% users.forEach(function(user) { %>
             <%
               var sortedTrophies = (user.trophies || []).slice().sort(function(a, b) { return b.year - a.year; });
-              var totalTournaments = sortedTrophies.length;
+              var uniqueYears = {};
+              sortedTrophies.forEach(function(t) { uniqueYears[t.year] = true; });
+              var totalTournaments = Object.keys(uniqueYears).length;
               var bestFinish = totalTournaments > 0
                 ? Math.min.apply(null, sortedTrophies.map(function(t) { return t.userRank; }))
                 : 0;

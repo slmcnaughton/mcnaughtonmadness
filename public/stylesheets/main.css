@@ -1789,6 +1789,12 @@ footer {
     font-weight: 600;
 }
 
+.profile-trophy-group {
+    font-size: 0.78em;
+    color: #777;
+    font-style: italic;
+}
+
 .profile-trophy-score {
     font-size: 0.8em;
     color: #888;

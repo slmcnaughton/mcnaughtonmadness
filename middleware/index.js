@@ -15,6 +15,8 @@ var BonusAggregate = require("../models/bonusAggregate");
 var emailHelper = require("./emailHelper");
 var teamAliases = require("../helpers/teamAliases");
 var scoring = require("../helpers/scoring");
+var Trophy = require("../models/trophy");
+var User = require("../models/user");
 
 var middlewareObj = {};
 
@@ -177,6 +179,10 @@ middlewareObj.scrapeUpdateResults = function (parsedResults) {
       } else if (!foundTournament) {
         console.log("no tournament found");
       } else {
+        // Tournament is complete — no more rounds to process
+        if (foundTournament.currentRound > foundTournament.rounds.length) {
+          return;
+        }
         var round = foundTournament.rounds[foundTournament.currentRound - 1];
         var roundMatchIndex = 0;
         async.forEach(
@@ -735,13 +741,25 @@ var isRoundComplete = function (updatedMatches, done) {
                       foundTournamentGroup,
                       function (group, next) {
                         group.currentRound++;
-                        group.save();
-                        emailHelper.sendRoundSummary(group);
-                        next();
+                        group.save(function (err) {
+                          if (err) console.log("[ROUND] Error saving group round:", err);
+                          emailHelper.sendRoundSummary(group);
+                          next();
+                        });
                       },
                       function (err) {
                         if (err) console.log(err);
-                        done();
+
+                        // Check if tournament is complete (currentRound exceeded rounds array)
+                        if (foundTournament.currentRound > foundTournament.rounds.length) {
+                          console.log("[TOURNAMENT] Tournament " + foundTournament.year + " complete! Auto-awarding trophies...");
+                          awardGroupTrophies(foundTournament.year, function (err) {
+                            if (err) console.log("[TROPHY] Error during auto-award:", err);
+                            done();
+                          });
+                        } else {
+                          done();
+                        }
                       },
                     );
                   }
@@ -1202,5 +1220,140 @@ middlewareObj.checkUserPickStatus = function (userId, groupName, callback) {
         });
     });
 };
+
+// ─── Award Per-Group Trophies ────────────────────────────────────────────────
+// Creates one trophy per user per group they belong to, ranked within each group.
+// Idempotent: deletes all trophies for the year before re-creating.
+// Called automatically when tournament ends (isRoundComplete) and manually via admin finalize.
+// Guarded against concurrent execution (e.g., auto-trigger + admin click at the same time).
+
+var _awardingInProgress = {};
+
+var awardGroupTrophies = function (year, done) {
+  if (_awardingInProgress[year]) {
+    console.log("[TROPHY] Award already in progress for " + year + ", skipping duplicate call.");
+    return done(null, 0);
+  }
+  _awardingInProgress[year] = true;
+
+  console.log("[TROPHY] Starting per-group trophy award for " + year);
+
+  TournamentGroup.find({ year: year })
+    .populate({
+      path: "userTournaments",
+      populate: [
+        { path: "user.id" },
+        { path: "userRounds" },
+      ],
+    })
+    .exec(function (err, allGroups) {
+      if (err || !allGroups || allGroups.length === 0) {
+        console.log("[TROPHY] Error or no groups found:", err);
+        _awardingInProgress[year] = false;
+        return done(err);
+      }
+
+      // Step A: Delete existing trophies for this year (idempotent re-run)
+      Trophy.find({ year: year }, function (err, oldTrophies) {
+        if (err) console.log("[TROPHY] Error finding old trophies:", err);
+
+        var oldTrophyIds = (oldTrophies || []).map(function (t) { return t._id; });
+
+        if (oldTrophyIds.length > 0) {
+          User.updateMany(
+            { trophies: { $in: oldTrophyIds } },
+            { $pull: { trophies: { $in: oldTrophyIds } } },
+            function (err) {
+              if (err) console.log("[TROPHY] Error removing old trophy refs:", err);
+              Trophy.deleteMany({ year: year }, function (err) {
+                if (err) console.log("[TROPHY] Error deleting old trophies:", err);
+                createGroupTrophies();
+              });
+            }
+          );
+        } else {
+          createGroupTrophies();
+        }
+
+        // Step B: For each group, calculate standings and create trophies
+        function createGroupTrophies() {
+          var totalCreated = 0;
+
+          async.eachSeries(allGroups, function (group, nextGroup) {
+            if (!group.userTournaments || group.userTournaments.length === 0) {
+              return nextGroup();
+            }
+
+            // Sort by score descending
+            var participants = group.userTournaments.slice().sort(function (a, b) {
+              return b.score - a.score;
+            });
+
+            var totalPlayers = participants.length;
+
+            // Determine max rounds for madeAllPicks calculation
+            var maxRounds = 0;
+            participants.forEach(function (ut) {
+              var roundCount = ut.userRounds ? ut.userRounds.length : 0;
+              if (roundCount > maxRounds) maxRounds = roundCount;
+            });
+
+            async.eachSeries(participants, function (ut, nextParticipant) {
+              // Calculate rank (1-based, ties share same rank)
+              var score = Math.round(ut.score * 1000) / 1000;
+              var rank = 1;
+              participants.forEach(function (other) {
+                if (Math.round(other.score * 1000) / 1000 > score) rank++;
+              });
+
+              var roundCount = ut.userRounds ? ut.userRounds.length : 0;
+
+              // ut.user.id is populated to the full User document
+              var userId = ut.user.id._id || ut.user.id;
+              User.findById(userId, function (err, user) {
+                if (err || !user) {
+                  console.log("[TROPHY] No user found for " + (ut.user.firstName || "unknown"));
+                  return nextParticipant();
+                }
+
+                Trophy.create({
+                  year: year,
+                  userRank: rank,
+                  totalPlayers: totalPlayers,
+                  score: score,
+                  madeAllPicks: roundCount >= maxRounds,
+                  groupId: group._id,
+                  groupName: group.groupName,
+                }, function (err, trophy) {
+                  if (err) {
+                    console.log("[TROPHY] Error creating trophy:", err);
+                    return nextParticipant();
+                  }
+
+                  user.trophies.addToSet(trophy._id);
+                  user.save(function (err) {
+                    if (err) console.log("[TROPHY] Error saving user trophy:", err);
+                    totalCreated++;
+                    nextParticipant();
+                  });
+                });
+              });
+            }, function (err) {
+              if (err) console.log("[TROPHY] Error in group " + group.groupName + ":", err);
+              console.log("[TROPHY] Completed group: " + group.groupName + " (" + totalPlayers + " players)");
+              nextGroup();
+            });
+          }, function (err) {
+            if (err) console.log("[TROPHY] Error:", err);
+            console.log("[TROPHY] Finished! Created " + totalCreated + " trophies across " + allGroups.length + " groups for " + year);
+            _awardingInProgress[year] = false;
+            done(null, totalCreated);
+          });
+        }
+      });
+    });
+};
+
+middlewareObj.awardGroupTrophies = awardGroupTrophies;
 
 module.exports = middlewareObj;

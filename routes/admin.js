@@ -746,7 +746,7 @@ router.post("/groups/:groupName/toggle-official", function (req, res) {
 router.post("/finalize-tournament", function (req, res) {
   var year = new Date().getFullYear();
 
-  // 1. Find all official groups for this year (include userRounds for madeAllPicks check)
+  // 1. Build TournamentStanding from official groups (for Previous Standings page)
   TournamentGroup.find({ year: year, isOfficial: true })
     .populate({ path: "userTournaments", populate: ["user", "userRounds"] })
     .exec(function (err, officialGroups) {
@@ -756,18 +756,9 @@ router.post("/finalize-tournament", function (req, res) {
         return res.redirect("/admin");
       }
 
-      if (!officialGroups || officialGroups.length === 0) {
-        req.flash(
-          "error",
-          "No official groups found for " + year + ". Mark a group as official first.",
-        );
-        return res.redirect("/admin");
-      }
-
-      // 2. Collect standings from all official groups, deduplicate by name
-      var standingsMap = {}; // key: "firstName|lastName" → { firstName, lastName, score, roundCount }
-
-      officialGroups.forEach(function (group) {
+      // Collect standings from official groups, deduplicate by name (for Previous Standings)
+      var standingsMap = {};
+      (officialGroups || []).forEach(function (group) {
         if (!group.userTournaments) return;
         group.userTournaments.forEach(function (ut) {
           var key = ut.user.firstName + "|" + ut.user.lastName;
@@ -784,32 +775,16 @@ router.post("/finalize-tournament", function (req, res) {
         });
       });
 
-      // Determine max rounds any participant completed (expected total)
-      var maxRounds = 0;
-      Object.keys(standingsMap).forEach(function (key) {
-        if (standingsMap[key].roundCount > maxRounds) maxRounds = standingsMap[key].roundCount;
-      });
-
       var standings = Object.keys(standingsMap).map(function (key) {
         return standingsMap[key];
       });
 
-      if (standings.length === 0) {
-        req.flash("error", "No user scores found in official groups.");
-        return res.redirect("/admin");
-      }
-
       console.log(
-        "[ADMIN] Finalizing " +
-          year +
-          " tournament with " +
-          standings.length +
-          " participants from " +
-          officialGroups.length +
-          " official group(s).",
+        "[ADMIN] Finalizing " + year + " tournament — " +
+          standings.length + " official-group participants, awarding per-group trophies.",
       );
 
-      // 3. Upsert TournamentStanding for idempotency
+      // 2. Upsert TournamentStanding (used by Previous Standings page)
       TournamentStanding.findOneAndUpdate(
         { year: year },
         { year: year, standings: standings },
@@ -821,103 +796,19 @@ router.post("/finalize-tournament", function (req, res) {
             return res.redirect("/admin");
           }
 
-          // 4. Delete any existing trophies for this year (idempotent re-run)
-          Trophy.find({ year: year }, function (err, oldTrophies) {
-            if (err) console.log("Error finding old trophies:", err);
+          // 3. Award per-group trophies using the shared helper
+          middleware.awardGroupTrophies(year, function (err) {
+            if (err) {
+              console.log("[ADMIN] Trophy error:", err);
+              req.flash("error", "Error awarding trophies: " + err.message);
+              return res.redirect("/admin");
+            }
 
-            var oldTrophyIds = (oldTrophies || []).map(function (t) {
-              return t._id;
-            });
-
-            // Remove old trophy refs from all users, then delete the trophy docs
-            User.updateMany(
-              { trophies: { $in: oldTrophyIds } },
-              { $pull: { trophies: { $in: oldTrophyIds } } },
-              function (err) {
-                if (err) console.log("Error removing old trophy refs:", err);
-
-                Trophy.deleteMany({ year: year }, function (err) {
-                  if (err) console.log("Error deleting old trophies:", err);
-
-            // 5. For each standing entry, create trophy and assign to user
-            var totalPlayers = standings.length;
-            var created = 0;
-
-            async.eachSeries(
-              standings,
-              function (entry, next) {
-                // Calculate rank
-                var rank = 1;
-                standings.forEach(function (other) {
-                  if (other.score > entry.score) rank++;
-                });
-
-                // Find matching user
-                User.findOne(
-                  {
-                    firstName: entry.firstName,
-                    lastName: entry.lastName,
-                  },
-                  function (err, user) {
-                    if (err || !user) {
-                      console.log(
-                        "[TROPHY] No user found for " +
-                          entry.firstName +
-                          " " +
-                          entry.lastName,
-                      );
-                      return next();
-                    }
-
-                    // Create trophy (madeAllPicks = completed same # of rounds as the top participant)
-                    Trophy.create(
-                      {
-                        year: year,
-                        userRank: rank,
-                        totalPlayers: totalPlayers,
-                        score: entry.score,
-                        madeAllPicks: entry.roundCount >= maxRounds,
-                      },
-                      function (err, trophy) {
-                        if (err) {
-                          console.log("Error creating trophy:", err);
-                          return next();
-                        }
-
-                        user.trophies.addToSet(trophy._id);
-                        user.save(function (err) {
-                          if (err) console.log("Error saving user trophy:", err);
-                          created++;
-                          next();
-                        });
-                      },
-                    );
-                  },
-                );
-              },
-              function (err) {
-                if (err) console.log(err);
-                console.log(
-                  "[ADMIN] Finalized! Created " +
-                    created +
-                    " trophies for " +
-                    year +
-                    ".",
-                );
-                req.flash(
-                  "success",
-                  "Tournament finalized! Created " +
-                    created +
-                    " trophies for " +
-                    totalPlayers +
-                    " participants.",
-                );
-                res.redirect("/admin");
-              },
+            req.flash(
+              "success",
+              "Tournament finalized! Per-group trophies awarded for all " + year + " groups.",
             );
-                });
-              },
-            );
+            res.redirect("/admin");
           });
         },
       );
@@ -984,16 +875,18 @@ router.post("/merge", function (req, res) {
         " (" + target.username + ")",
       );
 
-      // Step 1: Transfer trophies from source to target (skip years target already has)
-      var targetTrophyYears = {};
+      // Step 1: Transfer trophies from source to target (skip duplicates by year + groupId)
+      var targetTrophyKeys = {};
       target.trophies.forEach(function (t) {
-        targetTrophyYears[t.year] = true;
+        var key = t.year + "|" + (t.groupId ? String(t.groupId) : "null");
+        targetTrophyKeys[key] = true;
       });
       source.trophies.forEach(function (trophy) {
-        if (!targetTrophyYears[trophy.year]) {
+        var key = trophy.year + "|" + (trophy.groupId ? String(trophy.groupId) : "null");
+        if (!targetTrophyKeys[key]) {
           target.trophies.addToSet(trophy._id || trophy);
         } else {
-          console.log("[MERGE] Skipping duplicate trophy for year " + trophy.year);
+          console.log("[MERGE] Skipping duplicate trophy for year " + trophy.year + " group " + (trophy.groupName || "legacy"));
         }
       });
 

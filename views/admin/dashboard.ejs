@@ -514,25 +514,19 @@
         <%
           var officialGroups = groups.filter(function(g) { return g.isOfficial; });
         %>
-        <% if(officialGroups.length === 0) { %>
-          <p class="text-muted">No official groups marked. Use the "Make Official" button above to designate which group(s) count for trophies.</p>
-        <% } else { %>
-          <p>
-            Official group<%= officialGroups.length > 1 ? 's' : '' %>:
-            <% officialGroups.forEach(function(g, i) { %>
-              <strong><%= g.groupName %></strong><%= i < officialGroups.length - 1 ? ', ' : '' %>
-            <% }); %>
-          </p>
-          <p class="text-muted" style="margin-bottom: 12px;">
-            This will create a historical standing record and assign trophies to all participants based on final scores.
-            Safe to run multiple times (replaces previous trophies for this year).
-          </p>
-          <form action="/admin/finalize-tournament" method="POST">
-            <button type="submit" class="btn btn-warning btn-lg" onclick="return confirm('Finalize the <%= year %> tournament and assign trophies? Make sure all scores are final before proceeding.');">
-              <i class="fas fa-trophy"></i> Finalize <%= year %> Tournament & Assign Trophies
-            </button>
-          </form>
-        <% } %>
+        <p class="text-muted" style="margin-bottom: 8px;">
+          Awards per-group trophies to participants in <strong>every</strong> <%= year %> group, ranked within each group.
+          Also creates a historical standing record from official groups.
+          Safe to run multiple times (replaces previous trophies for this year).
+        </p>
+        <p class="text-muted" style="margin-bottom: 12px;">
+          <strong>Note:</strong> Trophies are also auto-awarded when the championship game result is entered. This button is a manual fallback.
+        </p>
+        <form action="/admin/finalize-tournament" method="POST">
+          <button type="submit" class="btn btn-warning btn-lg" onclick="return confirm('Finalize the <%= year %> tournament? This will award per-group trophies to ALL groups and create historical standings. Make sure all scores are final.');">
+            <i class="fas fa-trophy"></i> Finalize <%= year %> Tournament & Award Per-Group Trophies
+          </button>
+        </form>
       </div>
     </div>
   </div>
