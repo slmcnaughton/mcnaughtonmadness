@@ -1428,7 +1428,32 @@ body {
 
 #pup {
     width: 200px;
-    z-index: 200; 
+    z-index: 200;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.aggregateBox {
+    width: 420px;
+}
+
+.picker-names {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 2px 6px 4px;
+    gap: 1px 0;
+}
+
+.picker-name {
+    flex: 0 0 50%;
+    font-size: 0.85em;
+    padding: 1px 0;
+    box-sizing: border-box;
+}
+
+.picker-comment {
+    font-size: 0.85em;
+    color: #555;
 }
 
 /*the bonusPicks are only useful for hovering, so we won't show on phone/tablet layouts*/

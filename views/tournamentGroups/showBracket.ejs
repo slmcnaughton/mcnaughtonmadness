@@ -104,7 +104,7 @@
                                                         </div>
                                                         <!--end match-->
                                                         
-                                                        <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "width: 500px; display: none;">
+                                                        <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style="display: none;">
                                                             <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
                                                             <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
                                                                 <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
@@ -120,9 +120,9 @@
                                                                         <div class="teamHeader">
                                                                             <%var winScore = Math.round(agg.topWinScore * 100)/100 %>
                                                                             <%var lossScore = Math.round(agg.topLossScore * 100)/100 %>
-                                                                            <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong></h5>
+                                                                            <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong> (<%= agg.topTeamPickers.length %>)</h5>
                                                                             <h6 style="display: inline-block; float: right;">(
-                                                                                <% if (!match.winner) { %> 
+                                                                                <% if (!match.winner) { %>
                                                                                     +<%=winScore%> or <%=lossScore%>
                                                                                 <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
                                                                                    +<%=winScore%>
@@ -132,16 +132,13 @@
                                                                             )</h6>
                                                                         </div>
                                                                         <% if (!hidePickerNames) { %>
-                                                                        <ul>
+                                                                        <div class="picker-names">
                                                                             <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
-                                                                                <li>
-                                                                                    <strong><%= agg.topTeamPickers[k].firstName %></strong>
-                                                                                    <% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0 ) { %>
-                                                                                        <em>- <%= agg.topTeamPickers[k].comment %></em>
-                                                                                    <% } %>
-                                                                                </li>
+                                                                                <span class="picker-name">
+                                                                                    <%= agg.topTeamPickers[k].firstName %><% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.topTeamPickers[k].comment %></em><% } %>
+                                                                                </span>
                                                                             <% } %>
-                                                                        </ul>
+                                                                        </div>
                                                                         <% } else { %>
                                                                         <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                                                         <% } %>
@@ -157,9 +154,9 @@
                                                                         <div class="teamHeader">
                                                                             <%var winScore = Math.round(agg.bottomWinScore * 100)/100 %>
                                                                             <%var lossScore = Math.round(agg.bottomLossScore * 100)/100 %>
-                                                                            <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong></h5>
+                                                                            <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong> (<%= agg.bottomTeamPickers.length %>)</h5>
                                                                             <h6 style="display: inline-block; float: right;">(
-                                                                                <% if (!match.winner) { %> 
+                                                                                <% if (!match.winner) { %>
                                                                                     +<%=winScore%> or <%=lossScore%>
                                                                                 <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
                                                                                    +<%=winScore%>
@@ -169,16 +166,13 @@
                                                                             )</h6>
                                                                         </div>
                                                                         <% if (!hidePickerNames) { %>
-                                                                        <ul>
+                                                                        <div class="picker-names">
                                                                             <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
-                                                                                <li>
-                                                                                    <strong><%= agg.bottomTeamPickers[k].firstName %></strong>
-                                                                                    <% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0 ) { %>
-                                                                                        <em>- <%= agg.bottomTeamPickers[k].comment %></em>
-                                                                                    <% } %>
-                                                                                </li>
+                                                                                <span class="picker-name">
+                                                                                    <%= agg.bottomTeamPickers[k].firstName %><% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.bottomTeamPickers[k].comment %></em><% } %>
+                                                                                </span>
                                                                             <% } %>
-                                                                        </ul>
+                                                                        </div>
                                                                         <% } else { %>
                                                                         <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                                                         <% } %>
@@ -274,9 +268,9 @@
                                                             <div class="teamHeader">
                                                                 <%var winScore = Math.round(agg.topWinScore * 10000)/10000 %>
                                                                 <%var lossScore = Math.round(agg.topLossScore * 10000)/10000 %>
-                                                                <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong></h5>
+                                                                <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong> (<%= agg.topTeamPickers.length %>)</h5>
                                                                 <h6 style="display: inline-block; float: right;">(
-                                                                    <% if (!match.winner) { %> 
+                                                                    <% if (!match.winner) { %>
                                                                         +<%=winScore%> or <%=lossScore%>
                                                                     <% } else if (String(match.winner) === String(match.topTeam._id)) { %>
                                                                        +<%=winScore%>
@@ -285,16 +279,13 @@
                                                                     <% } %>
                                                                 )</h6>
                                                             </div>
-                                                            <ul>
+                                                            <div class="picker-names">
                                                                 <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
-                                                                    <li>
-                                                                        <%= agg.topTeamPickers[k].firstName %>
-                                                                        <% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0 ) { %>
-                                                                            <em>- <%= agg.topTeamPickers[k].comment %></em>
-                                                                        <% } %>
-                                                                    </li>
+                                                                    <span class="picker-name">
+                                                                        <%= agg.topTeamPickers[k].firstName %><% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.topTeamPickers[k].comment %></em><% } %>
+                                                                    </span>
                                                                 <% } %>
-                                                            </ul>
+                                                            </div>
                                                         </div>
                                                    
                                                      <% if (!match.winner) { %> 
@@ -307,9 +298,9 @@
                                                             <div class="teamHeader">
                                                                 <%var winScore = Math.round(agg.bottomWinScore * 10000)/10000 %>
                                                                 <%var lossScore = Math.round(agg.bottomLossScore * 10000)/10000 %>
-                                                                <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong></h5>
+                                                                <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong> (<%= agg.bottomTeamPickers.length %>)</h5>
                                                                 <h6 style="display: inline-block; float: right;">(
-                                                                    <% if (!match.winner) { %> 
+                                                                    <% if (!match.winner) { %>
                                                                         +<%=winScore%> or <%=lossScore%>
                                                                     <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
                                                                        +<%=winScore%>
@@ -319,16 +310,13 @@
                                                                 )</h6>
                                                             </div>
                                                             <% if (!hidePickerNames) { %>
-                                                            <ul>
+                                                            <div class="picker-names">
                                                                 <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
-                                                                    <li>
-                                                                        <%= agg.bottomTeamPickers[k].firstName %>
-                                                                        <% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0 ) { %>
-                                                                            <em>- <%= agg.bottomTeamPickers[k].comment %></em>
-                                                                        <% } %>
-                                                                    </li>
+                                                                    <span class="picker-name">
+                                                                        <%= agg.bottomTeamPickers[k].firstName %><% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.bottomTeamPickers[k].comment %></em><% } %>
+                                                                    </span>
                                                                 <% } %>
-                                                            </ul>
+                                                            </div>
                                                             <% } else { %>
                                                             <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                                             <% } %>
@@ -416,19 +404,16 @@
                                         <div class="bonAggregate loss" >
                                     <% } %>
                                             <div class="teamHeader">
-                                                <h5 style="display: inline-block; "><strong><%=bonAgg[4][j].team.name%></strong></h5>
+                                                <h5 style="display: inline-block; "><strong><%=bonAgg[4][j].team.name%></strong> (<%= bonAgg[4][j].teamPickers.length %>)</h5>
                                             </div>
                                             <% if (!hidePickerNames) { %>
-                                            <ul>
+                                            <div class="picker-names">
                                                 <% for (var k = 0; k < bonAgg[4][j].teamPickers.length; k++) { %>
-                                                    <li>
-                                                        <%= bonAgg[4][j].teamPickers[k].firstName %>
-                                                        <% if(bonAgg[4][j].teamPickers[k].comment && bonAgg[4][j].teamPickers[k].comment.trim().length > 0 ) { %>
-                                                            <em>- <%= bonAgg[4][j].teamPickers[k].comment %></em>
-                                                        <% } %>
-                                                    </li>
+                                                    <span class="picker-name">
+                                                        <%= bonAgg[4][j].teamPickers[k].firstName %><% if(bonAgg[4][j].teamPickers[k].comment && bonAgg[4][j].teamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= bonAgg[4][j].teamPickers[k].comment %></em><% } %>
+                                                    </span>
                                                 <% } %>
-                                            </ul>
+                                            </div>
                                             <% } else { %>
                                             <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                             <% } %>
@@ -470,19 +455,16 @@
                                     <div class="bonAggregate loss" >
                                 <% } %>
                                         <div class="teamHeader">
-                                            <h5 style="display: inline-block; "><strong><%=bonAgg[i][j].team.name%></strong></h5>
+                                            <h5 style="display: inline-block; "><strong><%=bonAgg[i][j].team.name%></strong> (<%= bonAgg[i][j].teamPickers.length %>)</h5>
                                         </div>
                                         <% if (!hidePickerNames) { %>
-                                        <ul>
+                                        <div class="picker-names">
                                             <% for (var k = 0; k < bonAgg[i][j].teamPickers.length; k++) { %>
-                                                <li>
-                                                    <%= bonAgg[i][j].teamPickers[k].firstName %>
-                                                    <% if(bonAgg[i][j].teamPickers[k].comment && bonAgg[i][j].teamPickers[k].comment.trim().length > 0 ) { %>
-                                                        <em>- <%= bonAgg[i][j].teamPickers[k].comment %></em>
-                                                    <% } %>
-                                                </li>
+                                                <span class="picker-name">
+                                                    <%= bonAgg[i][j].teamPickers[k].firstName %><% if(bonAgg[i][j].teamPickers[k].comment && bonAgg[i][j].teamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= bonAgg[i][j].teamPickers[k].comment %></em><% } %>
+                                                </span>
                                             <% } %>
-                                        </ul>
+                                        </div>
                                         <% } else { %>
                                         <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                         <% } %>
