@@ -113,7 +113,7 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
 
 emailObj.sendPickReminderEmail = function () {
   TournamentGroup.find({ year: new Date().getFullYear() })
-    .populate("CurrentRound")
+    .populate({ path: "tournamentReference.id", populate: "rounds" })
     .exec(function (err, foundTournamentGroups) {
       if (err) {
         console.log(err);
@@ -136,7 +136,7 @@ function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
             subject:
               "Make Your Round " +
               tournamentGroup.currentRound +
-              " Picks Now! Tipoff In 3 Hours.",
+              " Picks Now! Tipoff In 2 Hours.",
             to: emailList,
             body: {
               content: buildPickReminderContent(tournamentGroup),
@@ -576,27 +576,59 @@ function ordinalSuffix(n) {
 }
 
 function buildPickReminderContent(tournamentGroup) {
-  var intro =
-    "<p>Hello,</p>" +
-    "<p>You are receiving this because there are just three hours until March Madness Round " +
-    tournamentGroup.currentRound +
-    " tips off.</p>";
+  var groupName = tournamentGroup.groupName;
+  var currentRound = tournamentGroup.currentRound;
+  var groupLink = "https://www.mcnaughtonmadness.com/tournamentGroups/" + groupName;
 
-  var groupLink =
-    "https://www.mcnaughtonmadness.com/tournamentGroups/" +
-    tournamentGroup.groupName;
-  var groupLinkHtml =
-    "<a href=" +
-    groupLink +
-    ">McNaughton Madness: " +
-    tournamentGroup.groupName +
-    "</a>";
-  var linkParagraph =
-    "<p>Go to " + groupLinkHtml + " and login to make your picks now!</p>";
+  // Find the tipoff time for this round
+  var tipoffStr = "";
+  if (tournamentGroup.tournamentReference && tournamentGroup.tournamentReference.id && tournamentGroup.tournamentReference.id.rounds) {
+    var rounds = tournamentGroup.tournamentReference.id.rounds;
+    for (var i = 0; i < rounds.length; i++) {
+      if (rounds[i].numRound === currentRound) {
+        tipoffStr = moment(rounds[i].startTime).tz("America/New_York").format("dddd, MMMM D [at] h:mm A") + " ET";
+        break;
+      }
+    }
+  }
 
-  var closing = "<p>Good luck!</p>";
+  var html = "";
+  html += '<html><head></head><body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background: #f4f4f4;">';
+  html += '<div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 0;">';
 
-  return intro + linkParagraph + closing;
+  // Header banner
+  html += '<div style="background: #1B3A5C; color: #ffffff; padding: 20px 24px; text-align: center;">';
+  html += '<h1 style="margin: 0; font-size: 22px; font-weight: bold;">&#127936; ' + groupName + '</h1>';
+  html += '<p style="margin: 6px 0 0; font-size: 16px; color: #FFA705;">Round ' + currentRound + ' Pick Reminder</p>';
+  html += '</div>';
+
+  // Body
+  html += '<div style="padding: 24px;">';
+  html += '<p style="font-size: 16px; margin: 0 0 16px; color: #333;">You haven\'t submitted your <strong>Round ' + currentRound + '</strong> picks yet!</p>';
+
+  if (tipoffStr) {
+    html += '<div style="background: #FFF9E6; border-left: 4px solid #FFA705; padding: 12px 16px; margin: 0 0 16px;">';
+    html += '<strong>&#9200; Tipoff:</strong> ' + tipoffStr;
+    html += '</div>';
+  }
+
+  html += '<p style="font-size: 15px; margin: 0 0 20px; color: #555;">Picks lock when the round starts. Don\'t miss out!</p>';
+
+  // CTA button
+  html += '<div style="text-align: center;">';
+  html += '<a href="' + groupLink + '" style="display: inline-block; padding: 14px 32px; background: #FFA705; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">Make Your Picks Now</a>';
+  html += '</div>';
+
+  html += '</div>';
+
+  // Footer
+  html += '<div style="padding: 12px 24px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #eee;">';
+  html += '<a href="https://www.mcnaughtonmadness.com" style="color: #999;">McNaughton Madness</a>';
+  html += '</div>';
+
+  html += '</div></body></html>';
+
+  return html;
 }
 
 emailObj.sendUsernameRecovery = async function (req, user) {

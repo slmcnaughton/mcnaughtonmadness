@@ -89,7 +89,7 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                   else {
                     //Schedule email reminders for the round
                     var emailSendTime = moment(createdRound.startTime).add({
-                      hours: -3,
+                      hours: -2,
                     });
                     var k = schedule.scheduleJob(
                       emailSendTime,
@@ -252,7 +252,7 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                         // Regular Year (2021 had a weird schedule)
                         if (i == 0)
                           startTime = moment(startDay).add(
-                            { days: 2, hours: 12, minutes: 45 },
+                            { days: 2, hours: 12, minutes: 10 },
                             "America/New_York",
                           );
                         else if (i == 1)
@@ -305,7 +305,7 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                               //Schedule email reminders for the round
                               var emailSendTime = moment(
                                 createdRound.startTime,
-                              ).add({ hours: -3 });
+                              ).add({ hours: -2 });
                               var k = schedule.scheduleJob(
                                 emailSendTime,
                                 emailHelper.sendPickReminderEmail,
