@@ -1,7 +1,9 @@
 var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
+var Round = require("../models/round");
 var User = require("../models/user");
+var scoring = require("../helpers/scoring");
 require("dotenv").config();
 var async = require("async");
 var { Resend } = require("resend");
@@ -29,38 +31,67 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
       populatedGroup.userTournaments.sort(compareUserTournaments);
       var completedRound = populatedGroup.currentRound - 1;
 
-      function sendIt(emailList) {
-        var mail = {
-          subject:
-            (testEmail ? "[TEST] " : "") +
-            populatedGroup.groupName + " — End of Round " + completedRound + " Summary",
-          to: emailList,
-          body: {
-            content: buildGroupScoreTableHtml(populatedGroup, completedRound),
-            contentType: "html",
-          },
-        };
-        sendEmail(mail.to, mail.subject, mail.body, function (err) {
-          if (err) console.log(err);
-        });
+      // Find the round ID for the completed round from any participant's userRound
+      var roundId = null;
+      for (var i = 0; i < populatedGroup.userTournaments.length && !roundId; i++) {
+        var urs = populatedGroup.userTournaments[i].userRounds;
+        for (var j = 0; j < urs.length; j++) {
+          if (urs[j].round.numRound === completedRound) {
+            roundId = urs[j].round.id;
+            break;
+          }
+        }
       }
 
-      if (testEmail) {
-        // Test mode: send only to the specified email
-        console.log("[EMAIL TEST] Sending round summary to " + testEmail + " only (skipping full mailing list)");
-        sendIt([testEmail]);
-      } else {
-        async.waterfall(
-          [
-            async.apply(createMailingList, populatedGroup),
-            async function (emailList) {
-              sendIt(emailList);
+      // Load match data with team seeds (for All Favorites / All Upsets insight)
+      function buildAndSend(roundMatches) {
+        function sendIt(emailList) {
+          var mail = {
+            subject:
+              (testEmail ? "[TEST] " : "") +
+              populatedGroup.groupName + " — End of Round " + completedRound + " Summary",
+            to: emailList,
+            body: {
+              content: buildGroupScoreTableHtml(populatedGroup, completedRound, roundMatches),
+              contentType: "html",
             },
-          ],
-          function (err) {
+          };
+          sendEmail(mail.to, mail.subject, mail.body, function (err) {
             if (err) console.log(err);
-          },
-        );
+          });
+        }
+
+        if (testEmail) {
+          console.log("[EMAIL TEST] Sending round summary to " + testEmail + " only (skipping full mailing list)");
+          sendIt([testEmail]);
+        } else {
+          async.waterfall(
+            [
+              async.apply(createMailingList, populatedGroup),
+              async function (emailList) {
+                sendIt(emailList);
+              },
+            ],
+            function (err) {
+              if (err) console.log(err);
+            },
+          );
+        }
+      }
+
+      if (roundId && completedRound <= 4) {
+        Round.findById(roundId)
+          .populate({ path: "matches", populate: ["topTeam", "bottomTeam"] })
+          .exec(function (err, foundRound) {
+            if (err || !foundRound) {
+              console.log("[EMAIL] Could not load round matches for insights:", err);
+              buildAndSend(null);
+            } else {
+              buildAndSend(foundRound.matches);
+            }
+          });
+      } else {
+        buildAndSend(null);
       }
     });
 };
@@ -113,7 +144,7 @@ function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
   );
 }
 
-function buildGroupScoreTableHtml(tournamentGroup, completedRound) {
+function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches) {
   var groupName = tournamentGroup.groupName;
   var groupLink = "https://www.mcnaughtonmadness.com/tournamentGroups/" + groupName;
   var participants = tournamentGroup.userTournaments;
@@ -305,6 +336,89 @@ function buildGroupScoreTableHtml(tournamentGroup, completedRound) {
     html += '<strong>&#128556; Rough Round:</strong> ' + joinNames(worstRoundPeople);
     html += ' (' + roundNum(worstRoundScore) + ' pts)';
     html += '</div>';
+  }
+
+  // Madness Meter + Biggest Upset (rounds 1-4 only)
+  if (completedRound <= 4 && roundMatches && roundMatches.length > 0) {
+    var allFavoritesScore = 0;
+    var allUpsetsScore = 0;
+    var upsetCount = 0;
+    var totalGames = 0;
+    var biggestUpset = null;
+    var biggestUpsetScore = 0;
+
+    for (var i = 0; i < roundMatches.length; i++) {
+      var m = roundMatches[i];
+      if (m.winner && m.topTeam && m.bottomTeam) {
+        totalGames++;
+        var topSeed = m.topTeam.seed;
+        var bottomSeed = m.bottomTeam.seed;
+        var winnerIsTop = String(m.winner) === String(m.topTeam._id);
+        var favoriteIsTop = topSeed <= bottomSeed;
+        var isUpset = (winnerIsTop && !favoriteIsTop) || (!winnerIsTop && favoriteIsTop);
+
+        if (isUpset && topSeed !== bottomSeed) {
+          upsetCount++;
+          var matchScores = scoring.calculateMatchScores(topSeed, bottomSeed, winnerIsTop, completedRound);
+          if (matchScores.winningScore > biggestUpsetScore) {
+            biggestUpsetScore = matchScores.winningScore;
+            biggestUpset = m;
+          }
+        }
+
+        allFavoritesScore += scoring.calculatePredictionScore(
+          topSeed, bottomSeed, winnerIsTop, favoriteIsTop, completedRound
+        );
+        allUpsetsScore += scoring.calculatePredictionScore(
+          topSeed, bottomSeed, winnerIsTop, !favoriteIsTop, completedRound
+        );
+      }
+    }
+
+    // Madness Meter line
+    html += '<div style="margin-bottom: 8px;">';
+    html += '<strong>&#128202; Madness Meter:</strong> ' + upsetCount + ' upset' + (upsetCount !== 1 ? 's' : '') + ' out of ' + totalGames + ' games';
+    html += '<br style="margin-bottom: 2px;">';
+    html += '&nbsp;&nbsp;&nbsp;All Favorites ' + roundNum(allFavoritesScore) + ' pts &#124; All Upsets ' + roundNum(allUpsetsScore) + ' pts';
+    html += '</div>';
+
+    // Biggest Upset — show who picked it
+    if (biggestUpset) {
+      var upsetWinnerIsTop = String(biggestUpset.winner) === String(biggestUpset.topTeam._id);
+      var underdogTeam = upsetWinnerIsTop ? biggestUpset.topTeam : biggestUpset.bottomTeam;
+      var favoriteTeam = upsetWinnerIsTop ? biggestUpset.bottomTeam : biggestUpset.topTeam;
+      var upsetMatchId = String(biggestUpset._id);
+
+      // Count who picked the upset
+      var upsetPickers = [];
+      for (var i = 0; i < stats.length; i++) {
+        for (var k = 0; k < stats[i].userRounds.length; k++) {
+          var ur = stats[i].userRounds[k];
+          if (ur.round.numRound === completedRound && ur.userMatchPredictions) {
+            for (var p = 0; p < ur.userMatchPredictions.length; p++) {
+              var pred = ur.userMatchPredictions[p];
+              if (String(pred.match.id) === upsetMatchId && String(pred.winner) === String(biggestUpset.winner)) {
+                upsetPickers.push(stats[i].firstName);
+              }
+            }
+          }
+        }
+      }
+
+      html += '<div style="margin-bottom: 8px;">';
+      html += '<strong>&#129327; Biggest Upset:</strong> ' + underdogTeam.seed + '-seed ' + underdogTeam.name + ' over ' + favoriteTeam.seed + '-seed ' + favoriteTeam.name;
+      if (upsetPickers.length === 0) {
+        html += ' &mdash; <em>nobody saw it coming!</em>';
+      } else if (upsetPickers.length <= 5) {
+        var pickerStr = upsetPickers.length === 1 ? upsetPickers[0]
+          : upsetPickers.length === 2 ? upsetPickers[0] + ' &amp; ' + upsetPickers[1]
+          : upsetPickers.slice(0, -1).join(', ') + ', &amp; ' + upsetPickers[upsetPickers.length - 1];
+        html += ' &mdash; called by ' + pickerStr;
+      } else {
+        html += ' &mdash; ' + upsetPickers.length + ' players called it';
+      }
+      html += '</div>';
+    }
   }
 
   html += '</div>';
