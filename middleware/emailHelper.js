@@ -4,6 +4,7 @@ var UserTournament = require("../models/userTournament");
 var Round = require("../models/round");
 var User = require("../models/user");
 var scoring = require("../helpers/scoring");
+var moment = require("moment-timezone");
 require("dotenv").config();
 var async = require("async");
 var { Resend } = require("resend");
@@ -22,6 +23,7 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
         populate: ["round", "userMatchPredictions"],
       },
     })
+    .populate({ path: "tournamentReference.id", populate: "rounds" })
     .exec(function (err, populatedGroup) {
       if (err || !populatedGroup) {
         console.log("Error populating group for email:", err);
@@ -43,6 +45,19 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
         }
       }
 
+      // Find next round tipoff time from the populated tournament rounds
+      var nextRoundStartTime = null;
+      var nextRound = completedRound + 1;
+      if (nextRound <= 6 && populatedGroup.tournamentReference && populatedGroup.tournamentReference.id && populatedGroup.tournamentReference.id.rounds) {
+        var rounds = populatedGroup.tournamentReference.id.rounds;
+        for (var r = 0; r < rounds.length; r++) {
+          if (rounds[r].numRound === nextRound) {
+            nextRoundStartTime = rounds[r].startTime;
+            break;
+          }
+        }
+      }
+
       // Load match data with team seeds (for All Favorites / All Upsets insight)
       function buildAndSend(roundMatches) {
         function sendIt(emailList) {
@@ -52,7 +67,7 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
               populatedGroup.groupName + " — End of Round " + completedRound + " Summary",
             to: emailList,
             body: {
-              content: buildGroupScoreTableHtml(populatedGroup, completedRound, roundMatches),
+              content: buildGroupScoreTableHtml(populatedGroup, completedRound, roundMatches, nextRoundStartTime),
               contentType: "html",
             },
           };
@@ -144,7 +159,7 @@ function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
   );
 }
 
-function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches) {
+function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches, nextRoundStartTime) {
   var groupName = tournamentGroup.groupName;
   var groupLink = "https://www.mcnaughtonmadness.com/tournamentGroups/" + groupName;
   var participants = tournamentGroup.userTournaments;
@@ -179,6 +194,7 @@ function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches)
 
     stats.push({
       firstName: p.user.firstName,
+      lastName: p.user.lastName,
       totalScore: p.score || 0,
       thisRoundScore: thisRoundScore,
       correctPicks: correctPicks,
@@ -479,7 +495,7 @@ function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches)
     }
 
     // Name
-    html += '<td ' + cs + '><strong>' + s.firstName + '</strong></td>';
+    html += '<td ' + cs + '><strong>' + s.firstName + ' ' + (s.lastName ? s.lastName.charAt(0) + '.' : '') + '</strong></td>';
 
     // Total
     html += '<td ' + cs + '>' + roundNum(s.totalScore) + '</td>';
@@ -526,7 +542,12 @@ function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches)
   var nextRound = completedRound + 1;
   if (nextRound <= 6) {
     html += '<div style="padding: 12px 24px; text-align: center; color: #666; font-size: 14px;">';
-    html += '&#128227; <strong>Round ' + nextRound + '</strong> is up next &mdash; make sure your picks are in!';
+    if (nextRoundStartTime) {
+      var tipoff = moment(nextRoundStartTime).tz("America/New_York").format("dddd, MMMM D [at] h:mm A");
+      html += '&#128227; <strong>Round ' + nextRound + '</strong> tips off <strong>' + tipoff + ' ET</strong> &mdash; make sure your picks are in!';
+    } else {
+      html += '&#128227; <strong>Round ' + nextRound + '</strong> is up next &mdash; make sure your picks are in!';
+    }
     html += '</div>';
   } else if (completedRound >= 6) {
     html += '<div style="padding: 12px 24px; text-align: center; color: #666; font-size: 14px;">';

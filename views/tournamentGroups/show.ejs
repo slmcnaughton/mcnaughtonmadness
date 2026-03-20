@@ -104,7 +104,7 @@
                         <% for (var i=0; i < tournamentGroup.tournamentReference.id.rounds.length; i++) { %>
                             <%
                                 var roundMoment = moment(tournamentGroup.tournamentReference.id.rounds[i].startTime);
-                                var roundDateTime = roundMoment.tz("America/New_York").format('LLLL');
+                                var roundDateTime = roundMoment.tz("America/New_York").format('LLLL') + ' ET';
                                 var isPast = roundMoment.isBefore(now);
                                 var isNext = !isPast && !foundNext;
                                 if (isNext) foundNext = true;
@@ -176,7 +176,7 @@
 
                                                                                 <td><a
                                                                                         href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= participant.user.username %>">
-                                                                                        <%=participant.user.firstName%>
+                                                                                        <%=participant.user.firstName%> <%= participant.user.lastName ? participant.user.lastName.charAt(0) + '.' : '' %>
                                                                                 </td>
 
                                                                                 <!--Loop through all 8 potential rounds-->
