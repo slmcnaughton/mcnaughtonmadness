@@ -288,12 +288,13 @@ function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches,
   // ── Shared inline styles (email clients ignore <style> blocks) ─────────────
   var headerCellStyle = 'style="padding: 8px 6px; text-align: center; background: #1B3A5C; color: #fff; font-size: 13px; font-weight: bold;"';
 
-  // Podium row backgrounds (subtle accents)
-  var podiumBg = { 1: '#FFF9E6', 2: '#F4F4F4', 3: '#FDF3EB' }; // gold, silver, bronze
+  // Trophy tier row backgrounds
+  var totalPlayers = stats.length;
+  var topHalf = Math.ceil(totalPlayers / 2);
+  var tierBg = { 1: '#FFF9E6', 2: '#F4F4F4', 3: '#FDF3EB' }; // gold, silver, bronze
   function cellStyleForRank(rank, altRow) {
-    var bg = podiumBg[rank] || (altRow ? '#f9f9f9' : '#ffffff');
-    var bold = rank <= 3 ? ' font-weight: bold;' : '';
-    return 'style="padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; font-size: 14px; background: ' + bg + ';' + bold + '"';
+    var bg = tierBg[rank] || (rank <= 10 ? '#F0F4FF' : rank <= topHalf ? '#F0FFF0' : (altRow ? '#f9f9f9' : '#ffffff'));
+    return 'style="padding: 8px 6px; text-align: center; border-bottom: 1px solid #eee; font-size: 14px; background: ' + bg + ';"';
   }
 
   // ── Build HTML ─────────────────────────────────────────────────────────────

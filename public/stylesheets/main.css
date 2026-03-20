@@ -320,7 +320,31 @@ th {
     text-align: left;
 }
 
-
+/* Trophy tier row backgrounds */
+#tournamentStandings .tier-gold td {
+    background-color: #FFF9E6 !important;
+}
+#tournamentStandings .tier-gold td:first-child {
+    color: #B8860B;
+}
+#tournamentStandings .tier-silver td {
+    background-color: #F4F4F4 !important;
+}
+#tournamentStandings .tier-silver td:first-child {
+    color: #808080;
+}
+#tournamentStandings .tier-bronze td {
+    background-color: #FDF3EB !important;
+}
+#tournamentStandings .tier-bronze td:first-child {
+    color: #A0522D;
+}
+#tournamentStandings .tier-top10 td {
+    background-color: #F0F4FF !important;
+}
+#tournamentStandings .tier-top50 td {
+    background-color: #F0FFF0 !important;
+}
 
 /*===========================================*/
 /*Rules Page and Rules Table Styles*/

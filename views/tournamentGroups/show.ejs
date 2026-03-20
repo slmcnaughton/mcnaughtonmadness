@@ -148,8 +148,10 @@
                         <tbody>
                             <% var tieCount=0 %>
                                 <% var rank=0 %>
+                                <% var totalPlayers=tournamentGroup.userTournaments.length %>
+                                <% var topHalf=Math.ceil(totalPlayers / 2) %>
 
-                                    <% for(var i=0; i < tournamentGroup.userTournaments.length; i++) { %>
+                                    <% for(var i=0; i < totalPlayers; i++) { %>
 
                                         <% var participant=tournamentGroup.userTournaments[i]; %>
                                             <% if (i> 0 && participant.score ===
@@ -161,7 +163,7 @@
                                                                 <% } %>
 
 
-                                                                    <tr>
+                                                                    <tr class="<%= rank === 1 ? 'tier-gold' : rank === 2 ? 'tier-silver' : rank === 3 ? 'tier-bronze' : rank <= 10 ? 'tier-top10' : rank <= topHalf ? 'tier-top50' : '' %>">
                                                                         <td>
                                                                             <%= rank %>
                                                                         </td>
