@@ -176,7 +176,7 @@
 
                                                                                 <td><a
                                                                                         href="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= participant.user.username %>">
-                                                                                        <%=participant.user.firstName%> <%= participant.user.lastName ? participant.user.lastName.charAt(0) + '.' : '' %>
+                                                                                        <%=participant.user.firstName%><%= participant.user.lastName ? ' ' + participant.user.lastName : '' %>
                                                                                 </td>
 
                                                                                 <!--Loop through all 8 potential rounds-->

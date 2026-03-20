@@ -495,7 +495,7 @@ function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches,
     }
 
     // Name
-    html += '<td ' + cs + '><strong>' + s.firstName + ' ' + (s.lastName ? s.lastName.charAt(0) + '.' : '') + '</strong></td>';
+    html += '<td ' + cs + '><strong>' + s.firstName + (s.lastName ? ' ' + s.lastName : '') + '</strong></td>';
 
     // Total
     html += '<td ' + cs + '>' + roundNum(s.totalScore) + '</td>';
