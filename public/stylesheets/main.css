@@ -303,10 +303,21 @@ th {
     table-layout: auto;
 }
 
+#tournamentStandings td,
+#tournamentStandings th {
+    vertical-align: middle;
+    padding: 5px 6px;
+}
+
 #tournamentStandings th{
     background-color: #FFA705;
     color: #101010;
-    vertical-align: middle;
+}
+
+/* Left-align the Name column (3rd column) */
+#tournamentStandings td:nth-child(3),
+#tournamentStandings th:nth-child(3) {
+    text-align: left;
 }
 
 
@@ -1916,12 +1927,15 @@ footer {
 
     /* ── Standings table ── */
     #tournamentStandings {
-        font-size: 0.85em;
+        font-size: 0.82em;
     }
     #tournamentStandings td,
     #tournamentStandings th {
-        padding: 4px 3px;
+        padding: 3px 2px;
         white-space: nowrap;
+    }
+    #tournamentStandings td {
+        height: auto;
     }
     #tournamentStandings th {
         padding-right: 18px !important;
