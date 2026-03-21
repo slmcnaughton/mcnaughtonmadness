@@ -136,7 +136,12 @@ middlewareObj.manuallyUpdateResults = function (req, res, next) {
                 if (err) console.log(err);
                 var tempMatch = {
                   roundMatchIndex: roundMatchIndex,
-                  tournament: foundTournament,
+                  tournamentId: foundTournament._id,
+                  currentRound: foundTournament.currentRound,
+                  currentRoundId: foundTournament.rounds[foundTournament.currentRound - 1]._id,
+                  nextRoundId: foundTournament.currentRound < foundTournament.rounds.length
+                    ? foundTournament.rounds[foundTournament.currentRound]._id : null,
+                  totalRounds: foundTournament.rounds.length,
                   matchNumber: bodyIndex,
                   matchId: round.matches[roundMatchIndex].id,
                   winningTeam: winner,
@@ -161,7 +166,15 @@ middlewareObj.manuallyUpdateResults = function (req, res, next) {
     });
 };
 
+var scrapeInProgress = false;
+
 middlewareObj.scrapeUpdateResults = function (parsedResults) {
+  if (scrapeInProgress) {
+    console.log("[SCRAPE] Skipping — previous scrape still in progress");
+    return;
+  }
+  scrapeInProgress = true;
+
   var matchUpdates = [];
 
   Tournament.findOne({ year: new Date().getFullYear() })
@@ -176,77 +189,98 @@ middlewareObj.scrapeUpdateResults = function (parsedResults) {
     .exec(function (err, foundTournament) {
       if (err) {
         console.log(err);
+        scrapeInProgress = false;
+        return;
       } else if (!foundTournament) {
         console.log("no tournament found");
-      } else {
-        // Tournament is complete — no more rounds to process
-        if (foundTournament.currentRound > foundTournament.rounds.length) {
-          return;
-        }
-        var round = foundTournament.rounds[foundTournament.currentRound - 1];
-        var roundMatchIndex = 0;
-        async.forEach(
-          round.matches,
-          function (match, next) {
-            async.forEach(
-              parsedResults,
-              function (result, next) {
-                // Skip matches where teams haven't been set yet (e.g. later rounds)
-                if (!match.topTeam || !match.bottomTeam) return next();
-
-                var topAliases = match.topTeam.aliases || [];
-                var bottomAliases = match.bottomTeam.aliases || [];
-
-                var topMatchesTeam1 = teamAliases.teamsMatch(match.topTeam.name, result.team1, topAliases);
-                var topMatchesTeam2 = teamAliases.teamsMatch(match.topTeam.name, result.team2, topAliases);
-                var bottomMatchesTeam1 = teamAliases.teamsMatch(match.bottomTeam.name, result.team1, bottomAliases);
-                var bottomMatchesTeam2 = teamAliases.teamsMatch(match.bottomTeam.name, result.team2, bottomAliases);
-
-                var matchFound =
-                  !match.winner &&
-                  ((topMatchesTeam1 && bottomMatchesTeam2) ||
-                    (topMatchesTeam2 && bottomMatchesTeam1));
-
-                if (matchFound) {
-                  var winningTeam;
-                  if (teamAliases.teamsMatch(match.topTeam.name, result.winner, topAliases)) {
-                    console.log(match.topTeam.name + " defeated " + match.bottomTeam.name);
-                    winningTeam = match.topTeam;
-                  } else {
-                    console.log(match.bottomTeam.name + " defeated " + match.topTeam.name);
-                    winningTeam = match.bottomTeam;
-                  }
-                  var tempMatch = {
-                    roundMatchIndex: roundMatchIndex,
-                    tournament: foundTournament,
-                    matchNumber: match.matchNumber,
-                    matchId: match.id,
-                    winningTeam: winningTeam,
-                  };
-                  matchUpdates.push(tempMatch);
-                  next();
-                } else {
-                  next();
-                }
-              },
-              function (err) {
-                if (err) console.log(err);
-                else {
-                  roundMatchIndex++;
-                  next();
-                }
-              },
-            );
-          },
-          function (err) {
-            if (err) console.log(err);
-            logUnmatchedResults(parsedResults, round);
-            if (matchUpdates.length > 0) {
-              updateResults(matchUpdates);
-            }
-          },
-        );
+        scrapeInProgress = false;
+        return;
       }
+
+      // Tournament is complete — no more rounds to process
+      if (foundTournament.currentRound > foundTournament.rounds.length) {
+        scrapeInProgress = false;
+        return;
+      }
+
+      // Extract only the lightweight fields we need, so the fully-populated
+      // tournament can be garbage-collected once matching is done
+      var currentRound = foundTournament.currentRound;
+      var tournamentId = foundTournament._id;
+      var currentRoundId = foundTournament.rounds[currentRound - 1]._id;
+      var nextRoundId = currentRound < foundTournament.rounds.length
+        ? foundTournament.rounds[currentRound]._id : null;
+      var totalRounds = foundTournament.rounds.length;
+
+      var round = foundTournament.rounds[currentRound - 1];
+      var roundMatchIndex = 0;
+      async.forEach(
+        round.matches,
+        function (match, next) {
+          async.forEach(
+            parsedResults,
+            function (result, next) {
+              // Skip matches where teams haven't been set yet (e.g. later rounds)
+              if (!match.topTeam || !match.bottomTeam) return next();
+
+              var topAliases = match.topTeam.aliases || [];
+              var bottomAliases = match.bottomTeam.aliases || [];
+
+              var topMatchesTeam1 = teamAliases.teamsMatch(match.topTeam.name, result.team1, topAliases);
+              var topMatchesTeam2 = teamAliases.teamsMatch(match.topTeam.name, result.team2, topAliases);
+              var bottomMatchesTeam1 = teamAliases.teamsMatch(match.bottomTeam.name, result.team1, bottomAliases);
+              var bottomMatchesTeam2 = teamAliases.teamsMatch(match.bottomTeam.name, result.team2, bottomAliases);
+
+              var matchFound =
+                !match.winner &&
+                ((topMatchesTeam1 && bottomMatchesTeam2) ||
+                  (topMatchesTeam2 && bottomMatchesTeam1));
+
+              if (matchFound) {
+                var winningTeam;
+                if (teamAliases.teamsMatch(match.topTeam.name, result.winner, topAliases)) {
+                  console.log(match.topTeam.name + " defeated " + match.bottomTeam.name);
+                  winningTeam = match.topTeam;
+                } else {
+                  console.log(match.bottomTeam.name + " defeated " + match.topTeam.name);
+                  winningTeam = match.bottomTeam;
+                }
+                var tempMatch = {
+                  roundMatchIndex: roundMatchIndex,
+                  tournamentId: tournamentId,
+                  currentRound: currentRound,
+                  currentRoundId: currentRoundId,
+                  nextRoundId: nextRoundId,
+                  totalRounds: totalRounds,
+                  matchNumber: match.matchNumber,
+                  matchId: match.id,
+                  winningTeam: winningTeam,
+                };
+                matchUpdates.push(tempMatch);
+                next();
+              } else {
+                next();
+              }
+            },
+            function (err) {
+              if (err) console.log(err);
+              else {
+                roundMatchIndex++;
+                next();
+              }
+            },
+          );
+        },
+        function (err) {
+          if (err) console.log(err);
+          logUnmatchedResults(parsedResults, round);
+          if (matchUpdates.length > 0) {
+            updateResults(matchUpdates);
+          } else {
+            scrapeInProgress = false;
+          }
+        },
+      );
     });
 };
 
@@ -293,6 +327,7 @@ var updateResults = function (matchUpdates, next) {
     ],
     function (err) {
       if (err) console.log(err);
+      scrapeInProgress = false;
       try {
         next();
       } catch (err) {}
@@ -301,85 +336,101 @@ var updateResults = function (matchUpdates, next) {
 };
 
 // Req. Params:
-// roundMatchIndex: roundMatchIndex,
-// tournament: foundTournament,
-// matchNumber: match.matchNumber,
-// matchId: match.id,
-// winningTeam: winningTeam
+// roundMatchIndex, tournamentId, currentRound, currentRoundId,
+// nextRoundId, totalRounds, matchNumber, matchId, winningTeam
 var advanceWinners = function (matchUpdates, done) {
-  var nextRoundIndex = matchUpdates[0].tournament.currentRound;
-  var nextRound = matchUpdates[0].tournament.rounds[nextRoundIndex];
-  async.forEachOfSeries(
-    matchUpdates,
-    function (matchUpdate, i, next) {
-      Match.findById(matchUpdate.matchId)
-        .populate("topTeam")
-        .populate("bottomTeam")
-        .exec(function (err, updatedMatch) {
-          if (err || !updatedMatch) {
-            console.log(err);
-            return next();
-          }
+  var currentRound = matchUpdates[0].currentRound;
+  var nextRoundId = matchUpdates[0].nextRoundId;
 
-          // Set winner and mark losing team
-          updatedMatch.winner = matchUpdate.winningTeam;
-          var losingTeam;
-          if (matchUpdate.winningTeam._id.equals(updatedMatch.topTeam._id)) {
-            losingTeam = updatedMatch.bottomTeam;
-          } else {
-            losingTeam = updatedMatch.topTeam;
-          }
-          losingTeam.lost++;
+  // Fetch the next round's matches fresh (lightweight — just match docs, no team populates)
+  // so we don't need to hold the entire populated tournament in memory
+  var fetchNextRound = function (callback) {
+    if (currentRound >= matchUpdates[0].totalRounds) {
+      // Championship round — no next round to fetch
+      return callback(null, null);
+    }
+    Round.findById(nextRoundId)
+      .populate("matches")
+      .exec(function (err, round) {
+        if (err) console.log("Error fetching next round:", err);
+        callback(err, round);
+      });
+  };
 
-          // Save losingTeam, then match, then advance — all sequentially
-          // Each save MUST complete before the next starts to avoid ParallelSaveError
-          // (two R1 matches can feed the same R2 match)
-          losingTeam.save(function (err) {
-            if (err) console.log("Error saving losing team:", err);
-            updatedMatch.save(function (err) {
-              if (err) console.log("Error saving match:", err);
+  fetchNextRound(function (err, nextRound) {
+    if (err) return done();
 
-              // Advance winner to next round
-              if (nextRoundIndex < 6) {
-                var currIndex = Number(matchUpdates[i].roundMatchIndex);
-                var nextMatchIndex = Math.floor(currIndex / 2);
-                var nextRoundMatch = nextRound.matches[nextMatchIndex];
-                if (currIndex % 2 === 0) {
-                  nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
+    async.forEachOfSeries(
+      matchUpdates,
+      function (matchUpdate, i, next) {
+        Match.findById(matchUpdate.matchId)
+          .populate("topTeam")
+          .populate("bottomTeam")
+          .exec(function (err, updatedMatch) {
+            if (err || !updatedMatch) {
+              console.log(err);
+              return next();
+            }
+
+            // Set winner and mark losing team
+            updatedMatch.winner = matchUpdate.winningTeam;
+            var losingTeam;
+            if (matchUpdate.winningTeam._id.equals(updatedMatch.topTeam._id)) {
+              losingTeam = updatedMatch.bottomTeam;
+            } else {
+              losingTeam = updatedMatch.topTeam;
+            }
+            losingTeam.lost++;
+
+            // Save losingTeam, then match, then advance — all sequentially
+            // Each save MUST complete before the next starts to avoid ParallelSaveError
+            // (two R1 matches can feed the same R2 match)
+            losingTeam.save(function (err) {
+              if (err) console.log("Error saving losing team:", err);
+              updatedMatch.save(function (err) {
+                if (err) console.log("Error saving match:", err);
+
+                // Advance winner to next round
+                if (nextRound) {
+                  var currIndex = Number(matchUpdates[i].roundMatchIndex);
+                  var nextMatchIndex = Math.floor(currIndex / 2);
+                  var nextRoundMatch = nextRound.matches[nextMatchIndex];
+                  if (currIndex % 2 === 0) {
+                    nextRoundMatch.topTeam = matchUpdates[i].winningTeam;
+                  } else {
+                    nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
+                  }
+                  // Must save the Match doc — Round only stores ObjectId refs
+                  nextRoundMatch.save(function (err) {
+                    if (err) console.log("Error saving next round match:", err);
+                    next();
+                  });
                 } else {
-                  nextRoundMatch.bottomTeam = matchUpdates[i].winningTeam;
+                  // Championship game — update tournament champion without holding full doc
+                  Tournament.findByIdAndUpdate(
+                    matchUpdates[0].tournamentId,
+                    { champion: matchUpdates[i].winningTeam._id },
+                    function (err) {
+                      if (err) console.log("Error saving tournament champion:", err);
+                      next();
+                    }
+                  );
                 }
-                // Must save the Match doc — Round only stores ObjectId refs
-                nextRoundMatch.save(function (err) {
-                  if (err) console.log("Error saving next round match:", err);
-                  next();
-                });
-              } else {
-                // Championship game
-                matchUpdates[0].tournament.champion =
-                  matchUpdates[i].winningTeam;
-                matchUpdates[0].tournament.save(function (err) {
-                  if (err) console.log("Error saving tournament:", err);
-                  next();
-                });
-              }
+              });
             });
           });
-        });
-    },
-    function (err) {
-      if (err) console.log(err);
-      done();
-    },
-  );
+      },
+      function (err) {
+        if (err) console.log(err);
+        done();
+      },
+    );
+  });
 };
 
 // Req. Params:
-// roundMatchIndex: roundMatchIndex,
-// tournament: foundTournament,
-// matchNumber: match.matchNumber,
-// matchId: match.id,
-// winningTeam: winningTeam
+// roundMatchIndex, tournamentId, currentRound, currentRoundId,
+// nextRoundId, totalRounds, matchNumber, matchId, winningTeam
 var scoreUserMatchPredictions = function (updatedMatches, next) {
   async.forEachSeries(
     updatedMatches,
@@ -397,7 +448,7 @@ var scoreUserMatchPredictions = function (updatedMatches, next) {
               foundMatch.topTeam.seed,
               foundMatch.bottomTeam.seed,
               winnerIsTop,
-              match.tournament.currentRound,
+              match.currentRound,
             );
             var winningScore = matchScores.winningScore;
             var losingScore = matchScores.losingScore;
@@ -423,7 +474,7 @@ var scoreUserMatchPredictions = function (updatedMatches, next) {
                         //find the user rounds that reference user match prediction ids (and are in the current round to avoid bonus round picks interfering with rounds 4 and 6
                         UserRound.find({
                           userMatchPredictions: { $in: userMPids },
-                          "round.numRound": match.tournament.currentRound,
+                          "round.numRound": match.currentRound,
                         }).exec(function (err, foundUserRound) {
                           if (err) console.log(err);
                           else {
@@ -435,7 +486,7 @@ var scoreUserMatchPredictions = function (updatedMatches, next) {
                             //  b) they may have the round, but no pick (i.e., we created the round for them with no picks and just need to subtract the score)
                             UserTournament.find({
                               "tournamentReference.id":
-                                updatedMatches[0].tournament,
+                                updatedMatches[0].tournamentId,
                               userRounds: { $nin: userRids },
                             })
                               .populate("userRounds")
@@ -465,8 +516,7 @@ var scoreUserMatchPredictions = function (updatedMatches, next) {
                                                     .userRounds[j].round
                                                     .numRound ===
                                                   Number(
-                                                    match.tournament
-                                                      .currentRound,
+                                                    match.currentRound,
                                                   )
                                                 ) {
                                                   foundRound = j;
@@ -486,13 +536,9 @@ var scoreUserMatchPredictions = function (updatedMatches, next) {
                                                       .user.firstName,
                                                   },
                                                   round: {
-                                                    id: match.tournament.rounds[
-                                                      match.tournament
-                                                        .currentRound - 1
-                                                    ],
+                                                    id: match.currentRoundId,
                                                     numRound:
-                                                      match.tournament
-                                                        .currentRound,
+                                                      match.currentRound,
                                                   },
                                                 };
                                                 UserRound.create(
@@ -592,14 +638,11 @@ var scoreUserMatchPredictions = function (updatedMatches, next) {
 };
 
 // Req. Params:
-// roundMatchIndex: roundMatchIndex,
-// tournament: foundTournament,
-// matchNumber: match.matchNumber,
-// matchId: match.id,
-// winningTeam: winningTeam
+// roundMatchIndex, tournamentId, currentRound, currentRoundId,
+// nextRoundId, totalRounds, matchNumber, matchId, winningTeam
 var updateTournamentGroupScores = function (updatedMatches, next) {
   TournamentGroup.find({
-    "tournamentReference.id": updatedMatches[0].tournament.id,
+    "tournamentReference.id": updatedMatches[0].tournamentId,
   })
     .populate({
       path: "userTournaments",
@@ -694,13 +737,10 @@ var updateTournamentGroupScores = function (updatedMatches, next) {
 };
 
 // Req. Params:
-// roundMatchIndex: roundMatchIndex,
-// tournament: foundTournament,
-// matchNumber: match.matchNumber,
-// matchId: match.id,
-// winningTeam: winningTeam
+// roundMatchIndex, tournamentId, currentRound, currentRoundId,
+// nextRoundId, totalRounds, matchNumber, matchId, winningTeam
 var isRoundComplete = function (updatedMatches, done) {
-  Tournament.findById(updatedMatches[0].tournament.id)
+  Tournament.findById(updatedMatches[0].tournamentId)
     .populate({ path: "rounds", populate: { path: "matches" } })
     .exec(function (err, foundTournament) {
       if (err || !foundTournament) {
@@ -727,7 +767,7 @@ var isRoundComplete = function (updatedMatches, done) {
 
               //find all tournamentGroups, update their currentRounds, and send out email
               TournamentGroup.find({
-                "tournamentReference.id": updatedMatches[0].tournament.id,
+                "tournamentReference.id": updatedMatches[0].tournamentId,
               })
                 .populate({
                   path: "userTournaments",
