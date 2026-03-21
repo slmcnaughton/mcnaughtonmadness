@@ -57,14 +57,41 @@ router.get(
                   page: "tournamentGroups",
                 });
               } else {
-                res.render("userRounds/editChamp.ejs", {
-                  tournament: foundTournament,
-                  numRound: Number(numRound),
-                  tournamentGroup: foundTournamentGroup,
-                  username: req.params.username,
-                  targetFirstName: req.targetUserFirstName,
-                  page: "tournamentGroups",
-                });
+                // For Champion pick, look up this user's Final Four picks
+                // so we can limit champion options to just those 4 teams
+                UserTournament.findOne({
+                  "tournamentReference.id": foundTournament._id,
+                  "user.username": req.params.username,
+                })
+                  .populate({
+                    path: "userRounds",
+                    populate: { path: "userMatchPredictions", populate: "winner" },
+                  })
+                  .exec(function (err, foundUserTournament) {
+                    var finalFourTeams = [];
+                    if (!err && foundUserTournament) {
+                      for (var r = 0; r < foundUserTournament.userRounds.length; r++) {
+                        if (foundUserTournament.userRounds[r].round.numRound === 7) {
+                          var preds = foundUserTournament.userRounds[r].userMatchPredictions;
+                          for (var p = 0; p < preds.length; p++) {
+                            if (preds[p].winner) {
+                              finalFourTeams.push(preds[p].winner);
+                            }
+                          }
+                          break;
+                        }
+                      }
+                    }
+                    res.render("userRounds/editChamp.ejs", {
+                      tournament: foundTournament,
+                      numRound: Number(numRound),
+                      tournamentGroup: foundTournamentGroup,
+                      username: req.params.username,
+                      targetFirstName: req.targetUserFirstName,
+                      page: "tournamentGroups",
+                      finalFourTeams: finalFourTeams,
+                    });
+                  });
               }
             });
         }

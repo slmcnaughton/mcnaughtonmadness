@@ -2081,6 +2081,13 @@ footer {
     color: #337ab7;
 }
 
+/* ── Champion picker — narrower centered layout ── */
+.champPicker {
+    max-width: 480px;
+    margin: 0 auto;
+    float: none;
+}
+
 /* ── Pick workflow stepper ── */
 .pick-stepper {
     display: flex;

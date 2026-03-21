@@ -39,131 +39,6 @@
   </div>
 </div>
 
-<!-- ── Feedback ───────────────────────────────────────────────────── -->
-<%
-  var newFeedbackCount = feedback.filter(function(fb) { return fb.status === 'new'; }).length;
-%>
-<% if(feedback.length > 0) { %>
-<div class="row">
-  <div class="col-lg-12">
-    <div class="panel panel-<%= newFeedbackCount > 0 ? 'info' : 'default' %>">
-      <div class="panel-heading" style="cursor: pointer;" data-toggle="collapse" data-target="#feedbackBody">
-        <h3 class="panel-title" style="display: flex; align-items: center;">
-          <span>
-            <i class="fas fa-comment-dots"></i> Feedback
-            <% if(newFeedbackCount > 0) { %>
-              <span class="badge"><%= newFeedbackCount %> new</span>
-            <% } %>
-          </span>
-          <i class="fas fa-chevron-down" style="margin-left: auto; color: #999; transition: transform 0.2s;" id="feedbackChevron"></i>
-        </h3>
-      </div>
-      <div class="panel-body collapse<%= newFeedbackCount > 0 ? ' in' : '' %>" id="feedbackBody">
-        <div style="overflow-x: auto;">
-          <table class="table table-condensed">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>From</th>
-                <th>Category</th>
-                <th>Message</th>
-                <th>Page</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% feedback.forEach(function(fb, idx) { %>
-                <tr class="<%= fb.status === 'new' ? 'info' : (fb.status === 'resolved' ? 'success' : '') %>">
-                  <td style="white-space: nowrap;"><%= fb.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></td>
-                  <td>
-                    <% if(fb.author && fb.author.username) { %>
-                      <a href="/users/<%= fb.author.username %>"><%= fb.author.firstName %> <%= fb.author.lastName %></a>
-                    <% } else { %>
-                      <span class="text-muted">Unknown</span>
-                    <% } %>
-                  </td>
-                  <td>
-                    <% if(fb.category === 'bug') { %>
-                      <span class="label label-danger">Bug</span>
-                    <% } else if(fb.category === 'feature') { %>
-                      <span class="label label-info">Feature</span>
-                    <% } else { %>
-                      <span class="label label-default">General</span>
-                    <% } %>
-                  </td>
-                  <td style="max-width: 300px; word-wrap: break-word;">
-                    <%= fb.message %>
-                    <% if(fb.adminNotes) { %>
-                      <div style="margin-top: 4px; padding: 4px 8px; background: #f0f7fb; border-left: 3px solid #337ab7; border-radius: 2px;">
-                        <small><strong><i class="fas fa-reply"></i> You:</strong> <%= fb.adminNotes %></small>
-                      </div>
-                    <% } %>
-                  </td>
-                  <td style="max-width: 150px; word-wrap: break-word;">
-                    <% if(fb.pageContext) { %>
-                      <small class="text-muted"><%= fb.pageContext %></small>
-                    <% } else { %>
-                      <span class="text-muted">&#x2014;</span>
-                    <% } %>
-                  </td>
-                  <td>
-                    <% if(fb.status === 'new') { %>
-                      <span class="label label-warning">New</span>
-                    <% } else if(fb.status === 'read') { %>
-                      <span class="label label-primary">Read</span>
-                    <% } else { %>
-                      <span class="label label-success">Resolved</span>
-                    <% } %>
-                  </td>
-                  <td style="white-space: nowrap;">
-                    <button type="button" class="btn btn-xs btn-default btn-feedback-reply" data-idx="<%= idx %>" title="Reply">
-                      <i class="fas fa-reply"></i>
-                    </button>
-                    <% if(fb.status === 'new') { %>
-                      <form action="/admin/feedback/<%= fb._id %>/status" method="POST" style="display: inline; margin-left: 2px;">
-                        <input type="hidden" name="status" value="read">
-                        <button type="submit" class="btn btn-xs btn-primary" title="Mark as read">
-                          <i class="fas fa-eye"></i>
-                        </button>
-                      </form>
-                    <% } %>
-                    <% if(fb.status !== 'resolved') { %>
-                      <form action="/admin/feedback/<%= fb._id %>/status" method="POST" style="display: inline; margin-left: 2px;">
-                        <input type="hidden" name="status" value="resolved">
-                        <button type="submit" class="btn btn-xs btn-success" title="Mark as resolved">
-                          <i class="fas fa-check"></i>
-                        </button>
-                      </form>
-                    <% } %>
-                    <form action="/admin/feedback/<%= fb._id %>?_method=DELETE" method="POST" style="display: inline; margin-left: 2px;">
-                      <button type="submit" class="btn btn-xs btn-danger" title="Delete" onclick="return confirm('Delete this feedback?');">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-                <tr class="feedback-reply-row" id="feedbackReply<%= idx %>" style="display: none;">
-                  <td colspan="7" style="background: #fafafa;">
-                    <form action="/admin/feedback/<%= fb._id %>/status" method="POST" class="form-inline" style="padding: 6px 0;">
-                      <input type="hidden" name="status" value="<%= fb.status === 'new' ? 'read' : fb.status %>">
-                      <input type="text" name="adminNotes" class="form-control input-sm" style="width: 70%;" placeholder="Write a reply to <%= fb.author.firstName %>..." value="<%= fb.adminNotes || '' %>">
-                      <button type="submit" class="btn btn-sm btn-primary" style="margin-left: 6px;">
-                        <i class="fas fa-paper-plane"></i> Save Reply
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<% } %>
-
 <!-- ── Pending Name Changes ──────────────────────────────────────── -->
 <%
   var pendingUsers = users.filter(function(u) { return u.pendingFirstName || u.pendingLastName; });
@@ -448,6 +323,131 @@
     </div>
   </div>
 </div>
+
+<!-- ── Feedback ───────────────────────────────────────────────────── -->
+<%
+  var newFeedbackCount = feedback.filter(function(fb) { return fb.status === 'new'; }).length;
+%>
+<% if(feedback.length > 0) { %>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-<%= newFeedbackCount > 0 ? 'info' : 'default' %>">
+      <div class="panel-heading" style="cursor: pointer;" data-toggle="collapse" data-target="#feedbackBody">
+        <h3 class="panel-title" style="display: flex; align-items: center;">
+          <span>
+            <i class="fas fa-comment-dots"></i> Feedback
+            <% if(newFeedbackCount > 0) { %>
+              <span class="badge"><%= newFeedbackCount %> new</span>
+            <% } %>
+          </span>
+          <i class="fas fa-chevron-down" style="margin-left: auto; color: #999; transition: transform 0.2s;" id="feedbackChevron"></i>
+        </h3>
+      </div>
+      <div class="panel-body collapse<%= newFeedbackCount > 0 ? ' in' : '' %>" id="feedbackBody">
+        <div style="overflow-x: auto;">
+          <table class="table table-condensed">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>From</th>
+                <th>Category</th>
+                <th>Message</th>
+                <th>Page</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% feedback.forEach(function(fb, idx) { %>
+                <tr class="<%= fb.status === 'new' ? 'info' : (fb.status === 'resolved' ? 'success' : '') %>">
+                  <td style="white-space: nowrap;"><%= fb.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></td>
+                  <td>
+                    <% if(fb.author && fb.author.username) { %>
+                      <a href="/users/<%= fb.author.username %>"><%= fb.author.firstName %> <%= fb.author.lastName %></a>
+                    <% } else { %>
+                      <span class="text-muted">Unknown</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(fb.category === 'bug') { %>
+                      <span class="label label-danger">Bug</span>
+                    <% } else if(fb.category === 'feature') { %>
+                      <span class="label label-info">Feature</span>
+                    <% } else { %>
+                      <span class="label label-default">General</span>
+                    <% } %>
+                  </td>
+                  <td style="max-width: 300px; word-wrap: break-word;">
+                    <%= fb.message %>
+                    <% if(fb.adminNotes) { %>
+                      <div style="margin-top: 4px; padding: 4px 8px; background: #f0f7fb; border-left: 3px solid #337ab7; border-radius: 2px;">
+                        <small><strong><i class="fas fa-reply"></i> You:</strong> <%= fb.adminNotes %></small>
+                      </div>
+                    <% } %>
+                  </td>
+                  <td style="max-width: 150px; word-wrap: break-word;">
+                    <% if(fb.pageContext) { %>
+                      <small class="text-muted"><%= fb.pageContext %></small>
+                    <% } else { %>
+                      <span class="text-muted">&#x2014;</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(fb.status === 'new') { %>
+                      <span class="label label-warning">New</span>
+                    <% } else if(fb.status === 'read') { %>
+                      <span class="label label-primary">Read</span>
+                    <% } else { %>
+                      <span class="label label-success">Resolved</span>
+                    <% } %>
+                  </td>
+                  <td style="white-space: nowrap;">
+                    <button type="button" class="btn btn-xs btn-default btn-feedback-reply" data-idx="<%= idx %>" title="Reply">
+                      <i class="fas fa-reply"></i>
+                    </button>
+                    <% if(fb.status === 'new') { %>
+                      <form action="/admin/feedback/<%= fb._id %>/status" method="POST" style="display: inline; margin-left: 2px;">
+                        <input type="hidden" name="status" value="read">
+                        <button type="submit" class="btn btn-xs btn-primary" title="Mark as read">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                      </form>
+                    <% } %>
+                    <% if(fb.status !== 'resolved') { %>
+                      <form action="/admin/feedback/<%= fb._id %>/status" method="POST" style="display: inline; margin-left: 2px;">
+                        <input type="hidden" name="status" value="resolved">
+                        <button type="submit" class="btn btn-xs btn-success" title="Mark as resolved">
+                          <i class="fas fa-check"></i>
+                        </button>
+                      </form>
+                    <% } %>
+                    <form action="/admin/feedback/<%= fb._id %>?_method=DELETE" method="POST" style="display: inline; margin-left: 2px;">
+                      <button type="submit" class="btn btn-xs btn-danger" title="Delete" onclick="return confirm('Delete this feedback?');">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <tr class="feedback-reply-row" id="feedbackReply<%= idx %>" style="display: none;">
+                  <td colspan="7" style="background: #fafafa;">
+                    <form action="/admin/feedback/<%= fb._id %>/status" method="POST" class="form-inline" style="padding: 6px 0;">
+                      <input type="hidden" name="status" value="<%= fb.status === 'new' ? 'read' : fb.status %>">
+                      <input type="text" name="adminNotes" class="form-control input-sm" style="width: 70%;" placeholder="Write a reply to <%= fb.author.firstName %>..." value="<%= fb.adminNotes || '' %>">
+                      <button type="submit" class="btn btn-sm btn-primary" style="margin-left: 6px;">
+                        <i class="fas fa-paper-plane"></i> Save Reply
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
 
 <!-- ── Manage Official Groups (All Years) ───────────────────────── -->
 <div class="row">

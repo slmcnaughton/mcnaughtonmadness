@@ -10,10 +10,6 @@
     <% } %>
 </h1>
 
-<!--=======================================================-->
-<!--UPDATE FORM ACTION AND LOCATION-->
-<!--=======================================================-->
-
 <div class="pick-stepper">
     <div class="pick-step completed">
         <div class="pick-step-dot"><i class="fas fa-check"></i></div>
@@ -33,24 +29,48 @@
 
 <p class="scoring-note"><i class="fas fa-info-circle"></i> 5 points for each correct Final Four pick, 0 for incorrect</p>
 
-<form action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
+<form class="teamPicker" action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
     <% for(var i = 0; i < 4; i++) { %>
-        <div class="form-group column">
-            <label for="finalFourPicks"><%=tournament.rounds[0].matches[i * 8].topTeam.region%></label>
-            <select id="finalFourPicks" name="<%=57 + i%>">
+        <div class="regionPicker col-xs-12 col-sm-6 col-md-3">
+            <h2 class="regionLabel"><%=tournament.rounds[0].matches[i * 8].topTeam.region%></h2>
+
+            <div class="form-group matchPicker">
                 <% for(var j = 0; j < 8; j++) { %>
                     <% var match = tournament.rounds[0].matches[i*8 + j] %>
-                    <option value="<%=match.topTeam._id%>"><%=match.topTeam.seed%>) <%=match.topTeam.name%></option>
-                    <option value="<%=match.bottomTeam._id%>"><%=match.bottomTeam.seed%>) <%=match.bottomTeam.name%></option>
+                    <% var pickName = 57 + i %>
+                    <% var idTop = "ff" + i + "m" + j + "top" %>
+                    <% var idBottom = "ff" + i + "m" + j + "bottom" %>
+
+                    <label for="<%=idTop%>" style="display: block">
+                        <div class="team">
+                            <input class="radio" type="radio" id="<%=idTop%>" name="<%=pickName%>" value="<%= match.topTeam._id %>" <%= j === 0 ? 'required' : '' %>>
+                            <div class="teamTitle">
+                                <img class="pickerImage" src="<%= match.topTeam.image %>">
+                                <span class="seed"><%=match.topTeam.seed%></span>
+                                <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label for="<%=idBottom%>" style="display: block">
+                        <div class="team">
+                            <input class="radio" type="radio" id="<%=idBottom%>" name="<%=pickName%>" value="<%= match.bottomTeam._id %>">
+                            <div class="teamTitle">
+                                <img class="pickerImage" src="<%= match.bottomTeam.image %>">
+                                <span class="seed"><%=match.bottomTeam.seed%></span>
+                                <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
+                            </div>
+                        </div>
+                    </label>
                 <% } %>
-            </select>
-        </div>
-        <div class="form-group">
-            <input class="form-control" type="text" name="<%=57 + i%>" placeholder="Optional comment">
+            </div>
+
+            <div class="form-group">
+                <input class="form-control" type="text" name="<%=57 + i%>" placeholder="Optional comment">
+            </div>
         </div>
     <% } %>
-    
-       
+
     <div class="form-group">
         <button class="btn btn-primary btn-lg btn-default btn-block">Submit & Pick Champion <i class="fas fa-arrow-right"></i></button>
     </div>
