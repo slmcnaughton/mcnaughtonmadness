@@ -39,29 +39,6 @@
   </div>
 </div>
 
-<!-- ── Scrape Trigger ──────────────────────────────────────────────── -->
-<div class="row" style="margin-bottom: 20px;">
-  <div class="col-lg-12">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title"><i class="fas fa-sync-alt"></i> Scrape Scores</h3>
-      </div>
-      <div class="panel-body">
-        <form action="/admin/scrape" method="POST" class="form-inline">
-          <div class="form-group" style="margin-right: 10px;">
-            <input type="text" name="dateStr" class="form-control" placeholder="YYYYMMDD (blank = today)" style="width: 200px;" pattern="\d{8}" title="8-digit date like 20260313">
-          </div>
-          <button type="submit" class="btn btn-primary" onclick="return confirm('Trigger a scrape? This will update match results from CBS.');">
-            <i class="fas fa-play"></i> Run Scrape
-          </button>
-          <span class="text-muted" style="margin-left: 10px;">Leave blank to scrape today's scoreboard, or enter a date like 20260313</span>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-
 <!-- ── Feedback ───────────────────────────────────────────────────── -->
 <%
   var newFeedbackCount = feedback.filter(function(fb) { return fb.status === 'new'; }).length;
@@ -70,15 +47,18 @@
 <div class="row">
   <div class="col-lg-12">
     <div class="panel panel-<%= newFeedbackCount > 0 ? 'info' : 'default' %>">
-      <div class="panel-heading">
-        <h3 class="panel-title">
-          <i class="fas fa-comment-dots"></i> Feedback
-          <% if(newFeedbackCount > 0) { %>
-            <span class="badge"><%= newFeedbackCount %> new</span>
-          <% } %>
+      <div class="panel-heading" style="cursor: pointer;" data-toggle="collapse" data-target="#feedbackBody">
+        <h3 class="panel-title" style="display: flex; align-items: center;">
+          <span>
+            <i class="fas fa-comment-dots"></i> Feedback
+            <% if(newFeedbackCount > 0) { %>
+              <span class="badge"><%= newFeedbackCount %> new</span>
+            <% } %>
+          </span>
+          <i class="fas fa-chevron-down" style="margin-left: auto; color: #999; transition: transform 0.2s;" id="feedbackChevron"></i>
         </h3>
       </div>
-      <div class="panel-body">
+      <div class="panel-body collapse<%= newFeedbackCount > 0 ? ' in' : '' %>" id="feedbackBody">
         <div style="overflow-x: auto;">
           <table class="table table-condensed">
             <thead>
@@ -235,6 +215,86 @@
 </div>
 <% } %>
 
+<!-- ── Group Summaries ───────────────────────────────────────────── -->
+<% if(groups.length > 0) { %>
+  <div class="row">
+    <div class="col-lg-12">
+      <h3>Group Summaries</h3>
+    </div>
+    <% groups.forEach(function(group) { %>
+      <div class="col-md-6">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4 class="panel-title" style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <a href="/tournamentGroups/<%= group.groupName %>"><%= group.groupName %></a>
+              <span class="badge"><%= group.userTournaments ? group.userTournaments.length : 0 %> members</span>
+              <% if(group.isOfficial) { %>
+                <span class="label label-success"><i class="fas fa-trophy"></i> Official</span>
+              <% } %>
+              <form action="/admin/groups/<%= group.groupName %>/toggle-official" method="POST" style="display: inline; margin-left: auto;">
+                <button type="submit" class="btn btn-xs <%= group.isOfficial ? 'btn-default' : 'btn-success' %>" title="<%= group.isOfficial ? 'Remove official status' : 'Mark as official (used for trophies)' %>">
+                  <i class="fas fa-trophy"></i> <%= group.isOfficial ? 'Unofficial' : 'Make Official' %>
+                </button>
+              </form>
+            </h4>
+          </div>
+          <div class="panel-body">
+            <% if(group.userTournaments && group.userTournaments.length > 0) { %>
+              <table class="table table-condensed" style="margin-bottom: 0;">
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th>R1</th>
+                    <th>R2</th>
+                    <th>R3</th>
+                    <th>R4</th>
+                    <th>R5</th>
+                    <th>R6</th>
+                    <th>FF</th>
+                    <th>Champ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% group.userTournaments.forEach(function(ut) { %>
+                    <tr>
+                      <td>
+                        <a href="/tournamentGroups/<%= group.groupName %>/userTournaments/<%= ut.user.username %>">
+                          <%= ut.user.firstName %> <%= ut.user.lastName %>
+                        </a>
+                      </td>
+                      <%
+                        // Rounds: 1-4 are regular, 7=final four, 8=champion
+                        var roundLabels = [1, 2, 3, 4, 5, 6, 7, 8];
+                        var editBase = "/tournamentGroups/" + group.groupName + "/userTournaments/" + ut.user.username + "/";
+                      %>
+                      <% roundLabels.forEach(function(rn) { %>
+                        <td class="text-center">
+                          <%
+                            var ur = ut.userRounds ? ut.userRounds.find(function(r) { return r.round.numRound === rn; }) : null;
+                            var hasPicks = ur && ur.userMatchPredictions && ur.userMatchPredictions.length > 0 &&
+                              ur.userMatchPredictions.some(function(p) { return !!p.winner; });
+                          %>
+                          <% if(hasPicks) { %>
+                            <a href="<%= editBase + rn + '/edit' %>" title="Edit R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #5cb85c;"><i class="fas fa-check"></i></a>
+                          <% } else { %>
+                            <a href="<%= editBase + rn + '/edit' %>" title="Make R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #f0ad4e;"><i class="fas fa-pencil-alt"></i></a>
+                          <% } %>
+                        </td>
+                      <% }); %>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            <% } else { %>
+              <p class="text-muted">No members yet.</p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
 <!-- ── User Management ───────────────────────────────────────────── -->
 <div class="row">
   <div class="col-lg-12">
@@ -364,85 +424,30 @@
   </div>
 </div>
 
-<!-- ── Group Summaries ───────────────────────────────────────────── -->
-<% if(groups.length > 0) { %>
-  <div class="row">
-    <div class="col-lg-12">
-      <h3>Group Summaries</h3>
-    </div>
-    <% groups.forEach(function(group) { %>
-      <div class="col-md-6">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h4 class="panel-title" style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <a href="/tournamentGroups/<%= group.groupName %>"><%= group.groupName %></a>
-              <span class="badge"><%= group.userTournaments ? group.userTournaments.length : 0 %> members</span>
-              <% if(group.isOfficial) { %>
-                <span class="label label-success"><i class="fas fa-trophy"></i> Official</span>
-              <% } %>
-              <form action="/admin/groups/<%= group.groupName %>/toggle-official" method="POST" style="display: inline; margin-left: auto;">
-                <button type="submit" class="btn btn-xs <%= group.isOfficial ? 'btn-default' : 'btn-success' %>" title="<%= group.isOfficial ? 'Remove official status' : 'Mark as official (used for trophies)' %>">
-                  <i class="fas fa-trophy"></i> <%= group.isOfficial ? 'Unofficial' : 'Make Official' %>
-                </button>
-              </form>
-            </h4>
-          </div>
-          <div class="panel-body">
-            <% if(group.userTournaments && group.userTournaments.length > 0) { %>
-              <table class="table table-condensed" style="margin-bottom: 0;">
-                <thead>
-                  <tr>
-                    <th>Member</th>
-                    <th>R1</th>
-                    <th>R2</th>
-                    <th>R3</th>
-                    <th>R4</th>
-                    <th>R5</th>
-                    <th>R6</th>
-                    <th>FF</th>
-                    <th>Champ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% group.userTournaments.forEach(function(ut) { %>
-                    <tr>
-                      <td>
-                        <a href="/tournamentGroups/<%= group.groupName %>/userTournaments/<%= ut.user.username %>">
-                          <%= ut.user.firstName %> <%= ut.user.lastName %>
-                        </a>
-                      </td>
-                      <%
-                        // Rounds: 1-4 are regular, 7=final four, 8=champion
-                        var roundLabels = [1, 2, 3, 4, 5, 6, 7, 8];
-                        var editBase = "/tournamentGroups/" + group.groupName + "/userTournaments/" + ut.user.username + "/";
-                      %>
-                      <% roundLabels.forEach(function(rn) { %>
-                        <td class="text-center">
-                          <%
-                            var ur = ut.userRounds ? ut.userRounds.find(function(r) { return r.round.numRound === rn; }) : null;
-                            var hasPicks = ur && ur.userMatchPredictions && ur.userMatchPredictions.length > 0 &&
-                              ur.userMatchPredictions.some(function(p) { return !!p.winner; });
-                          %>
-                          <% if(hasPicks) { %>
-                            <a href="<%= editBase + rn + '/edit' %>" title="Edit R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #5cb85c;"><i class="fas fa-check"></i></a>
-                          <% } else { %>
-                            <a href="<%= editBase + rn + '/edit' %>" title="Make R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #f0ad4e;"><i class="fas fa-pencil-alt"></i></a>
-                          <% } %>
-                        </td>
-                      <% }); %>
-                    </tr>
-                  <% }); %>
-                </tbody>
-              </table>
-            <% } else { %>
-              <p class="text-muted">No members yet.</p>
-            <% } %>
-          </div>
-        </div>
+<!-- ── Scrape Trigger ──────────────────────────────────────────────── -->
+<div class="row" style="margin-bottom: 20px;">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading" style="cursor: pointer;" data-toggle="collapse" data-target="#scrapeBody">
+        <h3 class="panel-title" style="display: flex; align-items: center;">
+          <span><i class="fas fa-sync-alt"></i> Scrape Scores</span>
+          <i class="fas fa-chevron-down" style="margin-left: auto; color: #999; transition: transform 0.2s;" id="scrapeChevron"></i>
+        </h3>
       </div>
-    <% }); %>
+      <div class="panel-body collapse" id="scrapeBody">
+        <form action="/admin/scrape" method="POST" class="form-inline">
+          <div class="form-group" style="margin-right: 10px;">
+            <input type="text" name="dateStr" class="form-control" placeholder="YYYYMMDD (blank = today)" style="width: 200px;" pattern="\d{8}" title="8-digit date like 20260313">
+          </div>
+          <button type="submit" class="btn btn-primary" onclick="return confirm('Trigger a scrape? This will update match results from CBS.');">
+            <i class="fas fa-play"></i> Run Scrape
+          </button>
+          <span class="text-muted" style="margin-left: 10px;">Leave blank to scrape today's scoreboard, or enter a date like 20260313</span>
+        </form>
+      </div>
+    </div>
   </div>
-<% } %>
+</div>
 
 <!-- ── Manage Official Groups (All Years) ───────────────────────── -->
 <div class="row">
@@ -579,16 +584,23 @@
 <script>
 $(document).ready(function () {
   // Chevron rotation for collapsible sections
-  $('#userManagementBody').on('show.bs.collapse', function () {
-    $('#userChevron').css('transform', 'rotate(180deg)');
-  }).on('hide.bs.collapse', function () {
-    $('#userChevron').css('transform', 'rotate(0deg)');
+  var chevronSections = [
+    { body: '#feedbackBody', chevron: '#feedbackChevron' },
+    { body: '#userManagementBody', chevron: '#userChevron' },
+    { body: '#scrapeBody', chevron: '#scrapeChevron' },
+    { body: '#officialGroupsBody', chevron: '#officialChevron' }
+  ];
+  chevronSections.forEach(function(s) {
+    $(s.body).on('show.bs.collapse', function () {
+      $(s.chevron).css('transform', 'rotate(180deg)');
+    }).on('hide.bs.collapse', function () {
+      $(s.chevron).css('transform', 'rotate(0deg)');
+    });
   });
-  $('#officialGroupsBody').on('show.bs.collapse', function () {
-    $('#officialChevron').css('transform', 'rotate(180deg)');
-  }).on('hide.bs.collapse', function () {
-    $('#officialChevron').css('transform', 'rotate(0deg)');
-  });
+  // Initialize chevron state for sections that start expanded
+  if ($('#feedbackBody').hasClass('in')) {
+    $('#feedbackChevron').css('transform', 'rotate(180deg)');
+  }
 
   var $checkboxes = $('.user-checkbox');
   var $selectAll = $('#selectAll');
