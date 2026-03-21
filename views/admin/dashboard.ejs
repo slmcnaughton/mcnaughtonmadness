@@ -324,6 +324,87 @@
   </div>
 </div>
 
+<!-- ── Email Log ────────────────────────────────────────────────────── -->
+<% if(emailLogs && emailLogs.length > 0) { %>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="panel panel-default">
+      <div class="panel-heading" style="cursor: pointer;" data-toggle="collapse" data-target="#emailLogBody">
+        <h3 class="panel-title" style="display: flex; align-items: center;">
+          <span>
+            <i class="fas fa-envelope"></i> Email Log
+            <%
+              var failedCount = emailLogs.filter(function(e) { return e.status === 'failed'; }).length;
+            %>
+            <% if(failedCount > 0) { %>
+              <span class="badge" style="background: #d9534f;"><%= failedCount %> failed</span>
+            <% } %>
+          </span>
+          <i class="fas fa-chevron-down" style="margin-left: auto; color: #999; transition: transform 0.2s;" id="emailLogChevron"></i>
+        </h3>
+      </div>
+      <div class="panel-body collapse" id="emailLogBody">
+        <div style="overflow-x: auto;">
+          <table class="table table-condensed">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Subject</th>
+                <th>Recipients</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% emailLogs.forEach(function(log) { %>
+                <tr class="<%= log.status === 'failed' ? 'danger' : '' %>">
+                  <td style="white-space: nowrap;">
+                    <%= log.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                    <small class="text-muted"><%= log.createdAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) %></small>
+                  </td>
+                  <td>
+                    <% if(log.emailType === 'roundSummary') { %>
+                      <span class="label label-primary">Round Summary</span>
+                    <% } else if(log.emailType === 'pickReminder') { %>
+                      <span class="label label-warning">Pick Reminder</span>
+                    <% } else if(log.emailType === 'passwordRecovery') { %>
+                      <span class="label label-info">Password Reset</span>
+                    <% } else if(log.emailType === 'usernameRecovery') { %>
+                      <span class="label label-info">Username Recovery</span>
+                    <% } else if(log.emailType === 'passwordConfirmation') { %>
+                      <span class="label label-default">Password Confirm</span>
+                    <% } else if(log.emailType === 'nameChangeNotification') { %>
+                      <span class="label label-default">Name Change</span>
+                    <% } else { %>
+                      <span class="label label-default">Other</span>
+                    <% } %>
+                  </td>
+                  <td style="max-width: 300px; word-wrap: break-word;"><%= log.subject %></td>
+                  <td>
+                    <% if(log.recipientCount > 3) { %>
+                      <span title="<%= log.recipients.join(', ') %>"><%= log.recipientCount %> recipients</span>
+                    <% } else { %>
+                      <small><%= log.recipients.join(', ') %></small>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(log.status === 'sent') { %>
+                      <span class="label label-success"><i class="fas fa-check"></i> Sent</span>
+                    <% } else { %>
+                      <span class="label label-danger" title="<%= log.error || '' %>"><i class="fas fa-times"></i> Failed</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
 <!-- ── Feedback ───────────────────────────────────────────────────── -->
 <%
   var newFeedbackCount = feedback.filter(function(fb) { return fb.status === 'new'; }).length;
@@ -588,6 +669,7 @@ $(document).ready(function () {
     { body: '#feedbackBody', chevron: '#feedbackChevron' },
     { body: '#userManagementBody', chevron: '#userChevron' },
     { body: '#scrapeBody', chevron: '#scrapeChevron' },
+    { body: '#emailLogBody', chevron: '#emailLogChevron' },
     { body: '#officialGroupsBody', chevron: '#officialChevron' }
   ];
   chevronSections.forEach(function(s) {

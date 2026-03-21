@@ -11,6 +11,8 @@ var { Resend } = require("resend");
 
 var resend = new Resend(process.env.RESEND_API_KEY);
 
+var EmailLog = require("../models/emailLog");
+
 var emailObj = {};
 
 emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
@@ -71,9 +73,7 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
               contentType: "html",
             },
           };
-          sendEmail(mail.to, mail.subject, mail.body, function (err) {
-            if (err) console.log(err);
-          });
+          sendEmail(mail.to, mail.subject, mail.body, "roundSummary");
         }
 
         if (testEmail) {
@@ -143,9 +143,7 @@ function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
               contentType: "html",
             },
           };
-          sendEmail(mail.to, mail.subject, mail.body, function (err) {
-            if (err) console.log(err);
-          });
+          sendEmail(mail.to, mail.subject, mail.body, "pickReminder");
         } else {
           console.log(
             `All users from ${tournamentGroup.groupName} have submitted picks.`,
@@ -647,9 +645,7 @@ emailObj.sendUsernameRecovery = async function (req, user) {
     contentType: "text",
   };
 
-  sendEmail(user.email, subject, mailBody, function (err) {
-    if (err) console.log(err);
-  });
+  sendEmail(user.email, subject, mailBody, "usernameRecovery");
 
   req.flash(
     "info",
@@ -678,9 +674,7 @@ emailObj.sendPasswordRecovery = async function (req, token, user) {
     contentType: "text",
   };
 
-  sendEmail(user.email, subject, mailBody, function (err) {
-    if (err) console.log(err);
-  });
+  sendEmail(user.email, subject, mailBody, "passwordRecovery");
 
   req.flash(
     "info",
@@ -699,9 +693,7 @@ emailObj.confirmPasswordChange = async function (req, user) {
     contentType: "text",
   };
 
-  sendEmail(user.email, subject, mailBody, function (err) {
-    if (err) console.log(err);
-  });
+  sendEmail(user.email, subject, mailBody, "passwordConfirmation");
 
   req.flash("success", "Success! Your password has been changed.");
 };
@@ -718,12 +710,10 @@ emailObj.sendNameChangeNotification = async function (user) {
     contentType: "text",
   };
 
-  sendEmail(adminEmail, subject, mailBody, function (err) {
-    if (err) console.log(err);
-  });
+  sendEmail(adminEmail, subject, mailBody, "nameChangeNotification");
 };
 
-async function sendEmail(mailingList, subject, mailBody) {
+async function sendEmail(mailingList, subject, mailBody, emailType) {
   var recipients = Array.isArray(mailingList) ? mailingList : [mailingList];
   console.log("Sending email to " + recipients.length + " recipient(s): " + recipients.join(", "));
 
@@ -742,9 +732,32 @@ async function sendEmail(mailingList, subject, mailBody) {
 
   try {
     var result = await resend.emails.send(mail);
-    console.log("Email sent successfully, id:", result.data ? result.data.id : result);
+    var providerMessageId = result.data ? result.data.id : null;
+    console.log("Email sent successfully, id:", providerMessageId || result);
+
+    EmailLog.create({
+      emailType: emailType || "other",
+      subject: subject,
+      recipients: recipients,
+      recipientCount: recipients.length,
+      status: "sent",
+      providerMessageId: providerMessageId,
+    }).catch(function (logErr) {
+      console.log("Failed to log email:", logErr);
+    });
   } catch (err) {
     console.log("Email send failed:", err);
+
+    EmailLog.create({
+      emailType: emailType || "other",
+      subject: subject,
+      recipients: recipients,
+      recipientCount: recipients.length,
+      status: "failed",
+      error: err.message || String(err),
+    }).catch(function (logErr) {
+      console.log("Failed to log email error:", logErr);
+    });
   }
 }
 

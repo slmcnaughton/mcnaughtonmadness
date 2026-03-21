@@ -17,6 +17,7 @@ var Feedback = require("../models/feedback");
 var FamilyMember = require("../models/familyMember");
 var FamilyRelationship = require("../models/familyRelationship");
 var scrape = require("../scrape");
+var EmailLog = require("../models/emailLog");
 
 // Lazy-load so the app still starts if packages aren't installed
 var upload;
@@ -110,15 +111,26 @@ router.get("/", function (req, res) {
                     allFeedback = [];
                   }
 
-                  res.render("admin/dashboard", {
-                    page: "admin",
-                    users: allUsers,
-                    groups: groups,
-                    allGroups: allGroups,
-                    pickStatus: pickStatus,
-                    year: year,
-                    feedback: allFeedback,
-                  });
+                  EmailLog.find({})
+                    .sort({ createdAt: -1 })
+                    .limit(50)
+                    .exec(function (err, emailLogs) {
+                      if (err) {
+                        console.log(err);
+                        emailLogs = [];
+                      }
+
+                      res.render("admin/dashboard", {
+                        page: "admin",
+                        users: allUsers,
+                        groups: groups,
+                        allGroups: allGroups,
+                        pickStatus: pickStatus,
+                        year: year,
+                        feedback: allFeedback,
+                        emailLogs: emailLogs,
+                      });
+                    });
                 });
             });
         });
