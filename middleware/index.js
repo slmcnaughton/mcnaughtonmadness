@@ -44,6 +44,30 @@ middlewareObj.checkTournamentGroupOwnership = function (req, res, next) {
   }
 };
 
+middlewareObj.isCommissionerOrAdmin = function (req, res, next) {
+  if (req.isAuthenticated()) {
+    if (req.user.isAdmin) {
+      return next();
+    }
+    TournamentGroup.findOne({ groupName: req.params.groupName }).exec(
+      function (err, foundTournamentGroup) {
+        if (err || !foundTournamentGroup) {
+          req.flash("error", "Tournament Group not found");
+          return res.redirect("back");
+        }
+        if (foundTournamentGroup.commissioner.id.equals(req.user.id)) {
+          return next();
+        }
+        req.flash("error", "You don't have permission to do that");
+        res.redirect("back");
+      }
+    );
+  } else {
+    req.flash("error", "You need to be logged in to do that");
+    res.redirect("/login");
+  }
+};
+
 middlewareObj.checkUserTournamentOwnership = function (req, res, next) {
   if (req.isAuthenticated()) {
     UserTournament.findOne({
@@ -54,7 +78,7 @@ middlewareObj.checkUserTournamentOwnership = function (req, res, next) {
         req.flash("error", "User Tournament not found");
         res.redirect("back");
       } else {
-        //does user own the User Tournament?
+        //does user own the User Tournament, or is the requester admin/commissioner?
         if (
           foundUserTournament.user.id.equals(req.user.id) ||
           req.user.isAdmin
@@ -62,8 +86,17 @@ middlewareObj.checkUserTournamentOwnership = function (req, res, next) {
           req.targetUserFirstName = foundUserTournament.user.firstName;
           next();
         } else {
-          req.flash("error", "You don't have permission to do that");
-          res.redirect("back");
+          // Check if current user is commissioner of this group
+          TournamentGroup.findOne({ groupName: req.params.groupName }).exec(
+            function (err, group) {
+              if (!err && group && group.commissioner.id.equals(req.user.id)) {
+                req.targetUserFirstName = foundUserTournament.user.firstName;
+                return next();
+              }
+              req.flash("error", "You don't have permission to do that");
+              res.redirect("back");
+            }
+          );
         }
       }
     });

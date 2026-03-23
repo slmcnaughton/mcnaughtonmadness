@@ -1,0 +1,182 @@
+<% include ../partials/header %>
+
+<div class="container" style="margin-top: 20px;">
+  <div style="margin-bottom: 15px;">
+    <a href="/tournamentGroups/<%= group.groupName %>" class="btn btn-default btn-sm">
+      <i class="fas fa-arrow-left"></i> Back to <%= group.groupName %>
+    </a>
+  </div>
+
+  <h2 style="margin-top: 0;">
+    <i class="fas fa-cog"></i> Manage: <%= group.groupName %>
+    <% if(group.isOfficial) { %>
+      <span class="label label-success" style="font-size: 14px; vertical-align: middle;"><i class="fas fa-trophy"></i> Official</span>
+    <% } %>
+  </h2>
+
+  <!-- ── Pick Status ──────────────────────────────────────────────── -->
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title"><i class="fas fa-clipboard-check"></i> Pick Status</h3>
+    </div>
+    <div class="panel-body">
+      <% if(group.userTournaments && group.userTournaments.length > 0) { %>
+        <div style="overflow-x: auto;">
+          <table class="table table-condensed" style="margin-bottom: 0;">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th class="text-center">R1</th>
+                <th class="text-center">R2</th>
+                <th class="text-center">R3</th>
+                <th class="text-center">R4</th>
+                <th class="text-center">R5</th>
+                <th class="text-center">R6</th>
+                <th class="text-center">FF</th>
+                <th class="text-center">Champ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% group.userTournaments.forEach(function(ut) { %>
+                <tr>
+                  <td>
+                    <a href="/tournamentGroups/<%= group.groupName %>/userTournaments/<%= ut.user.username %>">
+                      <%= ut.user.firstName %> <%= ut.user.lastName %>
+                    </a>
+                  </td>
+                  <%
+                    var roundLabels = [1, 2, 3, 4, 5, 6, 7, 8];
+                    var editBase = "/tournamentGroups/" + group.groupName + "/userTournaments/" + ut.user.username + "/";
+                  %>
+                  <% roundLabels.forEach(function(rn) { %>
+                    <td class="text-center">
+                      <%
+                        var ur = ut.userRounds ? ut.userRounds.find(function(r) { return r.round.numRound === rn; }) : null;
+                        var hasPicks = ur && ur.userMatchPredictions && ur.userMatchPredictions.length > 0 &&
+                          ur.userMatchPredictions.some(function(p) { return !!p.winner; });
+                      %>
+                      <% if(hasPicks) { %>
+                        <a href="<%= editBase + rn + '/edit' %>" title="Edit R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #5cb85c;"><i class="fas fa-check"></i></a>
+                      <% } else { %>
+                        <a href="<%= editBase + rn + '/edit' %>" title="Make R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #f0ad4e;"><i class="fas fa-pencil-alt"></i></a>
+                      <% } %>
+                    </td>
+                  <% }); %>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p class="text-muted">No members yet.</p>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ── Test Emails ──────────────────────────────────────────────── -->
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title"><i class="fas fa-paper-plane"></i> Test Emails</h3>
+    </div>
+    <div class="panel-body">
+      <p class="text-muted" style="margin-bottom: 12px;">Test emails are sent only to you (<%= currentUser.email %>).</p>
+      <form action="/tournamentGroups/<%= group.groupName %>/testRoundSummary" method="POST" style="display: inline-block; margin-right: 10px;">
+        <button class="btn btn-sm btn-primary"><i class="fas fa-envelope"></i> Test Round Summary</button>
+      </form>
+      <form action="/tournamentGroups/<%= group.groupName %>/testPickReminder" method="POST" style="display: inline-block;">
+        <button class="btn btn-sm btn-warning"><i class="fas fa-bell"></i> Test Pick Reminder</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Email Log ────────────────────────────────────────────────── -->
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">
+        <i class="fas fa-envelope"></i> Email Log
+        <% if(emailLogs && emailLogs.length > 0) { %>
+          <%
+            var failedCount = emailLogs.filter(function(e) { return e.status === 'failed'; }).length;
+          %>
+          <% if(failedCount > 0) { %>
+            <span class="badge" style="background: #d9534f;"><%= failedCount %> failed</span>
+          <% } %>
+        <% } %>
+      </h3>
+    </div>
+    <div class="panel-body">
+      <% if(emailLogs && emailLogs.length > 0) { %>
+        <div style="overflow-x: auto;">
+          <table class="table table-condensed" style="margin-bottom: 0;">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Subject</th>
+                <th>Recipients</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% emailLogs.forEach(function(log) { %>
+                <tr class="<%= log.status === 'failed' ? 'danger' : '' %>">
+                  <td style="white-space: nowrap;">
+                    <%= moment(log.createdAt).tz("America/New_York").format("MMM D") %>
+                    <small class="text-muted"><%= moment(log.createdAt).tz("America/New_York").format("h:mm A") %> ET</small>
+                  </td>
+                  <td>
+                    <% if(log.emailType === 'roundSummary') { %>
+                      <span class="label label-primary">Round Summary</span>
+                    <% } else if(log.emailType === 'pickReminder') { %>
+                      <span class="label label-warning">Pick Reminder</span>
+                    <% } else { %>
+                      <span class="label label-default">Other</span>
+                    <% } %>
+                  </td>
+                  <td style="max-width: 300px; word-wrap: break-word;"><%= log.subject %></td>
+                  <td>
+                    <% if(log.recipientCount > 3) { %>
+                      <span title="<%= log.recipients.join(', ') %>"><%= log.recipientCount %> recipients</span>
+                    <% } else { %>
+                      <small><%= log.recipients.join(', ') %></small>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(log.status === 'sent') { %>
+                      <span class="label label-success"><i class="fas fa-check"></i> Sent</span>
+                    <% } else { %>
+                      <span class="label label-danger" title="<%= log.error || '' %>"><i class="fas fa-times"></i> Failed</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p class="text-muted">No emails sent for this group yet.</p>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ── Official Status (Admin only) ────────────────────────────── -->
+  <% if(currentUser && currentUser.isAdmin) { %>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fas fa-shield-alt"></i> Admin Settings</h3>
+      </div>
+      <div class="panel-body">
+        <form action="/admin/groups/<%= group.groupName %>/toggle-official" method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-sm <%= group.isOfficial ? 'btn-default' : 'btn-success' %>">
+            <i class="fas fa-trophy"></i> <%= group.isOfficial ? 'Remove Official Status' : 'Mark as Official' %>
+          </button>
+        </form>
+        <p class="text-muted" style="margin-top: 8px; margin-bottom: 0;">
+          Members of official groups can view the Family Tree and are included in the historical Previous Standings page.
+        </p>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<% include ../partials/footer %>

@@ -73,7 +73,7 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
               contentType: "html",
             },
           };
-          sendEmail(mail.to, mail.subject, mail.body, "roundSummary");
+          sendEmail(mail.to, mail.subject, mail.body, "roundSummary", populatedGroup.groupName);
         }
 
         if (testEmail) {
@@ -143,7 +143,7 @@ function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
               contentType: "html",
             },
           };
-          sendEmail(mail.to, mail.subject, mail.body, "pickReminder");
+          sendEmail(mail.to, mail.subject, mail.body, "pickReminder", tournamentGroup.groupName);
         } else {
           console.log(
             `All users from ${tournamentGroup.groupName} have submitted picks.`,
@@ -713,7 +713,7 @@ emailObj.sendNameChangeNotification = async function (user) {
   sendEmail(adminEmail, subject, mailBody, "nameChangeNotification");
 };
 
-async function sendEmail(mailingList, subject, mailBody, emailType) {
+async function sendEmail(mailingList, subject, mailBody, emailType, groupName) {
   var recipients = Array.isArray(mailingList) ? mailingList : [mailingList];
   console.log("Sending email to " + recipients.length + " recipient(s): " + recipients.join(", "));
 
@@ -730,32 +730,30 @@ async function sendEmail(mailingList, subject, mailBody, emailType) {
     mail.html = mailBody.content;
   }
 
+  var logEntry = {
+    emailType: emailType || "other",
+    subject: subject,
+    recipients: recipients,
+    recipientCount: recipients.length,
+  };
+  if (groupName) logEntry.groupName = groupName;
+
   try {
     var result = await resend.emails.send(mail);
     var providerMessageId = result.data ? result.data.id : null;
     console.log("Email sent successfully, id:", providerMessageId || result);
 
-    EmailLog.create({
-      emailType: emailType || "other",
-      subject: subject,
-      recipients: recipients,
-      recipientCount: recipients.length,
-      status: "sent",
-      providerMessageId: providerMessageId,
-    }).catch(function (logErr) {
+    logEntry.status = "sent";
+    logEntry.providerMessageId = providerMessageId;
+    EmailLog.create(logEntry).catch(function (logErr) {
       console.log("Failed to log email:", logErr);
     });
   } catch (err) {
     console.log("Email send failed:", err);
 
-    EmailLog.create({
-      emailType: emailType || "other",
-      subject: subject,
-      recipients: recipients,
-      recipientCount: recipients.length,
-      status: "failed",
-      error: err.message || String(err),
-    }).catch(function (logErr) {
+    logEntry.status = "failed";
+    logEntry.error = err.message || String(err);
+    EmailLog.create(logEntry).catch(function (logErr) {
       console.log("Failed to log email error:", logErr);
     });
   }

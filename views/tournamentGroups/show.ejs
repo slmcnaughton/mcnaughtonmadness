@@ -29,22 +29,6 @@
             <div class="container">
                 <div class="row">
 
-                    <!--DELETE AFTER TESTING-->
-                    <!--<form action="/tournamentGroups/<%= tournamentGroup.groupName%>/testRoundSummary" method="POST">-->
-                    <!--    <div class="form-group text-center">-->
-                    <!--        <button class="btn btn-success btn-lg btn-default">Test Round Summary</button>-->
-                    <!--    </div>-->
-                    <!--</form>-->
-                    <!--DELETE AFTER TESTING-->
-
-                    <!--DELETE AFTER TESTING-->
-                    <!--<form action="/tournamentGroups/<%= tournamentGroup.groupName%>/testPickReminder" method="POST">-->
-                    <!--    <div class="form-group text-center">-->
-                    <!--        <button class="btn btn-success btn-lg btn-default">Test Pick Reminder</button>-->
-                    <!--    </div>-->
-                    <!--</form>-->
-                    <!--DELETE AFTER TESTING-->
-
                     <div class="joinOrPick standingsInfo col-xs-12 col-sm-4">
                         <% if(!isInGroup) { %>
                             <form action="/tournamentGroups/<%= tournamentGroup.groupName%>/userTournaments"
@@ -89,8 +73,12 @@
                         <h4>
                             <%=tournamentGroup.tournamentReference.year%> Tournament
                         </h4>
-                        <h5>Commissioner: <%=tournamentGroup.commissioner.name%>
-                        </h5>
+                        <h5>Commissioner: <%=tournamentGroup.commissioner.name%></h5>
+                        <% if(currentUser && (currentUser.isAdmin || (tournamentGroup.commissioner.id && currentUser._id.equals(tournamentGroup.commissioner.id)))) { %>
+                          <a href="/tournamentGroups/<%= tournamentGroup.groupName %>/manage" class="btn btn-xs btn-default">
+                            <i class="fas fa-cog"></i> Manage Group
+                          </a>
+                        <% } %>
                         <p><em>
                                 <%=tournamentGroup.groupMotto%>
                             </em></p>

@@ -14,6 +14,7 @@ var emailLogSchema = new mongoose.Schema({
     ],
     default: "other",
   },
+  groupName: String,
   subject: String,
   recipients: [String],
   recipientCount: Number,

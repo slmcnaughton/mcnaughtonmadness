@@ -97,72 +97,17 @@
       <h3>Group Summaries</h3>
     </div>
     <% groups.forEach(function(group) { %>
-      <div class="col-md-6">
+      <div class="col-md-6 col-lg-4">
         <div class="panel panel-default">
-          <div class="panel-heading">
-            <h4 class="panel-title" style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <a href="/tournamentGroups/<%= group.groupName %>"><%= group.groupName %></a>
-              <span class="badge"><%= group.userTournaments ? group.userTournaments.length : 0 %> members</span>
-              <% if(group.isOfficial) { %>
-                <span class="label label-success"><i class="fas fa-trophy"></i> Official</span>
-              <% } %>
-              <form action="/admin/groups/<%= group.groupName %>/toggle-official" method="POST" style="display: inline; margin-left: auto;">
-                <button type="submit" class="btn btn-xs <%= group.isOfficial ? 'btn-default' : 'btn-success' %>" title="<%= group.isOfficial ? 'Remove official status' : 'Mark as official (used for trophies)' %>">
-                  <i class="fas fa-trophy"></i> <%= group.isOfficial ? 'Unofficial' : 'Make Official' %>
-                </button>
-              </form>
-            </h4>
-          </div>
-          <div class="panel-body">
-            <% if(group.userTournaments && group.userTournaments.length > 0) { %>
-              <table class="table table-condensed" style="margin-bottom: 0;">
-                <thead>
-                  <tr>
-                    <th>Member</th>
-                    <th>R1</th>
-                    <th>R2</th>
-                    <th>R3</th>
-                    <th>R4</th>
-                    <th>R5</th>
-                    <th>R6</th>
-                    <th>FF</th>
-                    <th>Champ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% group.userTournaments.forEach(function(ut) { %>
-                    <tr>
-                      <td>
-                        <a href="/tournamentGroups/<%= group.groupName %>/userTournaments/<%= ut.user.username %>">
-                          <%= ut.user.firstName %> <%= ut.user.lastName %>
-                        </a>
-                      </td>
-                      <%
-                        // Rounds: 1-4 are regular, 7=final four, 8=champion
-                        var roundLabels = [1, 2, 3, 4, 5, 6, 7, 8];
-                        var editBase = "/tournamentGroups/" + group.groupName + "/userTournaments/" + ut.user.username + "/";
-                      %>
-                      <% roundLabels.forEach(function(rn) { %>
-                        <td class="text-center">
-                          <%
-                            var ur = ut.userRounds ? ut.userRounds.find(function(r) { return r.round.numRound === rn; }) : null;
-                            var hasPicks = ur && ur.userMatchPredictions && ur.userMatchPredictions.length > 0 &&
-                              ur.userMatchPredictions.some(function(p) { return !!p.winner; });
-                          %>
-                          <% if(hasPicks) { %>
-                            <a href="<%= editBase + rn + '/edit' %>" title="Edit R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #5cb85c;"><i class="fas fa-check"></i></a>
-                          <% } else { %>
-                            <a href="<%= editBase + rn + '/edit' %>" title="Make R<%= rn %> picks for <%= ut.user.firstName %>" style="color: #f0ad4e;"><i class="fas fa-pencil-alt"></i></a>
-                          <% } %>
-                        </td>
-                      <% }); %>
-                    </tr>
-                  <% }); %>
-                </tbody>
-              </table>
-            <% } else { %>
-              <p class="text-muted">No members yet.</p>
+          <div class="panel-body" style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <a href="/tournamentGroups/<%= group.groupName %>" style="font-weight: 600;"><%= group.groupName %></a>
+            <span class="badge"><%= group.userTournaments ? group.userTournaments.length : 0 %> members</span>
+            <% if(group.isOfficial) { %>
+              <span class="label label-success"><i class="fas fa-trophy"></i> Official</span>
             <% } %>
+            <a href="/tournamentGroups/<%= group.groupName %>/manage" class="btn btn-xs btn-default" style="margin-left: auto;">
+              <i class="fas fa-cog"></i> Manage
+            </a>
           </div>
         </div>
       </div>
@@ -359,8 +304,8 @@
               <% emailLogs.forEach(function(log) { %>
                 <tr class="<%= log.status === 'failed' ? 'danger' : '' %>">
                   <td style="white-space: nowrap;">
-                    <%= log.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
-                    <small class="text-muted"><%= log.createdAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) %></small>
+                    <%= moment(log.createdAt).tz("America/New_York").format("MMM D") %>
+                    <small class="text-muted"><%= moment(log.createdAt).tz("America/New_York").format("h:mm A") %> ET</small>
                   </td>
                   <td>
                     <% if(log.emailType === 'roundSummary') { %>

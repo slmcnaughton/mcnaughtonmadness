@@ -13,6 +13,7 @@ var Comment = require("../models/comment");
 var Trophy = require("../models/trophy");
 var TournamentStanding = require("../models/tournamentStanding");
 var async = require("async");
+var moment = require("moment-timezone");
 var Feedback = require("../models/feedback");
 var FamilyMember = require("../models/familyMember");
 var FamilyRelationship = require("../models/familyRelationship");
@@ -46,15 +47,9 @@ router.get("/", function (req, res) {
         return res.redirect("/");
       }
 
-      // Find all groups for the current year
+      // Find all groups for the current year (lightweight — just need member counts)
       TournamentGroup.find({ year: year })
-        .populate({
-          path: "userTournaments",
-          populate: {
-            path: "userRounds",
-            populate: { path: "userMatchPredictions" },
-          },
-        })
+        .populate("userTournaments")
         .exec(function (err, groups) {
           if (err) {
             console.log(err);
@@ -62,36 +57,8 @@ router.get("/", function (req, res) {
             return res.redirect("/");
           }
 
-          // Build a pick-status summary per user per group
-          // pickStatus[username][groupName] = { joined: true, rounds: { 1: true, 2: false, ... } }
+          // Pick status is now built per-group on the manage page
           var pickStatus = {};
-
-          groups.forEach(function (group) {
-            if (!group.userTournaments) return;
-
-            group.userTournaments.forEach(function (ut) {
-              var username = ut.user.username;
-              if (!pickStatus[username]) pickStatus[username] = {};
-              pickStatus[username][group.groupName] = {
-                joined: true,
-                rounds: {},
-              };
-
-              if (ut.userRounds) {
-                ut.userRounds.forEach(function (ur) {
-                  var hasPicks =
-                    ur.userMatchPredictions &&
-                    ur.userMatchPredictions.length > 0 &&
-                    ur.userMatchPredictions.some(function (p) {
-                      return !!p.winner;
-                    });
-                  pickStatus[username][group.groupName].rounds[
-                    ur.round.numRound
-                  ] = hasPicks;
-                });
-              }
-            });
-          });
 
           // Load ALL groups (lightweight, no population) for historical official toggle
           TournamentGroup.find({})
@@ -129,6 +96,7 @@ router.get("/", function (req, res) {
                         year: year,
                         feedback: allFeedback,
                         emailLogs: emailLogs,
+                        moment: moment,
                       });
                     });
                 });

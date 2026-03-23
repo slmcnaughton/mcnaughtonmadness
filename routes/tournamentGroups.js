@@ -1,15 +1,17 @@
 var express = require("express");
 var router = express.Router();
 var async = require("async");
+var moment = require("moment-timezone");
 var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
 var Team = require("../models/team");
+var EmailLog = require("../models/emailLog");
 var emailHelper = require("../middleware/emailHelper");
 
 //SendRoundSummaryTest — always sends only to the logged-in user's email
-router.post("/:groupName/testRoundSummary", middleware.isLoggedIn, function (req, res) {
+router.post("/:groupName/testRoundSummary", middleware.isCommissionerOrAdmin, function (req, res) {
   var groupName = req.params.groupName;
   TournamentGroup.findOne({ groupName: groupName })
     .populate({
@@ -28,7 +30,7 @@ router.post("/:groupName/testRoundSummary", middleware.isLoggedIn, function (req
     });
 });
 
-router.post("/:groupName/testPickReminder", function (req, res) {
+router.post("/:groupName/testPickReminder", middleware.isCommissionerOrAdmin, function (req, res) {
   var groupName = req.params.groupName;
   TournamentGroup.findOne({ groupName: groupName })
     .populate({
@@ -154,6 +156,39 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
       }
     },
   );
+});
+
+// MANAGE - commissioner/admin management page for a group
+router.get("/:groupName/manage", middleware.isCommissionerOrAdmin, function (req, res) {
+  var groupName = req.params.groupName;
+  TournamentGroup.findOne({ groupName: groupName })
+    .populate({
+      path: "userTournaments",
+      populate: {
+        path: "userRounds",
+        populate: { path: "userMatchPredictions" },
+      },
+    })
+    .exec(function (err, group) {
+      if (err || !group) {
+        req.flash("error", "Tournament Group not found");
+        return res.redirect("/tournamentGroups");
+      }
+
+      EmailLog.find({ groupName: groupName })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .exec(function (err, emailLogs) {
+          if (err) emailLogs = [];
+
+          res.render("tournamentGroups/manage", {
+            group: group,
+            emailLogs: emailLogs,
+            moment: moment,
+            page: "tournamentGroups",
+          });
+        });
+    });
 });
 
 //Note: this must be below the /tournaments/new route
