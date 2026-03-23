@@ -379,10 +379,35 @@
                  
             <% } %>
         <% } %>    
-    </div>             
-              
-    
-    
+    </div>
+
+    <!-- ── Mobile Bonus Picks (visible < 992px only) ── -->
+    <div class="mobile-bonus-picks">
+        <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
+            <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 8) { %>
+                <h3><i class="fas fa-crown" style="color: #D4AF37;"></i> Champion Pick</h3>
+                <% var team = userTournament.userRounds[i].userMatchPredictions[0].winner %>
+                <div class="mobile-bonus-pick <%= team.lost > 0 ? 'lost' : '' %>">
+                    <img src="<%= team.image %>">
+                    <span class="mobile-bonus-pick-team"><%= team.seed %>) <%= team.name %></span>
+                </div>
+            <% } %>
+        <% } %>
+
+        <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
+            <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 7) { %>
+                <% for (var j = 0; j < tournament.regions.length; j++) { %>
+                    <h3><i class="fas fa-basketball-ball"></i> <%= tournament.regions[j] %> Pick</h3>
+                    <% var team = userTournament.userRounds[i].userMatchPredictions[j].winner %>
+                    <div class="mobile-bonus-pick <%= team.lost > 0 ? 'lost' : '' %>">
+                        <img src="<%= team.image %>">
+                        <span class="mobile-bonus-pick-team"><%= team.seed %>) <%= team.name %></span>
+                    </div>
+                <% } %>
+            <% } %>
+        <% } %>
+    </div>
+
 </main>
 <!--end tournament-->
 
