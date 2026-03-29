@@ -132,10 +132,11 @@
                                                                             )</h6>
                                                                         </div>
                                                                         <% if (!hidePickerNames) { %>
+                                                                        <% agg.topTeamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }); %>
                                                                         <div class="picker-names">
                                                                             <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
                                                                                 <span class="picker-name">
-                                                                                    <%= agg.topTeamPickers[k].firstName %><% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.topTeamPickers[k].comment %></em><% } %>
+                                                                                    <span class="picker-rank"><%= rankMap[String(agg.topTeamPickers[k].id)] || '' %>.</span> <%= agg.topTeamPickers[k].firstName %><% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.topTeamPickers[k].comment %></em><% } %>
                                                                                 </span>
                                                                             <% } %>
                                                                         </div>
@@ -143,8 +144,8 @@
                                                                         <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                                                         <% } %>
                                                                     </div>
-                                                               
-                                                                 <% if (!match.winner) { %> 
+
+                                                                 <% if (!match.winner) { %>
                                                                     <div class="aggregate noWin" >
                                                                 <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
                                                                    <div class="aggregate win" >
@@ -166,10 +167,11 @@
                                                                             )</h6>
                                                                         </div>
                                                                         <% if (!hidePickerNames) { %>
+                                                                        <% agg.bottomTeamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }); %>
                                                                         <div class="picker-names">
                                                                             <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
                                                                                 <span class="picker-name">
-                                                                                    <%= agg.bottomTeamPickers[k].firstName %><% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.bottomTeamPickers[k].comment %></em><% } %>
+                                                                                    <span class="picker-rank"><%= rankMap[String(agg.bottomTeamPickers[k].id)] || '' %>.</span> <%= agg.bottomTeamPickers[k].firstName %><% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.bottomTeamPickers[k].comment %></em><% } %>
                                                                                 </span>
                                                                             <% } %>
                                                                         </div>
@@ -279,16 +281,17 @@
                                                                     <% } %>
                                                                 )</h6>
                                                             </div>
+                                                            <% agg.topTeamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }); %>
                                                             <div class="picker-names">
                                                                 <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
                                                                     <span class="picker-name">
-                                                                        <%= agg.topTeamPickers[k].firstName %><% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.topTeamPickers[k].comment %></em><% } %>
+                                                                        <span class="picker-rank"><%= rankMap[String(agg.topTeamPickers[k].id)] || '' %>.</span> <%= agg.topTeamPickers[k].firstName %><% if(agg.topTeamPickers[k].comment && agg.topTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.topTeamPickers[k].comment %></em><% } %>
                                                                     </span>
                                                                 <% } %>
                                                             </div>
                                                         </div>
-                                                   
-                                                     <% if (!match.winner) { %> 
+
+                                                     <% if (!match.winner) { %>
                                                         <div class="aggregate noWin" >
                                                     <% } else if (String(match.winner) === String(match.bottomTeam._id)) { %>
                                                        <div class="aggregate win" >
@@ -310,10 +313,11 @@
                                                                 )</h6>
                                                             </div>
                                                             <% if (!hidePickerNames) { %>
+                                                            <% agg.bottomTeamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }); %>
                                                             <div class="picker-names">
                                                                 <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
                                                                     <span class="picker-name">
-                                                                        <%= agg.bottomTeamPickers[k].firstName %><% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.bottomTeamPickers[k].comment %></em><% } %>
+                                                                        <span class="picker-rank"><%= rankMap[String(agg.bottomTeamPickers[k].id)] || '' %>.</span> <%= agg.bottomTeamPickers[k].firstName %><% if(agg.bottomTeamPickers[k].comment && agg.bottomTeamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= agg.bottomTeamPickers[k].comment %></em><% } %>
                                                                     </span>
                                                                 <% } %>
                                                             </div>
@@ -407,10 +411,11 @@
                                                 <h5 style="display: inline-block; "><strong><%=bonAgg[4][j].team.name%></strong> (<%= bonAgg[4][j].teamPickers.length %>)</h5>
                                             </div>
                                             <% if (!hidePickerNames) { %>
+                                            <% bonAgg[4][j].teamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }); %>
                                             <div class="picker-names">
                                                 <% for (var k = 0; k < bonAgg[4][j].teamPickers.length; k++) { %>
                                                     <span class="picker-name">
-                                                        <%= bonAgg[4][j].teamPickers[k].firstName %><% if(bonAgg[4][j].teamPickers[k].comment && bonAgg[4][j].teamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= bonAgg[4][j].teamPickers[k].comment %></em><% } %>
+                                                        <span class="picker-rank"><%= rankMap[String(bonAgg[4][j].teamPickers[k].id)] || '' %>.</span> <%= bonAgg[4][j].teamPickers[k].firstName %><% if(bonAgg[4][j].teamPickers[k].comment && bonAgg[4][j].teamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= bonAgg[4][j].teamPickers[k].comment %></em><% } %>
                                                     </span>
                                                 <% } %>
                                             </div>
@@ -458,10 +463,11 @@
                                             <h5 style="display: inline-block; "><strong><%=bonAgg[i][j].team.name%></strong> (<%= bonAgg[i][j].teamPickers.length %>)</h5>
                                         </div>
                                         <% if (!hidePickerNames) { %>
+                                        <% bonAgg[i][j].teamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }); %>
                                         <div class="picker-names">
                                             <% for (var k = 0; k < bonAgg[i][j].teamPickers.length; k++) { %>
                                                 <span class="picker-name">
-                                                    <%= bonAgg[i][j].teamPickers[k].firstName %><% if(bonAgg[i][j].teamPickers[k].comment && bonAgg[i][j].teamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= bonAgg[i][j].teamPickers[k].comment %></em><% } %>
+                                                    <span class="picker-rank"><%= rankMap[String(bonAgg[i][j].teamPickers[k].id)] || '' %>.</span> <%= bonAgg[i][j].teamPickers[k].firstName %><% if(bonAgg[i][j].teamPickers[k].comment && bonAgg[i][j].teamPickers[k].comment.trim().length > 0) { %> <em class="picker-comment">- <%= bonAgg[i][j].teamPickers[k].comment %></em><% } %>
                                                 </span>
                                             <% } %>
                                         </div>
@@ -496,7 +502,7 @@
                 <span class="mobile-bonus-pick-team"><%= bonAgg[4][j].team.name %></span>
                 <% if (!hidePickerNames) { %>
                     <span class="mobile-bonus-pick-pickers">
-                        <%= bonAgg[4][j].teamPickers.map(function(p) { return p.firstName; }).join(', ') %>
+                        <%= bonAgg[4][j].teamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }).map(function(p) { return (rankMap[String(p.id)] || '') + '. ' + p.firstName; }).join(', ') %>
                     </span>
                 <% } %>
             </div>
@@ -510,7 +516,7 @@
                     <span class="mobile-bonus-pick-team"><%= bonAgg[i][j].team.name %></span>
                     <% if (!hidePickerNames) { %>
                         <span class="mobile-bonus-pick-pickers">
-                            <%= bonAgg[i][j].teamPickers.map(function(p) { return p.firstName; }).join(', ') %>
+                            <%= bonAgg[i][j].teamPickers.sort(function(a, b) { return (rankMap[String(a.id)] || 999) - (rankMap[String(b.id)] || 999); }).map(function(p) { return (rankMap[String(p.id)] || '') + '. ' + p.firstName; }).join(', ') %>
                         </span>
                     <% } %>
                 </div>

@@ -90,22 +90,27 @@ nhpup = {
   /* Avoid edge overflow */
   nudge: function (x, y) {
     var win = $jq(window);
+    var scrollTop = $jq(document).scrollTop();
+    var scrollLeft = $jq(document).scrollLeft();
+    var viewHeight = win.height();
+    var viewWidth = win.width();
+    var pupHeight = this.pup.height();
+    var pupWidth = this.pup.width();
 
     // When the mouse is too far on the right, put window to the left
-    var xtreme =
-      $jq(document).scrollLeft() +
-      win.width() -
-      this.pup.width() -
-      this.minMargin;
+    var xtreme = scrollLeft + viewWidth - pupWidth - this.minMargin;
     if (x > xtreme) {
-      x -= this.pup.width() + 2 * this.minMargin - 10; //Seth fix: -10 pushes the box further to the left after flip
+      x -= pupWidth + 2 * this.minMargin - 10; //Seth fix: -10 pushes the box further to the left after flip
     }
     x = this.max(x, 0);
 
-    // When the mouse is too far down, move window up
-    if (y + this.pup.height() > win.height() + $jq(document).scrollTop()) {
-      y -= this.pup.height() + this.minMargin;
-    }
+    // Vertically center the popup around the mouse position,
+    // then clamp so it stays within the viewport
+    y = y - pupHeight / 2;
+    var minY = scrollTop + this.minMargin;
+    var maxY = scrollTop + viewHeight - pupHeight - this.minMargin;
+    if (y < minY) y = minY;
+    if (y > maxY) y = maxY;
 
     return [x, y];
   },

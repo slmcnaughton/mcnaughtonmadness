@@ -366,6 +366,15 @@ router.get("/:groupName/bracket", function (req, res) {
             });
           }
 
+          // Build rank lookup: userId → standings position (for sorting pickers on bracket)
+          var sortedUTs = foundTournamentGroup.userTournaments.slice().sort(function (a, b) {
+            return b.score - a.score;
+          });
+          var rankMap = {};
+          sortedUTs.forEach(function (ut, idx) {
+            rankMap[String(ut.user.id)] = idx + 1;
+          });
+
           // Check if current user should see picker names
           var currentUser = res.locals.currentUser;
           if (!currentUser) {
@@ -374,6 +383,7 @@ router.get("/:groupName/bracket", function (req, res) {
               tournamentGroup: foundTournamentGroup,
               bonAgg: bonusAggregates,
               teamLostMap: teamLostMap,
+              rankMap: rankMap,
               hidePickerNames: true,
               page: "tournamentGroups",
             });
@@ -383,6 +393,7 @@ router.get("/:groupName/bracket", function (req, res) {
               tournamentGroup: foundTournamentGroup,
               bonAgg: bonusAggregates,
               teamLostMap: teamLostMap,
+              rankMap: rankMap,
               hidePickerNames: false,
               page: "tournamentGroups",
             });
@@ -395,6 +406,7 @@ router.get("/:groupName/bracket", function (req, res) {
                   tournamentGroup: foundTournamentGroup,
                   bonAgg: bonusAggregates,
                   teamLostMap: teamLostMap,
+                  rankMap: rankMap,
                   hidePickerNames: result ? result.shouldHide : false,
                   page: "tournamentGroups",
                 });
