@@ -330,10 +330,10 @@ router.post("/", middleware.isLoggedIn, function (req, res) {
                                     for (var j = 0; j < 2; j++) {
                                       var startTime;
                                       if ((i === 1 || i === 2) && j === 1)
-                                        //Second day of Sweet 16/Elite 8 starts an hour earlier than day 1
+                                        //Second day of Sweet 16/Elite 8 starts earlier than day 1 (games often tip off around noon)
                                         startTime = new moment(
                                           createdRound.startTime,
-                                        ).add({ d: 1, h: 0, m: 0 });
+                                        ).add({ d: 1, h: -4, m: 0 });
                                       else
                                         startTime = new moment(
                                           createdRound.startTime,
