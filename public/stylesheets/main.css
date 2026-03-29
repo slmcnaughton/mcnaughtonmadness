@@ -1983,6 +1983,19 @@ footer {
         margin-bottom: 12px;
     }
 
+    .match-finished {
+        opacity: 0.65;
+        border-left: 3px solid #f0ad4e;
+        padding-left: 8px;
+    }
+
+    .match-complete-label {
+        color: #f0ad4e;
+        font-size: 0.85em;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
     /* ── Bracket view ── */
     .bracket {
         font-size: 0.85em;

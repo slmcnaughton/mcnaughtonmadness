@@ -27,11 +27,14 @@ router.get(
           Tournament.findById(foundTournamentGroup.tournamentReference.id)
             .populate({
               path: "rounds",
-              populate: { path: "matches", populate: { path: "topTeam" } },
-            })
-            .populate({
-              path: "rounds",
-              populate: { path: "matches", populate: { path: "bottomTeam" } },
+              populate: {
+                path: "matches",
+                populate: [
+                  { path: "topTeam" },
+                  { path: "bottomTeam" },
+                  { path: "winner" },
+                ],
+              },
             })
             .exec(function (err, foundTournament) {
               if (err || !foundTournament) {

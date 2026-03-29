@@ -975,7 +975,14 @@ middlewareObj.userRoundCreation = function (req, res, next) {
         Round.findById(
           foundUserTournament.tournamentReference.id.rounds[actualRoundIndex - 1],
         )
-          .populate("matches")
+          .populate({
+            path: "matches",
+            populate: [
+              { path: "topTeam" },
+              { path: "bottomTeam" },
+              { path: "winner" },
+            ],
+          })
           .exec(function (err, foundRound) {
             if (err) console.log(err);
             else {
@@ -998,6 +1005,7 @@ middlewareObj.userRoundCreation = function (req, res, next) {
                   //============================================================================================
                   // userRound Created -> now fill with the userMatchPredictions
                   //============================================================================================
+                  var cumulativeScore = 0;
                   async.forEachSeries(
                     foundRound.matches,
                     function (match, next) {
@@ -1007,8 +1015,28 @@ middlewareObj.userRoundCreation = function (req, res, next) {
                         winner = req.body[match.matchNumber][0];
                         comment = req.body[match.matchNumber][1];
                       }
+
+                      // Pre-score predictions for already-finished games
+                      // (the scraper won't re-run for these)
+                      var predictionScore = 0;
+                      if (match.winner && match.topTeam && match.bottomTeam) {
+                        var winnerIsTop = match.winner._id.equals(match.topTeam._id);
+                        var matchScores = scoring.calculateMatchScores(
+                          match.topTeam.seed,
+                          match.bottomTeam.seed,
+                          winnerIsTop,
+                          numRound,
+                        );
+                        if (winner && winner.toString() === match.winner._id.toString()) {
+                          predictionScore = matchScores.winningScore;
+                        } else {
+                          predictionScore = matchScores.losingScore;
+                        }
+                      }
+                      cumulativeScore += predictionScore;
+
                       var newUserMatchPrediction = {
-                        score: 0,
+                        score: predictionScore,
                         numRound: newUserRound.round.numRound,
                         winner: winner,
                         match: {
@@ -1034,10 +1062,30 @@ middlewareObj.userRoundCreation = function (req, res, next) {
                       if (err) console.log(err);
                       else {
                         res.locals.newUserRound = newUserRound;
+                        newUserRound.roundScore = cumulativeScore;
                         foundUserTournament.userRounds.push(newUserRound);
                         newUserRound.save();
-                        foundUserTournament.save();
-                        next();
+
+                        // Save the UserTournament first (with the new UserRound ref),
+                        // then re-fetch to recalculate total score from all rounds
+                        foundUserTournament.save(function (err) {
+                          if (err) console.log(err);
+                          UserTournament.findById(foundUserTournament._id)
+                            .populate("userRounds")
+                            .exec(function (err, refreshed) {
+                              if (err || !refreshed) {
+                                console.log(err);
+                                next();
+                              } else {
+                                refreshed.score = 0;
+                                refreshed.userRounds.forEach(function (ur) {
+                                  refreshed.score += ur.roundScore;
+                                });
+                                refreshed.save();
+                                next();
+                              }
+                            });
+                        });
                       }
                     },
                   );

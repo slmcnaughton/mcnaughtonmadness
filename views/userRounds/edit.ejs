@@ -1,4 +1,5 @@
 <% include ../partials/header %>
+<div class="container">
 
 <%
   var numRound = round.numRound;
@@ -57,50 +58,53 @@
                 <% } %>
                     
                     <% var match = tournament.rounds[numRound - 1].matches[j]; %>
-                
-                    <% if (!match.winner) { %>
+                    <% if (match.topTeam && match.bottomTeam) { %>
                         <% var scores = calculateScores(match.topTeam.seed, match.bottomTeam.seed, numRound) %>
+                        <%
+                            var isFinished = !!match.winner;
+                            var losingTeamId = '';
+                            if (isFinished) {
+                                losingTeamId = match.winner._id.equals(match.topTeam._id)
+                                    ? match.bottomTeam._id.toString()
+                                    : match.topTeam._id.toString();
+                            }
+                        %>
 
-                        <div class="form-group matchPicker">
+                        <div class="form-group matchPicker<% if (isFinished) { %> match-finished<% } %>">
+                            <% if (isFinished) { %><div class="match-complete-label"><i class="fas fa-check-circle"></i> Game Complete</div><% } %>
                             <% var matchNum = match.matchNumber %>
                             <% var idMaker = tournament.year + "m" + match.matchNumber %>
 
                             <label for="<%=idMaker%>top" style="display: block">
                                 <div class="team" >
-                                    <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam._id %>" required>
+                                    <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam._id %>" required
+                                        <% if (isFinished && losingTeamId === match.topTeam._id.toString()) { %>checked<% } %>>
                                     <div class="teamTitle">
-                                        <% if(match.topTeam !== null) { %>
-                                            <img class="pickerImage" src="<%= match.topTeam.image %>">
-                                            <span class="seed"><%=match.topTeam.seed%></span>
-                                            <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
-                                            <span class="pick-scores"><%=fmtPts(scores.topWinScore)%> / <%=fmtPts(scores.topLossScore)%></span>
-                                        <% } else { %>
-                                            &nbsp
-                                        <% } %>
+                                        <img class="pickerImage" src="<%= match.topTeam.image %>">
+                                        <span class="seed"><%=match.topTeam.seed%></span>
+                                        <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
+                                        <span class="pick-scores"><%=fmtPts(scores.topWinScore)%> / <%=fmtPts(scores.topLossScore)%></span>
                                     </div>
                                 </div>
                             </label>
 
                             <label for="<%=idMaker%>bottom" style="display: block">
                                 <div class="team">
-                                    <input class="radio" type="radio" id="<%=idMaker%>bottom" name="<%=matchNum%>" value="<%= match.bottomTeam._id %>">
+                                    <input class="radio" type="radio" id="<%=idMaker%>bottom" name="<%=matchNum%>" value="<%= match.bottomTeam._id %>"
+                                        <% if (isFinished && losingTeamId === match.bottomTeam._id.toString()) { %>checked<% } %>>
                                     <div class="teamTitle">
-                                        <% if(match.bottomTeam !== null) { %>
-                                            <img class="pickerImage"  src="<%= match.bottomTeam.image %>">
-                                            <span class="seed"><%=match.bottomTeam.seed%></span>
-                                            <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
-                                            <span class="pick-scores"><%=fmtPts(scores.bottomWinScore)%> / <%=fmtPts(scores.bottomLossScore)%></span>
-                                        <% } else { %>
-                                            &nbsp
-                                        <% } %>
+                                        <img class="pickerImage"  src="<%= match.bottomTeam.image %>">
+                                        <span class="seed"><%=match.bottomTeam.seed%></span>
+                                        <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
+                                        <span class="pick-scores"><%=fmtPts(scores.bottomWinScore)%> / <%=fmtPts(scores.bottomLossScore)%></span>
                                     </div>
                                 </div>
                             </label>
-                            
+
                             <div class="form-group">
                                 <input class="form-control" type="text" name="<%=matchNum%>" placeholder="Optional comment">
                             </div>
-            
+
                         </div>
                     <% } %>    
                 
@@ -124,5 +128,5 @@
     </div>
 <!--</div>-->
 
-
+</div>
 <% include ../partials/footer %>
