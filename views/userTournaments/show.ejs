@@ -15,6 +15,7 @@
         <h1 id="headline">Madness</h1>
         <p class="year"><span class="icomoon icon-bracketLeft"></span><%=tournament.year%><span class="icomoon icon-bracketRight"></span></p>
         <p><%=userTournament.user.firstName%> <%=userTournament.user.lastName%></p>
+        <% if(userTournament.score) { %><p class="bracket-total-score"><%= Math.round(userTournament.score * 1000) / 1000 %> pts</p><% } %>
     </div>
     
     <div class="container-fluid tournamentContents" style="padding-bottom: 50px; min-height: 300px">
@@ -65,7 +66,7 @@
                                                                                     <% if(userMatch.winner) { %>
                                                                                         <img src="<%= userMatch.winner.image %>">
                                                                                         <span class="seed"><%=userMatch.winner.seed%></span>
-                                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                                                      <% } else { %>
                                                                                         &nbsp
                                                                                     <% } %>
@@ -101,7 +102,7 @@
                                                                                     <% if(userMatch.winner) { %>
                                                                                         <img src="<%= userMatch.winner.image %>">
                                                                                         <span class="seed"><%=userMatch.winner.seed%></span>
-                                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                                                      <% } else { %>
                                                                                         &nbsp
                                                                                     <% } %>
@@ -213,7 +214,7 @@
                                                                     <% if(userMatch.winner) { %>
                                                                         <img src="<%= userMatch.winner.image %>">
                                                                         <span class="seed"><%=userMatch.winner.seed%></span>
-                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                        <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                                      <% } else { %>
                                                                         &nbsp
                                                                     <% } %>
@@ -248,7 +249,7 @@
                                                                
                                                                     <img src="<%= userMatch.winner.image %>">
                                                                     <span class="seed"><%=userMatch.winner.seed%></span>
-                                                                    <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                                    <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                                  <% } else { %>
                                                                     &nbsp
                                                                 <% } %>
@@ -294,7 +295,7 @@
                                                         <% if(userMatch.winner) { %>
                                                             <img class="championshipImage" src="<%= userMatch.winner.image %>">
                                                             <span class="seed"><%=userMatch.winner.seed%></span>
-                                                            <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span>
+                                                            <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                          <% } else { %>
                                                             &nbsp
                                                         <% } %>

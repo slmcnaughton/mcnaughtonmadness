@@ -7,6 +7,7 @@ var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
 var UserTournament = require("../models/userTournament");
 var Team = require("../models/team");
+var Match = require("../models/match");
 var EmailLog = require("../models/emailLog");
 var emailHelper = require("../middleware/emailHelper");
 
@@ -337,6 +338,7 @@ router.get("/:groupName/bracket", function (req, res) {
       } else {
         foundTournamentGroup.bonusAggregates.sort(compareBonusAggregates);
 
+
         var bonusAggregates;
         if (foundTournamentGroup.bonusAggregates.length > 0) {
           bonusAggregates = [[], [], [], [], []];
@@ -358,6 +360,11 @@ router.get("/:groupName/bracket", function (req, res) {
         var teamIds = foundTournamentGroup.bonusAggregates.map(function (a) {
           return a.team.id;
         });
+        // Build match winner lookup for bonus aggregate win/loss coloring
+        var matchRefIds = foundTournamentGroup.bonusAggregates.map(function (a) {
+          return a.matchReference;
+        });
+
         Team.find({ _id: { $in: teamIds } }).exec(function (err, teams) {
           var teamLostMap = {};
           if (teams) {
@@ -366,13 +373,27 @@ router.get("/:groupName/bracket", function (req, res) {
             });
           }
 
+        Match.find({ _id: { $in: matchRefIds } }).exec(function (err, matches) {
+          var matchWinnerMap = {};
+          if (matches) {
+            matches.forEach(function (m) {
+              if (m.winner) matchWinnerMap[String(m._id)] = String(m.winner);
+            });
+          }
+
           // Build rank lookup: userId → standings position (for sorting pickers on bracket)
           var sortedUTs = foundTournamentGroup.userTournaments.slice().sort(function (a, b) {
             return b.score - a.score;
           });
           var rankMap = {};
+          var rankByName = {};
           sortedUTs.forEach(function (ut, idx) {
             rankMap[String(ut.user.id)] = idx + 1;
+            // Also key by firstName as fallback for bonus aggregates
+            // (older picker entries may store a different id format)
+            if (!rankByName[ut.user.firstName]) {
+              rankByName[ut.user.firstName] = idx + 1;
+            }
           });
 
           // Check if current user should see picker names
@@ -384,6 +405,8 @@ router.get("/:groupName/bracket", function (req, res) {
               bonAgg: bonusAggregates,
               teamLostMap: teamLostMap,
               rankMap: rankMap,
+              rankByName: rankByName,
+              matchWinnerMap: matchWinnerMap,
               hidePickerNames: true,
               page: "tournamentGroups",
             });
@@ -394,6 +417,8 @@ router.get("/:groupName/bracket", function (req, res) {
               bonAgg: bonusAggregates,
               teamLostMap: teamLostMap,
               rankMap: rankMap,
+              rankByName: rankByName,
+              matchWinnerMap: matchWinnerMap,
               hidePickerNames: false,
               page: "tournamentGroups",
             });
@@ -407,13 +432,16 @@ router.get("/:groupName/bracket", function (req, res) {
                   bonAgg: bonusAggregates,
                   teamLostMap: teamLostMap,
                   rankMap: rankMap,
+              rankByName: rankByName,
+              matchWinnerMap: matchWinnerMap,
                   hidePickerNames: result ? result.shouldHide : false,
                   page: "tournamentGroups",
                 });
               },
             );
           }
-        });
+        }); // end Match.find
+        }); // end Team.find
       }
     });
 });

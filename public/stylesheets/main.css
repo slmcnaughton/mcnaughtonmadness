@@ -1449,16 +1449,19 @@ body {
 }
 
 .win {
-    background-color: rgba(50, 225, 50, 0.92);
+    background-color: rgba(0, 51, 102, 0.95);
+    color: #fff;
 }
 
 .loss {
-    background-color: rgba(225, 50, 50, 0.92);
+    background-color: rgba(165, 120, 115, 0.92);
+    color: #f5eded;
 }
 
 
 .noWin {
-    background-color: rgba(225, 225, 50, 0.92);
+    background-color: rgba(255, 210, 60, 0.92);
+    color: #333;
 }
 
 #pup {
@@ -1492,15 +1495,35 @@ body {
 
 .picker-comment {
     font-size: 0.85em;
-    color: #555;
+    color: inherit;
+    opacity: 0.7;
+}
+
+.pick-score-value {
+    font-size: 0.7em;
+    font-weight: bold;
+    opacity: 0.8;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.bracket-total-score {
+    font-size: 1.2em;
+    letter-spacing: 0.15em;
+    opacity: 0.9;
 }
 
 .picker-rank {
     display: inline-block;
-    min-width: 18px;
+    min-width: 20px;
     font-weight: bold;
-    color: #888;
-    font-size: 0.9em;
+    font-size: 0.8em;
+    color: #444;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 3px;
+    padding: 0 3px;
+    margin-right: 2px;
+    text-align: right;
 }
 
 /*the bonusPicks are only useful for hovering, so we won't show on phone/tablet layouts*/
