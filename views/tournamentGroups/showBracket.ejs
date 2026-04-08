@@ -393,15 +393,15 @@
                         <div class="grid">
                     <% } %>
                             <% for (var j = 0; j < bonAgg[4].length; j++) { %>
-                                <% if (teamLostMap[String(bonAgg[4][j].team.id)] > 0) { %>
-                                    <div class="grid-item lost">
-                                        <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>').html());">
-                                    </div>
-                                <% } else { %>
-                                    <div class="grid-item">
-                                        <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>').html());">
-                                    </div>
-                                <% } %>  
+                                <%
+                                    var champMatchWinner = matchWinnerMap[String(bonAgg[4][j].matchReference)];
+                                    var champTeamId = String(bonAgg[4][j].team.id._id);
+                                    // Fade if: match decided and team lost, OR team eliminated from tournament
+                                    var champLost = (champMatchWinner && champMatchWinner !== champTeamId) || teamLostMap[String(bonAgg[4][j].team.id)] > 0;
+                                %>
+                                <div class="grid-item<%= champLost ? ' lost' : '' %>">
+                                    <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>').html());">
+                                </div>  
                                 
                                 <!--bonus aggregate popup-->
                                 <% var bonusMatchWinner = matchWinnerMap[String(bonAgg[4][j].matchReference)] %>
@@ -446,15 +446,15 @@
                     <div class="grid">
     
                         <% for (var j = 0; j < bonAgg[i].length; j++) { %>
-                            <% if (teamLostMap[String(bonAgg[i][j].team.id)] > 0) { %>
-                                <div class="grid-item lost">
-                                    <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>').html());">
-                                </div>
-                            <% } else { %>
-                                <div class="grid-item">
-                                    <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>').html());">
-                                </div>
-                            <% } %>   
+                            <%
+                                var regMatchWinner = matchWinnerMap[String(bonAgg[i][j].matchReference)];
+                                var regTeamId = String(bonAgg[i][j].team.id._id);
+                                // Fade if: match decided and this team didn't win
+                                var regLost = regMatchWinner ? regMatchWinner !== regTeamId : teamLostMap[String(bonAgg[i][j].team.id)] > 0;
+                            %>
+                            <div class="grid-item<%= regLost ? ' lost' : '' %>">
+                                <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>').html());">
+                            </div>   
     
                             <!--bonus aggregate popup - make sure onmouseover is set to the div/image you want to cause this popup-->
                             <% var bonusMatchWinner = matchWinnerMap[String(bonAgg[i][j].matchReference)] %>
