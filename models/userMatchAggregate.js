@@ -1,5 +1,14 @@
 var mongoose = require("mongoose");
 
+var pickerSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  firstName: String,
+  comment: String,
+}, { _id: false, id: false });
+
 var userMatchAggregateSchema = new mongoose.Schema({
   tournamentGroup: {
     type: mongoose.Schema.Types.ObjectId,
@@ -12,29 +21,11 @@ var userMatchAggregateSchema = new mongoose.Schema({
   },
   // numTeams: Number,
 
-  topTeamPickers: [
-    {
-      id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      firstName: String,
-      comment: String,
-    },
-  ],
+  topTeamPickers: [pickerSchema],
   topWinScore: Number,
   topLossScore: Number,
 
-  bottomTeamPickers: [
-    {
-      id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      firstName: String,
-      comment: String,
-    },
-  ],
+  bottomTeamPickers: [pickerSchema],
   bottomWinScore: Number,
   bottomLossScore: Number,
 });

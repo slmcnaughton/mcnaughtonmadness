@@ -2,7 +2,6 @@ var express = require("express");
 var router = express.Router();
 var passport = require("passport");
 var middleware = require("../middleware");
-var async = require("async");
 var User = require("../models/user");
 var TournamentStanding = require("../models/tournamentStanding");
 var Trophy = require("../models/trophy");
@@ -42,16 +41,15 @@ router.get("/website", function (req, res) {
   res.render("about/website", { page: "about" });
 });
 
-router.get("/team-names", function (req, res) {
-  TeamImage.find()
-    .sort("name")
-    .exec(function (err, foundTeamImages) {
-      // foundTeamImages.forEach(function(foundTeamImage) {
-      //     console.log(foundTeamImage.name + " " + foundTeamImage.image);
-      // });
-
-      res.render("test", { teamImages: foundTeamImages });
-    });
+router.get("/team-names", async function (req, res) {
+  try {
+    var foundTeamImages = await TeamImage.find().sort("name");
+    res.render("test", { teamImages: foundTeamImages });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 //=============
@@ -64,30 +62,30 @@ router.get("/register", function (req, res) {
 });
 
 //handle sign up logic
-router.post("/register", function (req, res) {
-  // Bot detection: honeypot field, JS token, and timing check
-  var formLoadedAt = parseInt(req.body._ts, 10) || 0;
-  var isBot =
-    req.body.message ||
-    req.body._token !== "human" ||
-    Date.now() - formLoadedAt < 3000;
+router.post("/register", async function (req, res) {
+  try {
+    // Bot detection: honeypot field, JS token, and timing check
+    var formLoadedAt = parseInt(req.body._ts, 10) || 0;
+    var isBot =
+      req.body.message ||
+      req.body._token !== "human" ||
+      Date.now() - formLoadedAt < 3000;
 
-  if (isBot) {
-    req.flash(
-      "error",
-      "Nonhuman user detected. Please contact us if you feel that this was in error.",
-    );
-    return res.redirect("/register");
-  }
+    if (isBot) {
+      req.flash(
+        "error",
+        "Nonhuman user detected. Please contact us if you feel that this was in error.",
+      );
+      return res.redirect("/register");
+    }
 
-  var username = req.body.username;
-  var firstName = req.body.firstName;
-  var lastName = req.body.lastName;
-  var email = req.body.email;
+    var username = req.body.username;
+    var firstName = req.body.firstName;
+    var lastName = req.body.lastName;
+    var email = req.body.email;
 
-  // Check if email is already registered
-  User.findOne({ email: email }, function (err, existingUser) {
-    if (err) console.log(err);
+    // Check if email is already registered
+    var existingUser = await User.findOne({ email: email });
     if (existingUser) {
       req.flash(
         "error",
@@ -115,44 +113,43 @@ router.post("/register", function (req, res) {
       newUser.pendingConnectionName = connectionName;
     }
 
-    User.register(newUser, req.body.password, function (err, user) {
-      if (err) {
-        req.flash("error", err.message);
-        return res.redirect("/register");
-      }
-      addPastTrophies(user);
+    var user = await User.register(newUser, req.body.password);
+    addPastTrophies(user);
 
-      // Auto-link: check if there's an unlinked FamilyMember with matching name
-      // (Admin may have pre-created a node for this person before they signed up)
-      FamilyMember.findOne({
-        firstName: new RegExp("^" + user.firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
-        lastName: new RegExp("^" + user.lastName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
-        user: { $exists: false },
-        approved: true,
-      }, function (err, matchingMember) {
-        if (!err && matchingMember) {
-          matchingMember.user = user._id;
-          matchingMember.save(function () {});
-          var autoLinkUpdate = { familyTreeId: matchingMember._id };
-          if (matchingMember.image) {
-            autoLinkUpdate.image = matchingMember.image;
-          }
-          User.findByIdAndUpdate(user._id, { $set: autoLinkUpdate }, function () {});
-          console.log("[FAMILY TREE] Auto-linked new user " + user.firstName + " " + user.lastName + " to existing family member node");
-        }
-
-        //once the user is registered, log them in
-        passport.authenticate("local")(req, res, function () {
-          var welcomeMsg = "Welcome to McNaughton Madness, " + user.firstName + "!";
-          if (!err && matchingMember) {
-            welcomeMsg += " We found your spot on the family tree!";
-          }
-          req.flash("success", welcomeMsg);
-          res.redirect("/users/" + user.username);
-        });
-      });
+    // Auto-link: check if there's an unlinked FamilyMember with matching name
+    // (Admin may have pre-created a node for this person before they signed up)
+    var matchingMember = await FamilyMember.findOne({
+      firstName: new RegExp("^" + user.firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+      lastName: new RegExp("^" + user.lastName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+      user: { $exists: false },
+      approved: true,
     });
-  });
+
+    if (matchingMember) {
+      matchingMember.user = user._id;
+      await matchingMember.save();
+      var autoLinkUpdate = { familyTreeId: matchingMember._id };
+      if (matchingMember.image) {
+        autoLinkUpdate.image = matchingMember.image;
+      }
+      await User.findByIdAndUpdate(user._id, { $set: autoLinkUpdate });
+      console.log("[FAMILY TREE] Auto-linked new user " + user.firstName + " " + user.lastName + " to existing family member node");
+    }
+
+    //once the user is registered, log them in
+    passport.authenticate("local")(req, res, function () {
+      var welcomeMsg = "Welcome to McNaughton Madness, " + user.firstName + "!";
+      if (matchingMember) {
+        welcomeMsg += " We found your spot on the family tree!";
+      }
+      req.flash("success", welcomeMsg);
+      res.redirect("/users/" + user.username);
+    });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", err.message || "Something went wrong");
+    res.redirect("/register");
+  }
 });
 
 //show login form
@@ -189,98 +186,103 @@ router.get("/logout", function (req, res) {
 });
 
 //INDEX - show all users
-router.get("/users", function (req, res) {
-  //get all users from db
-  User.find({})
-    .populate("trophies")
-    .sort({ lastName: 1, firstName: 1 })
-    .exec(function (err, allUsers) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.render("users/index", {
-          users: allUsers,
-          page: "users",
-          currentYear: new Date().getFullYear(),
-        });
-      }
+router.get("/users", async function (req, res) {
+  try {
+    var allUsers = await User.find({})
+      .populate("trophies")
+      .sort({ lastName: 1, firstName: 1 });
+    res.render("users/index", {
+      users: allUsers,
+      page: "users",
+      currentYear: new Date().getFullYear(),
     });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
-router.get("/users/:username", function (req, res) {
-  var username = req.params.username;
+router.get("/users/:username", async function (req, res) {
+  try {
+    var username = req.params.username;
 
-  User.findOne({ username: username })
-    .populate("trophies")
-    .exec(function (err, foundUser) {
-      if (err || !foundUser) {
-        req.flash("error", "User not found");
-        return res.redirect("/users");
-      } else {
-        foundUser.trophies.sort(compare);
-        if (req.user && req.user.username === foundUser.username)
-          res.render("users/show", {
-            user: foundUser,
-            isUser: true,
-            page: "profile",
-          });
-        else
-          res.render("users/show", {
-            user: foundUser,
-            isUser: false,
-            page: "users",
-          });
-      }
-    });
+    var foundUser = await User.findOne({ username: username })
+      .populate("trophies");
+    if (!foundUser) {
+      req.flash("error", "User not found");
+      return res.redirect("/users");
+    }
+    foundUser.trophies.sort(compare);
+    if (req.user && req.user.username === foundUser.username)
+      res.render("users/show", {
+        user: foundUser,
+        isUser: true,
+        page: "profile",
+      });
+    else
+      res.render("users/show", {
+        user: foundUser,
+        isUser: false,
+        page: "users",
+      });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 // ─── Edit Profile ──────────────────────────────────────────────────────────
 
-router.get("/users/:username/edit", middleware.isLoggedIn, function (req, res) {
-  if (req.user.username !== req.params.username) {
-    req.flash("error", "You can only edit your own profile.");
-    return res.redirect("/users/" + req.params.username);
-  }
+router.get("/users/:username/edit", middleware.isLoggedIn, async function (req, res) {
+  try {
+    if (req.user.username !== req.params.username) {
+      req.flash("error", "You can only edit your own profile.");
+      return res.redirect("/users/" + req.params.username);
+    }
 
-  var userFamilyId = req.user.familyTreeId ? req.user.familyTreeId.toString() : null;
+    var userFamilyId = req.user.familyTreeId ? req.user.familyTreeId.toString() : null;
 
-  if (userFamilyId) {
-    FamilyRelationship.find({
-      $or: [{ from: req.user.familyTreeId }, { to: req.user.familyTreeId }],
-    })
-      .populate("from to")
-      .exec(function (err, rels) {
-        if (err) rels = [];
+    if (userFamilyId) {
+      var rels = await FamilyRelationship.find({
+        $or: [{ from: req.user.familyTreeId }, { to: req.user.familyTreeId }],
+      }).populate("from to");
 
-        var myPartnerRels = rels.filter(function (r) {
-          return ["spouse", "fiance", "dating"].indexOf(r.type) !== -1;
-        });
-
-        res.render("users/edit", {
-          user: req.user,
-          page: "profile",
-          myRelationships: myPartnerRels,
-          userFamilyId: userFamilyId,
-        });
+      var myPartnerRels = rels.filter(function (r) {
+        return ["spouse", "fiance", "dating"].indexOf(r.type) !== -1;
       });
-  } else {
-    res.render("users/edit", {
-      user: req.user,
-      page: "profile",
-      myRelationships: [],
-      userFamilyId: null,
-    });
+
+      res.render("users/edit", {
+        user: req.user,
+        page: "profile",
+        myRelationships: myPartnerRels,
+        userFamilyId: userFamilyId,
+      });
+    } else {
+      res.render("users/edit", {
+        user: req.user,
+        page: "profile",
+        myRelationships: [],
+        userFamilyId: null,
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
   }
 });
 
-router.put("/users/:username", middleware.isLoggedIn, function (req, res) {
-  if (req.user.username !== req.params.username) {
-    req.flash("error", "You can only edit your own profile.");
-    return res.redirect("/users/" + req.params.username);
-  }
+router.put("/users/:username", middleware.isLoggedIn, async function (req, res) {
+  try {
+    if (req.user.username !== req.params.username) {
+      req.flash("error", "You can only edit your own profile.");
+      return res.redirect("/users/" + req.params.username);
+    }
 
-  User.findById(req.user._id, function (err, user) {
-    if (err || !user) {
+    var user = await User.findById(req.user._id);
+    if (!user) {
       req.flash("error", "User not found.");
       return res.redirect("/users/" + req.params.username);
     }
@@ -306,69 +308,63 @@ router.put("/users/:username", middleware.isLoggedIn, function (req, res) {
       user.nameChangeRequestedAt = new Date();
     }
 
-    user.save(function (err) {
-      if (err) {
-        console.log(err);
-        req.flash("error", "Error saving profile.");
-        return res.redirect("/users/" + req.params.username + "/edit");
-      }
+    await user.save();
 
-      var messages = [];
-      if (emailChanged) messages.push("Email updated!");
-      if (nameChanged) {
-        emailHelper.sendNameChangeNotification(user);
-        messages.push("Name change request submitted for admin approval.");
-      }
+    var messages = [];
+    if (emailChanged) messages.push("Email updated!");
+    if (nameChanged) {
+      emailHelper.sendNameChangeNotification(user);
+      messages.push("Name change request submitted for admin approval.");
+    }
 
-      req.flash("success", messages.length > 0 ? messages.join(" ") : "No changes detected.");
-      res.redirect("/users/" + req.params.username);
-    });
-  });
+    req.flash("success", messages.length > 0 ? messages.join(" ") : "No changes detected.");
+    res.redirect("/users/" + req.params.username);
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 // ─── Profile Photo Upload ──────────────────────────────────────────────────
 
-router.post("/users/:username/photo", middleware.isLoggedIn, upload.single("image"), function (req, res) {
-  if (req.user.username !== req.params.username) {
-    req.flash("error", "You can only edit your own profile.");
-    return res.redirect("/users/" + req.params.username);
-  }
+router.post("/users/:username/photo", middleware.isLoggedIn, upload.single("image"), async function (req, res) {
+  try {
+    if (req.user.username !== req.params.username) {
+      req.flash("error", "You can only edit your own profile.");
+      return res.redirect("/users/" + req.params.username);
+    }
 
-  if (!req.file) {
-    req.flash("error", "No image selected.");
-    return res.redirect("/users/" + req.params.username + "/edit");
-  }
+    if (!req.file) {
+      req.flash("error", "No image selected.");
+      return res.redirect("/users/" + req.params.username + "/edit");
+    }
 
-  User.findById(req.user._id, function (err, user) {
-    if (err || !user) {
+    var user = await User.findById(req.user._id);
+    if (!user) {
       req.flash("error", "User not found.");
       return res.redirect("/users/" + req.params.username + "/edit");
     }
 
     user.image = req.file.path;
-    user.save(function (err) {
-      if (err) {
-        console.log(err);
-        req.flash("error", "Error saving photo.");
-        return res.redirect("/users/" + req.params.username + "/edit");
-      }
+    await user.save();
 
-      // Also update FamilyMember image if linked
-      if (user.familyTreeId) {
-        var FamilyMember = require("../models/familyMember");
-        FamilyMember.findByIdAndUpdate(
-          user.familyTreeId,
-          { $set: { image: req.file.path } },
-          function (err) {
-            if (err) console.log("Error updating family member image:", err);
-          },
-        );
-      }
+    // Also update FamilyMember image if linked
+    if (user.familyTreeId) {
+      var FamilyMember = require("../models/familyMember");
+      await FamilyMember.findByIdAndUpdate(
+        user.familyTreeId,
+        { $set: { image: req.file.path } },
+      );
+    }
 
-      req.flash("success", "Profile photo updated!");
-      res.redirect("/users/" + req.params.username + "/edit");
-    });
-  });
+    req.flash("success", "Profile photo updated!");
+    res.redirect("/users/" + req.params.username + "/edit");
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 router.get("/forgotPassword", function (req, res) {
@@ -376,141 +372,119 @@ router.get("/forgotPassword", function (req, res) {
 });
 
 // http://sahatyalkabov.com/how-to-implement-password-reset-in-nodejs/
-router.post("/forgotPassword", function (req, res, next) {
-  async.waterfall(
-    [
-      function (done) {
-        crypto.randomBytes(20, function (err, buf) {
-          var token = buf.toString("hex");
-          if (err) console.log(err);
-          done(err, token);
-        });
-      },
-      function (token, done) {
-        User.findOne(
-          {
-            email: req.body.email,
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-          },
-          function (err, user) {
-            if (err || !user) {
-              req.flash(
-                "error",
-                "No account with that name/email address combination exists.",
-              );
-              return res.redirect("/forgotPassword");
-            }
+router.post("/forgotPassword", async function (req, res) {
+  try {
+    var buf = crypto.randomBytes(20);
+    var token = buf.toString("hex");
 
-            user.resetPasswordToken = token;
-            user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    var user = await User.findOne({
+      email: req.body.email,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+    });
+    if (!user) {
+      req.flash(
+        "error",
+        "No account with that name/email address combination exists.",
+      );
+      return res.redirect("/forgotPassword");
+    }
 
-            user.save(function (err) {
-              done(err, token, user);
-            });
-          },
-        );
-      },
-      async function (token, user) {
-        emailHelper.sendPasswordRecovery(req, token, user);
-      },
-    ],
-    function (err) {
-      if (err) return next(err);
-      res.redirect("/forgotPassword");
-    },
-  );
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+
+    await user.save();
+
+    emailHelper.sendPasswordRecovery(req, token, user);
+    res.redirect("/forgotPassword");
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 router.get("/forgotUsername", function (req, res) {
   res.render("forgotUsername", { user: req.user, page: "login" });
 });
 
-router.post("/forgotUsername", function (req, res, next) {
-  User.findOne(
-    {
+router.post("/forgotUsername", async function (req, res) {
+  try {
+    var user = await User.findOne({
       email: req.body.email,
       firstName: req.body.firstName,
       lastName: req.body.lastName,
-    },
-    function (err, user) {
-      if (err || !user) {
-        req.flash(
-          "error",
-          "No account with that name/email address combination exists.",
-        );
-        return res.redirect("/forgotUsername");
-      } else {
-        emailHelper.sendUsernameRecovery(req, user, err);
-        if (err) return next(err);
-        res.redirect("/login");
-      }
-    },
-  );
+    });
+    if (!user) {
+      req.flash(
+        "error",
+        "No account with that name/email address combination exists.",
+      );
+      return res.redirect("/forgotUsername");
+    }
+    emailHelper.sendUsernameRecovery(req, user);
+    res.redirect("/login");
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
-router.get("/reset/:token", function (req, res) {
-  User.findOne(
-    {
+router.get("/reset/:token", async function (req, res) {
+  try {
+    var user = await User.findOne({
       resetPasswordToken: req.params.token,
       resetPasswordExpires: { $gt: Date.now() },
-    },
-    function (err, user) {
-      if (err || !user) {
-        req.flash("error", "Password reset token is invalid or has expired.");
-        return res.redirect("/forgotPassword");
-      }
-      res.render("reset", {
-        user: req.user,
-        token: req.params.token,
-        page: "login",
-      });
-    },
-  );
+    });
+    if (!user) {
+      req.flash("error", "Password reset token is invalid or has expired.");
+      return res.redirect("/forgotPassword");
+    }
+    res.render("reset", {
+      user: req.user,
+      token: req.params.token,
+      page: "login",
+    });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
-router.post("/reset/:token", function (req, res) {
-  async.waterfall(
-    [
-      function (done) {
-        User.findOne(
-          {
-            resetPasswordToken: req.params.token,
-            resetPasswordExpires: { $gt: Date.now() },
-          },
-          function (err, user) {
-            if (err || !user) {
-              req.flash(
-                "error",
-                "Password reset token is invalid or has expired.",
-              );
-              return res.redirect("back");
-            }
+router.post("/reset/:token", async function (req, res) {
+  try {
+    var user = await User.findOne({
+      resetPasswordToken: req.params.token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+    if (!user) {
+      req.flash(
+        "error",
+        "Password reset token is invalid or has expired.",
+      );
+      return res.redirect("back");
+    }
 
-            user.resetPasswordToken = undefined;
-            user.resetPasswordExpires = undefined;
-            user.setPassword(req.body.password, function () {
-              user.save(function (err) {
-                if (err) console.log(err);
-                req.logIn(user, function (err) {
-                  if (err) console.log(err);
-                  done(err, user);
-                });
-              });
-            });
-          },
-        );
-      },
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.setPassword(req.body.password);
+    await user.save();
+    await new Promise(function (resolve, reject) {
+      req.logIn(user, function (err) {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
 
-      async function (user) {
-        emailHelper.confirmPasswordChange(req, user);
-      },
-    ],
-    function (err) {
-      if (err) console.log(err);
-      res.redirect("/users/" + req.user.username);
-    },
-  );
+    emailHelper.confirmPasswordChange(req, user);
+    res.redirect("/users/" + req.user.username);
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 //order trophies from newest year
@@ -520,68 +494,56 @@ function compare(a, b) {
   return 0;
 }
 
-var addPastTrophies = function (user) {
-  //find tournaments the user has participated in
-  TournamentStanding.find({
-    "standings.firstName": user.firstName,
-    "standings.lastName": user.lastName,
-  }).exec(function (err, tournamentYears) {
-    if (err) {
-      console.log(err);
-    } else {
-      //for each tournament year, add the correct trophy
-      async.forEachSeries(
-        tournamentYears,
-        function (tournamentYear, callback) {
-          var noTournamentEntryFoundScore = -10000;
+var addPastTrophies = async function (user) {
+  try {
+    //find tournaments the user has participated in
+    var tournamentYears = await TournamentStanding.find({
+      "standings.firstName": user.firstName,
+      "standings.lastName": user.lastName,
+    });
 
-          var year = tournamentYear.year;
-          var totalPlayers = tournamentYear.standings.length;
-          var rank = 1;
-          var score = noTournamentEntryFoundScore;
+    //for each tournament year, add the correct trophy
+    for (var i = 0; i < tournamentYears.length; i++) {
+      var tournamentYear = tournamentYears[i];
+      var noTournamentEntryFoundScore = -10000;
 
-          //find the user's score for this year
-          tournamentYear.standings.forEach(function (entry) {
-            if (
-              entry.firstName === user.firstName &&
-              entry.lastName === user.lastName
-            ) {
-              score = entry.score;
-            }
-          });
-          //calculate the user's rank by counting how many players scored higher
-          tournamentYear.standings.forEach(function (entry) {
-            if (entry.score > score) {
-              rank++;
-            }
-          });
+      var year = tournamentYear.year;
+      var totalPlayers = tournamentYear.standings.length;
+      var rank = 1;
+      var score = noTournamentEntryFoundScore;
 
-          // Ticket MNM-61 (All Gold Trophies)
-          if (score != noTournamentEntryFoundScore) {
-            var newTrophy = {
-              year: year,
-              userRank: rank,
-              totalPlayers: totalPlayers,
-              score: score,
-            };
-            Trophy.create(newTrophy, function (err, trophy) {
-              if (err) {
-                console.log(err);
-              } else {
-                user.trophies.addToSet(trophy._id);
-                user.save(callback);
-              }
-            });
-          }
-        },
-        function (err) {
-          if (err) {
-            console.log(err);
-          }
-        },
-      ); //end of async.forEachSeries
+      //find the user's score for this year
+      tournamentYear.standings.forEach(function (entry) {
+        if (
+          entry.firstName === user.firstName &&
+          entry.lastName === user.lastName
+        ) {
+          score = entry.score;
+        }
+      });
+      //calculate the user's rank by counting how many players scored higher
+      tournamentYear.standings.forEach(function (entry) {
+        if (entry.score > score) {
+          rank++;
+        }
+      });
+
+      // Ticket MNM-61 (All Gold Trophies)
+      if (score != noTournamentEntryFoundScore) {
+        var newTrophy = {
+          year: year,
+          userRank: rank,
+          totalPlayers: totalPlayers,
+          score: score,
+        };
+        var trophy = await Trophy.create(newTrophy);
+        user.trophies.addToSet(trophy._id);
+        await user.save();
+      }
     }
-  }); //end of TournamentStanding.find()
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 module.exports = router;

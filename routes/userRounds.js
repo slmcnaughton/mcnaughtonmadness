@@ -1,6 +1,5 @@
 var express = require("express");
 var router = express.Router({ mergeParams: true }); //pass {} merges the parameters from the campground.js to this comments.js...allows us to access :id of the campground
-var async = require("async");
 var Tournament = require("../models/tournament");
 var UserTournament = require("../models/userTournament");
 var TournamentGroup = require("../models/tournamentGroup");
@@ -16,90 +15,95 @@ var scoring = require("../helpers/scoring");
 router.get(
   "/:numRound/edit",
   middleware.checkUserTournamentOwnership,
-  function (req, res) {
-    TournamentGroup.findOne({ groupName: req.params.groupName }).exec(
-      function (err, foundTournamentGroup) {
-        if (err || !foundTournamentGroup) {
-          req.flash("error", "tournament combination not found");
-          res.redirect("back");
-        } else {
-          var numRound = Number(req.params.numRound);
-          Tournament.findById(foundTournamentGroup.tournamentReference.id)
-            .populate({
-              path: "rounds",
-              populate: {
-                path: "matches",
-                populate: [
-                  { path: "topTeam" },
-                  { path: "bottomTeam" },
-                  { path: "winner" },
-                ],
-              },
-            })
-            .exec(function (err, foundTournament) {
-              if (err || !foundTournament) {
-                req.flash("error", "tournament combination not found");
-                res.redirect("back");
-              } else if (numRound < 7) {
-                res.render("userRounds/edit.ejs", {
-                  tournament: foundTournament,
-                  round: foundTournament.rounds[numRound - 1],
-                  tournamentGroup: foundTournamentGroup,
-                  username: req.params.username,
-                  targetFirstName: req.targetUserFirstName,
-                  page: "tournamentGroups",
-                  calculateScores: scoring.calculateAggregateScores,
-                });
-              } else if (numRound === 7) {
-                res.render("userRounds/editFinalFour.ejs", {
-                  tournament: foundTournament,
-                  numRound: numRound,
-                  tournamentGroup: foundTournamentGroup,
-                  username: req.params.username,
-                  targetFirstName: req.targetUserFirstName,
-                  page: "tournamentGroups",
-                });
-              } else {
-                // For Champion pick, look up this user's Final Four picks
-                // so we can limit champion options to just those 4 teams
-                UserTournament.findOne({
-                  "tournamentReference.id": foundTournament._id,
-                  "user.username": req.params.username,
-                })
-                  .populate({
-                    path: "userRounds",
-                    populate: { path: "userMatchPredictions", populate: "winner" },
-                  })
-                  .exec(function (err, foundUserTournament) {
-                    var finalFourTeams = [];
-                    if (!err && foundUserTournament) {
-                      for (var r = 0; r < foundUserTournament.userRounds.length; r++) {
-                        if (foundUserTournament.userRounds[r].round.numRound === 7) {
-                          var preds = foundUserTournament.userRounds[r].userMatchPredictions;
-                          for (var p = 0; p < preds.length; p++) {
-                            if (preds[p].winner) {
-                              finalFourTeams.push(preds[p].winner);
-                            }
-                          }
-                          break;
-                        }
-                      }
-                    }
-                    res.render("userRounds/editChamp.ejs", {
-                      tournament: foundTournament,
-                      numRound: Number(numRound),
-                      tournamentGroup: foundTournamentGroup,
-                      username: req.params.username,
-                      targetFirstName: req.targetUserFirstName,
-                      page: "tournamentGroups",
-                      finalFourTeams: finalFourTeams,
-                    });
-                  });
+  async function (req, res) {
+    try {
+      var foundTournamentGroup = await TournamentGroup.findOne({
+        groupName: req.params.groupName,
+      });
+      if (!foundTournamentGroup) {
+        req.flash("error", "tournament combination not found");
+        return res.redirect("back");
+      }
+      var numRound = Number(req.params.numRound);
+      var foundTournament = await Tournament.findById(
+        foundTournamentGroup.tournamentReference.id,
+      ).populate({
+        path: "rounds",
+        populate: {
+          path: "matches",
+          populate: [
+            { path: "topTeam" },
+            { path: "bottomTeam" },
+            { path: "winner" },
+          ],
+        },
+      });
+      if (!foundTournament) {
+        req.flash("error", "tournament combination not found");
+        return res.redirect("back");
+      }
+      if (numRound < 7) {
+        res.render("userRounds/edit.ejs", {
+          tournament: foundTournament,
+          round: foundTournament.rounds[numRound - 1],
+          tournamentGroup: foundTournamentGroup,
+          username: req.params.username,
+          targetFirstName: req.targetUserFirstName,
+          page: "tournamentGroups",
+          calculateScores: scoring.calculateAggregateScores,
+        });
+      } else if (numRound === 7) {
+        res.render("userRounds/editFinalFour.ejs", {
+          tournament: foundTournament,
+          numRound: numRound,
+          tournamentGroup: foundTournamentGroup,
+          username: req.params.username,
+          targetFirstName: req.targetUserFirstName,
+          page: "tournamentGroups",
+        });
+      } else {
+        // For Champion pick, look up this user's Final Four picks
+        // so we can limit champion options to just those 4 teams
+        var foundUserTournament = await UserTournament.findOne({
+          "tournamentReference.id": foundTournament._id,
+          "user.username": req.params.username,
+        }).populate({
+          path: "userRounds",
+          populate: {
+            path: "userMatchPredictions",
+            populate: "winner",
+          },
+        });
+        var finalFourTeams = [];
+        if (foundUserTournament) {
+          for (var r = 0; r < foundUserTournament.userRounds.length; r++) {
+            if (foundUserTournament.userRounds[r].round.numRound === 7) {
+              var preds =
+                foundUserTournament.userRounds[r].userMatchPredictions;
+              for (var p = 0; p < preds.length; p++) {
+                if (preds[p].winner) {
+                  finalFourTeams.push(preds[p].winner);
+                }
               }
-            });
+              break;
+            }
+          }
         }
-      },
-    );
+        res.render("userRounds/editChamp.ejs", {
+          tournament: foundTournament,
+          numRound: Number(numRound),
+          tournamentGroup: foundTournamentGroup,
+          username: req.params.username,
+          targetFirstName: req.targetUserFirstName,
+          page: "tournamentGroups",
+          finalFourTeams: finalFourTeams,
+        });
+      }
+    } catch (err) {
+      console.log(err);
+      req.flash("error", "Something went wrong");
+      res.redirect("back");
+    }
   },
 );
 

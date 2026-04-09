@@ -18,14 +18,11 @@ var express = require("express"),
   TournamentGroup = require("./models/tournamentGroup"),
   Match = require("./models/match"),
   User = require("./models/user"),
-  async = require("async"),
   UserMatchPrediction = require("./models/userMatchPrediction"),
   schedule = require("node-schedule"),
   moment = require("moment-timezone");
 
 require("dotenv").config();
-mongoose.set("useCreateIndex", true);
-mongoose.set("useFindAndModify", false);
 
 //requiring routes
 var commentRoutes = require("./routes/comments"),
@@ -40,10 +37,7 @@ var commentRoutes = require("./routes/comments"),
   feedbackRoutes = require("./routes/feedback"),
   familyTreeRoutes = require("./routes/familyTree");
 
-mongoose.connect(process.env.DATABASE_URL_PROD, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(process.env.DATABASE_URL_PROD);
 mongoose.connection.on("error", function (err) {
   console.error("[MongoDB] Connection error:", err.message);
 });
@@ -126,40 +120,38 @@ app.listen(process.env.PORT, process.env.IP, function () {
     "McNaughton Madness Server has started on port " + process.env.PORT,
   );
 
-  Tournament.findOne({ year: new Date().getFullYear() })
-    .populate("scrapes")
-    .populate("emailPickReminderJobs")
-    .exec(function (err, foundTournament) {
-      if (err) console.log(err);
-      else {
-        if (foundTournament) {
-          if (foundTournament.scrapes) {
-            for (var j = 0; j < foundTournament.scrapes.length; j++) {
-              var job = {
-                start: foundTournament.scrapes[j].start,
-                end: foundTournament.scrapes[j].end,
-                rule: foundTournament.scrapes[j].rule,
-              };
-              schedule.scheduleJob(job, function () {
-                scrape();
-              });
-            }
+  (async function () {
+    try {
+      var foundTournament = await Tournament.findOne({ year: new Date().getFullYear() })
+        .populate("scrapes")
+        .populate("emailPickReminderJobs");
+
+      if (foundTournament) {
+        if (foundTournament.scrapes) {
+          for (var j = 0; j < foundTournament.scrapes.length; j++) {
+            var job = {
+              start: foundTournament.scrapes[j].start,
+              end: foundTournament.scrapes[j].end,
+              rule: foundTournament.scrapes[j].rule,
+            };
+            schedule.scheduleJob(job, function () {
+              scrape();
+            });
           }
-          if (foundTournament.emailPickReminderJobs) {
-            for (
-              var i = 0;
-              i < foundTournament.emailPickReminderJobs.length;
-              i++
-            ) {
-              var date = foundTournament.emailPickReminderJobs[i].date;
-              schedule.scheduleJob(date, function () {
-                emailHelper.sendPickReminderEmail();
-              });
-            }
-          }
-        } else {
-          console.log("No tournament has been created for this year.");
         }
+        if (foundTournament.emailPickReminderJobs) {
+          for (var i = 0; i < foundTournament.emailPickReminderJobs.length; i++) {
+            var date = foundTournament.emailPickReminderJobs[i].date;
+            schedule.scheduleJob(date, function () {
+              emailHelper.sendPickReminderEmail();
+            });
+          }
+        }
+      } else {
+        console.log("No tournament has been created for this year.");
       }
-    });
+    } catch (err) {
+      console.log(err);
+    }
+  })();
 });

@@ -7,80 +7,85 @@ var middleware = require("../middleware");
 // app.use("/tournamentGroups/:groupName/comments", commentRoutes);
 
 //Comments New
-router.get("/new", middleware.isLoggedIn, function (req, res) {
-  //find tournament by group name
-  TournamentGroup.findOne({ groupName: req.params.groupName }).exec(
-    function (err, foundTournamentGroup) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.render("comments/new", { tournamentGroup: foundTournamentGroup });
-      }
-    },
-  );
+router.get("/new", middleware.isLoggedIn, async function (req, res) {
+  try {
+    //find tournament by group name
+    var foundTournamentGroup = await TournamentGroup.findOne({
+      groupName: req.params.groupName,
+    });
+    if (!foundTournamentGroup) {
+      req.flash("error", "Something went wrong");
+      return res.redirect("back");
+    }
+    res.render("comments/new", { tournamentGroup: foundTournamentGroup });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 //Comments Create
-router.post("/", middleware.isLoggedIn, function (req, res) {
-  TournamentGroup.findOne({ groupName: req.params.groupName }).exec(
-    function (err, foundTournamentGroup) {
-      if (err) {
-        req.flash("error", "Something went wrong creating the comment");
-        console.log(err);
-        res.redirect("/tournamentGroups");
-      } else {
-        //create new comment
-        Comment.create(req.body.comment, function (err, comment) {
-          if (err) {
-            console.log(err);
-          } else {
-            //add username and id to comment
-            comment.author.id = req.user._id;
-            comment.author.username = req.user.username;
-            comment.author.firstName = req.user.firstName;
-            comment.save();
-            //connect new comment to tournament group
-            foundTournamentGroup.comments.push(comment._id);
-            foundTournamentGroup.save();
+router.post("/", middleware.isLoggedIn, async function (req, res) {
+  try {
+    var foundTournamentGroup = await TournamentGroup.findOne({
+      groupName: req.params.groupName,
+    });
+    if (!foundTournamentGroup) {
+      req.flash("error", "Something went wrong creating the comment");
+      return res.redirect("/tournamentGroups");
+    }
+    //create new comment
+    var comment = await Comment.create(req.body.comment);
+    //add username and id to comment
+    comment.author.id = req.user._id;
+    comment.author.username = req.user.username;
+    comment.author.firstName = req.user.firstName;
+    await comment.save();
+    //connect new comment to tournament group
+    foundTournamentGroup.comments.push(comment._id);
+    await foundTournamentGroup.save();
 
-            req.flash("success", "Sucessfully posted comment");
-            res.redirect(
-              "/tournamentGroups/" +
-                foundTournamentGroup.groupName +
-                "/messageboard",
-            );
-          }
-        });
-      }
-    },
-  );
+    req.flash("success", "Sucessfully posted comment");
+    res.redirect(
+      "/tournamentGroups/" +
+        foundTournamentGroup.groupName +
+        "/messageboard",
+    );
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 //EDIT - comment form
 router.get(
   "/:comment_id/edit",
   middleware.checkCommentOwnership,
-  function (req, res) {
-    TournamentGroup.findOne({ groupName: req.params.groupName }).exec(
-      function (err, foundTournamentGroup) {
-        if (err || !foundTournamentGroup) {
-          req.flash("error", "Tournament Group not found");
-          return res.redirect("back");
-        } else {
-          Comment.findById(req.params.comment_id, function (err, foundComment) {
-            if (err || !foundComment) {
-              req.flash("error", "Comment not found");
-              res.redirect("back");
-            } else {
-              res.render("comments/edit", {
-                groupName: req.params.groupName,
-                comment: foundComment,
-              });
-            }
-          });
-        }
-      },
-    );
+  async function (req, res) {
+    try {
+      var foundTournamentGroup = await TournamentGroup.findOne({
+        groupName: req.params.groupName,
+      });
+      if (!foundTournamentGroup) {
+        req.flash("error", "Tournament Group not found");
+        return res.redirect("back");
+      }
+      var foundComment = await Comment.findById(req.params.comment_id);
+      if (!foundComment) {
+        req.flash("error", "Comment not found");
+        return res.redirect("back");
+      }
+      res.render("comments/edit", {
+        groupName: req.params.groupName,
+        comment: foundComment,
+      });
+    } catch (err) {
+      console.log(err);
+      req.flash("error", "Something went wrong");
+      res.redirect("back");
+    }
   },
 );
 
@@ -88,20 +93,20 @@ router.get(
 router.put(
   "/:comment_id",
   middleware.checkCommentOwnership,
-  function (req, res) {
-    Comment.findByIdAndUpdate(
-      req.params.comment_id,
-      req.body.comment,
-      function (err, updatedComment) {
-        if (err) {
-          res.redirect("back");
-        } else {
-          res.redirect(
-            "/tournamentGroups/" + req.params.groupName + "/messageboard",
-          );
-        }
-      },
-    );
+  async function (req, res) {
+    try {
+      await Comment.findByIdAndUpdate(
+        req.params.comment_id,
+        req.body.comment,
+      );
+      res.redirect(
+        "/tournamentGroups/" + req.params.groupName + "/messageboard",
+      );
+    } catch (err) {
+      console.log(err);
+      req.flash("error", "Something went wrong");
+      res.redirect("back");
+    }
   },
 );
 
@@ -109,17 +114,18 @@ router.put(
 router.delete(
   "/:comment_id",
   middleware.checkCommentOwnership,
-  function (req, res) {
-    Comment.findByIdAndRemove(req.params.comment_id, function (err) {
-      if (err) {
-        res.redirect("back");
-      } else {
-        req.flash("success", "Comment deleted");
-        res.redirect(
-          "/tournamentGroups/" + req.params.groupName + "/messageboard",
-        );
-      }
-    });
+  async function (req, res) {
+    try {
+      await Comment.findByIdAndDelete(req.params.comment_id);
+      req.flash("success", "Comment deleted");
+      res.redirect(
+        "/tournamentGroups/" + req.params.groupName + "/messageboard",
+      );
+    } catch (err) {
+      console.log(err);
+      req.flash("error", "Something went wrong");
+      res.redirect("back");
+    }
   },
 );
 

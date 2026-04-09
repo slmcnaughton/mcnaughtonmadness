@@ -3,57 +3,59 @@ var router = express.Router();
 var TournamentStanding = require("../models/tournamentStanding");
 
 //INDEX - show all tournamentStandings
-router.get("/", function (req, res) {
-  //get all tournamentStandings from db
-  TournamentStanding.find({}, function (err, allTournaments) {
-    if (err) {
-      console.log(err);
-    } else {
-      allTournaments.sort(compare);
-      res.render("tournamentStandings/index", {
-        tournaments: allTournaments,
-        page: "about",
-      });
-    }
-  });
+router.get("/", async function (req, res) {
+  try {
+    var allTournaments = await TournamentStanding.find({});
+    allTournaments.sort(compare);
+    res.render("tournamentStandings/index", {
+      tournaments: allTournaments,
+      page: "about",
+    });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Something went wrong");
+    res.redirect("back");
+  }
 });
 
 // SHOW by year — e.g. /tournamentStandings/year/2019
-router.get("/year/:year", function (req, res) {
-  TournamentStanding.findOne(
-    { year: parseInt(req.params.year) },
-    function (err, foundTournamentStanding) {
-      if (err || !foundTournamentStanding) {
-        req.flash("error", "Tournament standings not found for " + req.params.year);
-        res.redirect("/tournamentStandings");
-      } else {
-        res.render("tournamentStandings/show", {
-          tournament: foundTournamentStanding,
-          page: "about",
-        });
-      }
-    },
-  );
+router.get("/year/:year", async function (req, res) {
+  try {
+    var foundTournamentStanding = await TournamentStanding.findOne({
+      year: parseInt(req.params.year),
+    });
+    if (!foundTournamentStanding) {
+      req.flash("error", "Tournament standings not found for " + req.params.year);
+      return res.redirect("/tournamentStandings");
+    }
+    res.render("tournamentStandings/show", {
+      tournament: foundTournamentStanding,
+      page: "about",
+    });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Tournament standings not found for " + req.params.year);
+    res.redirect("/tournamentStandings");
+  }
 });
 
 //SHOW - shows more information about a particular Tournament Standing
-router.get("/:id", function (req, res) {
-  //find the TournamentStanding with provided ID, populate the comments array
-  TournamentStanding.findById(
-    req.params.id,
-    function (err, foundTournamentStanding) {
-      if (err || !foundTournamentStanding) {
-        req.flash("error", "Tournament standings not found");
-        res.redirect("back");
-      } else {
-        //render the show template with that Tournament Standing
-        res.render("tournamentStandings/show", {
-          tournament: foundTournamentStanding,
-          page: "about",
-        });
-      }
-    },
-  );
+router.get("/:id", async function (req, res) {
+  try {
+    var foundTournamentStanding = await TournamentStanding.findById(req.params.id);
+    if (!foundTournamentStanding) {
+      req.flash("error", "Tournament standings not found");
+      return res.redirect("back");
+    }
+    res.render("tournamentStandings/show", {
+      tournament: foundTournamentStanding,
+      page: "about",
+    });
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Tournament standings not found");
+    res.redirect("back");
+  }
 });
 
 function compare(a, b) {

@@ -9,9 +9,7 @@ var roundSchema = new mongoose.Schema({
       ref: "Match",
     },
   ],
-  startTime: {
-    type: { Date, default: Date.now },
-  },
+  startTime: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("Round", roundSchema);

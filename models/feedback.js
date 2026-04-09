@@ -1,5 +1,15 @@
 var mongoose = require("mongoose");
 
+var feedbackAuthorSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  username: String,
+  firstName: String,
+  lastName: String,
+}, { _id: false, id: false });
+
 var feedbackSchema = new mongoose.Schema({
   category: {
     type: String,
@@ -11,15 +21,7 @@ var feedbackSchema = new mongoose.Schema({
     required: true,
   },
   pageContext: String,
-  author: {
-    id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    username: String,
-    firstName: String,
-    lastName: String,
-  },
+  author: feedbackAuthorSchema,
   status: {
     type: String,
     enum: ["new", "read", "resolved"],

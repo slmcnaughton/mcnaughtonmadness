@@ -1,6 +1,5 @@
 var express = require("express");
 var router = express.Router();
-var async = require("async");
 var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var Round = require("../models/round");

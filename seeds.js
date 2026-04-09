@@ -16,150 +16,105 @@ var Scrape = require("./models/scrape");
 var Feedback = require("./models/feedback");
 var FamilyMember = require("./models/familyMember");
 var FamilyRelationship = require("./models/familyRelationship");
-var async = require("async");
 var data = require("./historicalStandings");
 
-function seedDB() {
-  // removeAndAddTournamentStandings(data);
-  // removeAndAddTrophies();
-  // removeBots();
-  // seedRootCouple();
+async function seedDB() {
+  // await removeAndAddTournamentStandings(data);
+  // await removeAndAddTrophies();
+  // await removeBots();
+  // await seedRootCouple();
 
-  async.parallel(
-    [
-      // deleteAllTournamentGroups,
-      // deleteAllUserTournaments,
-      // deleteAllUserRounds,
-      // deleteAllUserMatchPredictions,
-      // deleteAllUserMatchAggregates,
-      // deleteAllBonusMatchAggregates,
-      // deleteAllTeams,
-      // deleteAllMatches,
-      // deleteAllRounds,
-      // deleteAllTournaments,
-      // deleteAllScrapes,
-      // deleteAllFeedback,
-      // deleteAllFamilyData,
-      // deleteAllUsers,
-    ],
-    function (err) {
-      if (err) console.log(err);
-      // addTwoUsers();
-    },
-  );
+  try {
+    await Promise.all([
+      // deleteAllTournamentGroups(),
+      // deleteAllUserTournaments(),
+      // deleteAllUserRounds(),
+      // deleteAllUserMatchPredictions(),
+      // deleteAllUserMatchAggregates(),
+      // deleteAllBonusMatchAggregates(),
+      // deleteAllTeams(),
+      // deleteAllMatches(),
+      // deleteAllRounds(),
+      // deleteAllTournaments(),
+      // deleteAllScrapes(),
+      // deleteAllFeedback(),
+      // deleteAllFamilyData(),
+      // deleteAllUsers(),
+    ]);
+    // await addTwoUsers();
+  } catch (err) {
+    console.log(err);
+  }
 }
 
-function deleteAllTournamentGroups(callback) {
-  TournamentGroup.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else {
-      console.log("removed all tournament groups");
-      User.updateMany({}, { $set: { tournamentGroups: [] } }, function (err) {
-        if (err) console.log(err);
-        else console.log("cleared tournament group refs from all users");
-        callback();
-      });
-    }
-  });
+async function deleteAllTournamentGroups() {
+  await TournamentGroup.deleteMany({});
+  console.log("removed all tournament groups");
+  await User.updateMany({}, { $set: { tournamentGroups: [] } });
+  console.log("cleared tournament group refs from all users");
 }
 
-function deleteAllUserTournaments(callback) {
-  UserTournament.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all userTournaments");
-    callback();
-  });
+async function deleteAllUserTournaments() {
+  await UserTournament.deleteMany({});
+  console.log("removed all userTournaments");
 }
 
-function deleteAllUserRounds(callback) {
-  UserRound.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all user rounds");
-    callback();
-  });
+async function deleteAllUserRounds() {
+  await UserRound.deleteMany({});
+  console.log("removed all user rounds");
 }
 
-function deleteAllUserMatchPredictions(callback) {
-  UserMatchPrediction.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all user match predictions");
-    callback();
-  });
+async function deleteAllUserMatchPredictions() {
+  await UserMatchPrediction.deleteMany({});
+  console.log("removed all user match predictions");
 }
 
-function deleteAllUserMatchAggregates(callback) {
-  UserMatchAggregate.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all user match aggregates");
-    callback();
-  });
+async function deleteAllUserMatchAggregates() {
+  await UserMatchAggregate.deleteMany({});
+  console.log("removed all user match aggregates");
 }
 
-function deleteAllBonusMatchAggregates(callback) {
-  BonusAggregate.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all bonus match aggregates");
-    callback();
-  });
+async function deleteAllBonusMatchAggregates() {
+  await BonusAggregate.deleteMany({});
+  console.log("removed all bonus match aggregates");
 }
 
-function deleteAllTeams(callback) {
-  Team.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all teams");
-    callback();
-  });
+async function deleteAllTeams() {
+  await Team.deleteMany({});
+  console.log("removed all teams");
 }
 
-function deleteAllMatches(callback) {
-  Match.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all matches");
-    callback();
-  });
+async function deleteAllMatches() {
+  await Match.deleteMany({});
+  console.log("removed all matches");
 }
 
-function deleteAllRounds(callback) {
-  Round.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all rounds");
-    callback();
-  });
+async function deleteAllRounds() {
+  await Round.deleteMany({});
+  console.log("removed all rounds");
 }
 
-function deleteAllTournaments(callback) {
-  Tournament.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all tournaments");
-    callback();
-  });
+async function deleteAllTournaments() {
+  await Tournament.deleteMany({});
+  console.log("removed all tournaments");
 }
 
-function deleteAllScrapes(callback) {
-  Scrape.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all scrapes");
-    callback();
-  });
+async function deleteAllScrapes() {
+  await Scrape.deleteMany({});
+  console.log("removed all scrapes");
 }
 
-function deleteAllFeedback(callback) {
-  Feedback.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all feedback");
-    callback();
-  });
+async function deleteAllFeedback() {
+  await Feedback.deleteMany({});
+  console.log("removed all feedback");
 }
 
-function deleteAllUsers(callback) {
-  User.deleteMany({}, function (err) {
-    if (err) console.log(err);
-    else console.log("removed all users");
-    callback();
-  });
+async function deleteAllUsers() {
+  await User.deleteMany({});
+  console.log("removed all users");
 }
 
-function addTwoUsers(callback) {
+async function addTwoUsers() {
   var users = [
     new User({
       username: "seth",
@@ -175,225 +130,117 @@ function addTwoUsers(callback) {
     }),
   ];
 
-  users.forEach(function (user) {
-    User.register(user, "password", function (err, newUser) {
-      if (err) console.log(err);
-      else {
-        addPastTrophies(newUser);
-        console.log("Added " + newUser.firstName);
-      }
-    });
-  }, callback);
+  for (var i = 0; i < users.length; i++) {
+    var newUser = await User.register(users[i], "password");
+    await addPastTrophies(newUser);
+    console.log("Added " + newUser.firstName);
+  }
 }
 
 // remove all bots that found this site
-var removeBots = function () {
-  User.deleteMany(
-    { tournamentGroups: { $exists: true, $size: 0 } },
-    function (err) {
-      if (err) {
-        console.log("oops");
-      } else {
-        console.log("removed all users not in a tournament group");
-      }
-    },
-  );
-};
-
-var removeAndAddTrophies = function () {
-  removeAllTrophies(addTrophiesToAllExistingUsers);
-};
-
-var removeAllTrophies = function (callback) {
-  Trophy.deleteMany({}, function (err) {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log("removed all trophies");
-      callback();
-    }
-  });
-};
-
-var addTrophiesToAllExistingUsers = function () {
-  User.find({}, function (err, foundUsers) {
-    if (err) console.log(err);
-    else {
-      async.each(foundUsers, function (user, callback) {
-        addPastTrophies(user, callback);
-      });
-    }
-  });
-  console.log("Added all trophies to existing users!");
-};
-
-var addPastTrophies = function (user, done) {
-  //find tournaments the user has participated in
-  TournamentStanding.find({
-    "standings.firstName": user.firstName,
-    "standings.lastName": user.lastName,
-  }).exec(function (err, tournamentYears) {
-    if (err) {
-      console.log(err);
-    } else {
-      //for each tournament year, add the correct trophy
-      async.each(
-        tournamentYears,
-        function (tournamentYear, callback) {
-          var noTournamentEntryFoundScore = -10000;
-
-          var year = tournamentYear.year;
-          var totalPlayers = tournamentYear.standings.length;
-          var rank = 1;
-          var score = noTournamentEntryFoundScore;
-
-          //find the user's score for this year
-          tournamentYear.standings.forEach(function (entry) {
-            if (
-              entry.firstName === user.firstName &&
-              entry.lastName === user.lastName
-            ) {
-              score = entry.score;
-            }
-          });
-          //calculate the user's rank by counting how many players scored higher
-          tournamentYear.standings.forEach(function (entry) {
-            if (entry.score > score) {
-              rank++;
-            }
-          });
-
-          // Ticket MNM-61 (All Gold Trophies)
-          if (score != noTournamentEntryFoundScore) {
-            var newTrophy = {
-              year: year,
-              userRank: rank,
-              totalPlayers: totalPlayers,
-              score: score,
-            };
-            Trophy.create(newTrophy, function (err, trophy) {
-              if (err) {
-                console.log(err);
-              } else {
-                user.trophies.addToSet(trophy._id);
-                callback();
-              }
-            });
-          } else {
-            console.log(
-              "No tournament entry found for + " +
-                user.firstName +
-                " in year " +
-                tournamentYear.Year,
-            );
-            console.log(tournamentYear);
-          }
-        },
-        function (err) {
-          if (err) {
-            console.log(err);
-          } else {
-            user.save(done);
-          }
-        },
-      ); //end of async.each
-    }
-  }); //end of TournamentStanding.find()
-};
-
-var removeAndAddTournamentStandings = function (data) {
-  TournamentStanding.deleteMany({}, function (err) {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log("removed all tournament standings, added new ones!");
-      //add a few tournaments
-      data.forEach(function (seed) {
-        TournamentStanding.create(seed, function (err, tournament) {
-          if (err) {
-            console.log(err);
-          } else {
-            //   console.log("added a tournament");
-          }
-        });
-      });
-    }
-  });
-};
-
-function deleteAllFamilyData(callback) {
-  async.parallel(
-    [
-      function (cb) {
-        FamilyMember.deleteMany({}, function (err) {
-          if (err) console.log(err);
-          else console.log("removed all family members");
-          cb();
-        });
-      },
-      function (cb) {
-        FamilyRelationship.deleteMany({}, function (err) {
-          if (err) console.log(err);
-          else console.log("removed all family relationships");
-          cb();
-        });
-      },
-      function (cb) {
-        User.updateMany({}, { $unset: { familyTreeId: "" } }, function (err) {
-          if (err) console.log(err);
-          else console.log("cleared familyTreeId from all users");
-          cb();
-        });
-      },
-    ],
-    function (err) {
-      if (err) console.log(err);
-      callback();
-    },
-  );
+async function removeBots() {
+  await User.deleteMany({ tournamentGroups: { $exists: true, $size: 0 } });
+  console.log("removed all users not in a tournament group");
 }
 
-function seedRootCouple(callback) {
-  var eldon = new FamilyMember({
+async function removeAndAddTrophies() {
+  await Trophy.deleteMany({});
+  console.log("removed all trophies");
+  await addTrophiesToAllExistingUsers();
+}
+
+async function addTrophiesToAllExistingUsers() {
+  var foundUsers = await User.find({});
+  for (var i = 0; i < foundUsers.length; i++) {
+    await addPastTrophies(foundUsers[i]);
+  }
+  console.log("Added all trophies to existing users!");
+}
+
+async function addPastTrophies(user) {
+  var tournamentYears = await TournamentStanding.find({
+    "standings.firstName": user.firstName,
+    "standings.lastName": user.lastName,
+  });
+
+  var noTournamentEntryFoundScore = -10000;
+
+  for (var i = 0; i < tournamentYears.length; i++) {
+    var tournamentYear = tournamentYears[i];
+    var year = tournamentYear.year;
+    var totalPlayers = tournamentYear.standings.length;
+    var rank = 1;
+    var score = noTournamentEntryFoundScore;
+
+    tournamentYear.standings.forEach(function (entry) {
+      if (entry.firstName === user.firstName && entry.lastName === user.lastName) {
+        score = entry.score;
+      }
+    });
+    tournamentYear.standings.forEach(function (entry) {
+      if (entry.score > score) {
+        rank++;
+      }
+    });
+
+    if (score != noTournamentEntryFoundScore) {
+      var trophy = await Trophy.create({
+        year: year,
+        userRank: rank,
+        totalPlayers: totalPlayers,
+        score: score,
+      });
+      user.trophies.addToSet(trophy._id);
+    } else {
+      console.log("No tournament entry found for " + user.firstName + " in year " + tournamentYear.year);
+    }
+  }
+
+  await user.save();
+}
+
+async function removeAndAddTournamentStandings(data) {
+  await TournamentStanding.deleteMany({});
+  console.log("removed all tournament standings, adding new ones!");
+  for (var i = 0; i < data.length; i++) {
+    await TournamentStanding.create(data[i]);
+  }
+  console.log("added all tournament standings");
+}
+
+async function deleteAllFamilyData() {
+  await Promise.all([
+    FamilyMember.deleteMany({}),
+    FamilyRelationship.deleteMany({}),
+    User.updateMany({}, { $unset: { familyTreeId: "" } }),
+  ]);
+  console.log("removed all family members, relationships, and familyTreeId refs");
+}
+
+async function seedRootCouple() {
+  var savedEldon = await new FamilyMember({
     firstName: "Eldon",
     lastName: "McNaughton",
     deceased: true,
-  });
+  }).save();
 
-  var katherine = new FamilyMember({
+  var savedKatherine = await new FamilyMember({
     firstName: "Katherine",
     lastName: "McNaughton",
     deceased: true,
-  });
+  }).save();
 
-  eldon.save(function (err, savedEldon) {
-    if (err) console.log(err);
-    katherine.save(function (err, savedKatherine) {
-      if (err) console.log(err);
-      FamilyRelationship.create(
-        {
-          from: savedEldon._id,
-          to: savedKatherine._id,
-          type: "spouse",
-        },
-        function (err) {
-          if (err) console.log(err);
-          else console.log("seeded root couple: Eldon & Katherine McNaughton");
-          if (callback) callback();
-        },
-      );
-    });
+  await FamilyRelationship.create({
+    from: savedEldon._id,
+    to: savedKatherine._id,
+    type: "spouse",
   });
+  console.log("seeded root couple: Eldon & Katherine McNaughton");
 }
 
-function deleteTeamImages() {
-  TeamImage.deleteMany({}, function (err) {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log("removed all team images");
-    }
-  });
+async function deleteTeamImages() {
+  await TeamImage.deleteMany({});
+  console.log("removed all team images");
 }
 
 module.exports = seedDB;

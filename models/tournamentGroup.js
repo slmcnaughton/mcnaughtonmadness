@@ -1,18 +1,28 @@
 var mongoose = require("mongoose");
 
+var commissionerSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  name: String,
+}, { _id: false, id: false });
+
+var tournamentReferenceSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Tournament",
+  },
+  year: Number,
+}, { _id: false, id: false });
+
 var tournamentGroupSchema = new mongoose.Schema({
   year: Number,
   groupName: {
     type: String,
   },
   groupMotto: String,
-  commissioner: {
-    id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    name: String,
-  },
+  commissioner: commissionerSchema,
   publicGroup: Boolean,
   isOfficial: { type: Boolean, default: false },
   secretCode: String,
@@ -23,13 +33,7 @@ var tournamentGroupSchema = new mongoose.Schema({
       ref: "Comment",
     },
   ],
-  tournamentReference: {
-    id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Tournament",
-    },
-    year: Number,
-  },
+  tournamentReference: tournamentReferenceSchema,
   userTournaments: [
     {
       type: mongoose.Schema.Types.ObjectId,

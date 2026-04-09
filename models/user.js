@@ -1,5 +1,15 @@
 var mongoose = require("mongoose");
-var passportLocalMongoose = require("passport-local-mongoose");
+var passportLocalMongoose = require("passport-local-mongoose").default || require("passport-local-mongoose");
+
+var tournamentGroupRefSchema = new mongoose.Schema({
+  id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TournamentGroup",
+  },
+  groupName: String,
+  year: Number,
+  isOfficial: { type: Boolean, default: false },
+}, { _id: false, id: false });
 
 var UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -16,17 +26,7 @@ var UserSchema = new mongoose.Schema({
       ref: "Trophy",
     },
   ],
-  tournamentGroups: [
-    {
-      id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "TournamentGroup",
-      },
-      groupName: String,
-      year: Number,
-      isOfficial: { type: Boolean, default: false },
-    },
-  ],
+  tournamentGroups: [tournamentGroupRefSchema],
   familyTreeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "FamilyMember",

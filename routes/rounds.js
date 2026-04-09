@@ -1,33 +1,35 @@
 var express = require("express");
 var router = express.Router({ mergeParams: true }); //pass {} merges the parameters from the campground.js to this comments.js...allows us to access :id of the campground
-var async = require("async");
 var Tournament = require("../models/tournament");
 var Round = require("../models/round");
 var Team = require("../models/team");
 var middleware = require("../middleware");
 
 //EDIT - render edit round form (admin only)
-router.get("/:numRound/edit", middleware.isAdmin, function (req, res) {
-  Tournament.findOne({ year: req.params.year })
-    .populate({
-      path: "rounds",
-      populate: { path: "matches", populate: { path: "topTeam" } },
-    })
-    .populate({
-      path: "rounds",
-      populate: { path: "matches", populate: { path: "bottomTeam" } },
-    })
-    .exec(function (err, foundTournament) {
-      if (err || !foundTournament) {
-        req.flash("error", "tournament combination not found");
-        res.redirect("back");
-      } else {
-        res.render("rounds/edit.ejs", {
-          tournament: foundTournament,
-          round: foundTournament.rounds[req.params.numRound - 1],
-        });
-      }
+router.get("/:numRound/edit", middleware.isAdmin, async function (req, res) {
+  try {
+    var foundTournament = await Tournament.findOne({ year: req.params.year })
+      .populate({
+        path: "rounds",
+        populate: { path: "matches", populate: { path: "topTeam" } },
+      })
+      .populate({
+        path: "rounds",
+        populate: { path: "matches", populate: { path: "bottomTeam" } },
+      });
+
+    if (!foundTournament) {
+      req.flash("error", "tournament combination not found");
+      return res.redirect("back");
+    }
+    res.render("rounds/edit.ejs", {
+      tournament: foundTournament,
+      round: foundTournament.rounds[req.params.numRound - 1],
     });
+  } catch (err) {
+    req.flash("error", "tournament combination not found");
+    res.redirect("back");
+  }
 });
 
 //UPDATE - Round of Tournament

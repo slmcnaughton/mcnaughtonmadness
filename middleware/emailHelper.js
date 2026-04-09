@@ -6,7 +6,6 @@ var User = require("../models/user");
 var scoring = require("../helpers/scoring");
 var moment = require("moment-timezone");
 require("dotenv").config();
-var async = require("async");
 var { Resend } = require("resend");
 
 var resend = new Resend(process.env.RESEND_API_KEY);
@@ -17,7 +16,7 @@ var emailObj = {};
 
 emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
   // Re-populate with userMatchPredictions so we can count correct/incorrect picks
-  TournamentGroup.findById(tournamentGroup._id)
+  var populatedGroup = await TournamentGroup.findById(tournamentGroup._id)
     .populate({
       path: "userTournaments",
       populate: {
@@ -25,136 +24,101 @@ emailObj.sendRoundSummary = async function (tournamentGroup, testEmail) {
         populate: ["round", "userMatchPredictions"],
       },
     })
-    .populate({ path: "tournamentReference.id", populate: "rounds" })
-    .exec(function (err, populatedGroup) {
-      if (err || !populatedGroup) {
-        console.log("Error populating group for email:", err);
-        return;
+    .populate({ path: "tournamentReference.id", populate: "rounds" });
+
+  if (!populatedGroup) {
+    console.log("Error populating group for email");
+    return;
+  }
+
+  populatedGroup.userTournaments.sort(compareUserTournaments);
+  var completedRound = populatedGroup.currentRound - 1;
+
+  // Find the round ID for the completed round from any participant's userRound
+  var roundId = null;
+  for (var i = 0; i < populatedGroup.userTournaments.length && !roundId; i++) {
+    var urs = populatedGroup.userTournaments[i].userRounds;
+    for (var j = 0; j < urs.length; j++) {
+      if (urs[j].round.numRound === completedRound) {
+        roundId = urs[j].round.id;
+        break;
       }
+    }
+  }
 
-      populatedGroup.userTournaments.sort(compareUserTournaments);
-      var completedRound = populatedGroup.currentRound - 1;
-
-      // Find the round ID for the completed round from any participant's userRound
-      var roundId = null;
-      for (var i = 0; i < populatedGroup.userTournaments.length && !roundId; i++) {
-        var urs = populatedGroup.userTournaments[i].userRounds;
-        for (var j = 0; j < urs.length; j++) {
-          if (urs[j].round.numRound === completedRound) {
-            roundId = urs[j].round.id;
-            break;
-          }
-        }
+  // Find next round tipoff time from the populated tournament rounds
+  var nextRoundStartTime = null;
+  var nextRound = completedRound + 1;
+  if (nextRound <= 6 && populatedGroup.tournamentReference && populatedGroup.tournamentReference.id && populatedGroup.tournamentReference.id.rounds) {
+    var rounds = populatedGroup.tournamentReference.id.rounds;
+    for (var r = 0; r < rounds.length; r++) {
+      if (rounds[r].numRound === nextRound) {
+        nextRoundStartTime = rounds[r].startTime;
+        break;
       }
+    }
+  }
 
-      // Find next round tipoff time from the populated tournament rounds
-      var nextRoundStartTime = null;
-      var nextRound = completedRound + 1;
-      if (nextRound <= 6 && populatedGroup.tournamentReference && populatedGroup.tournamentReference.id && populatedGroup.tournamentReference.id.rounds) {
-        var rounds = populatedGroup.tournamentReference.id.rounds;
-        for (var r = 0; r < rounds.length; r++) {
-          if (rounds[r].numRound === nextRound) {
-            nextRoundStartTime = rounds[r].startTime;
-            break;
-          }
-        }
-      }
+  // Load match data with team seeds (for All Favorites / All Upsets insight)
+  var roundMatches = null;
+  if (roundId && completedRound <= 4) {
+    var foundRound = await Round.findById(roundId)
+      .populate({ path: "matches", populate: ["topTeam", "bottomTeam"] });
+    if (foundRound) {
+      roundMatches = foundRound.matches;
+    } else {
+      console.log("[EMAIL] Could not load round matches for insights");
+    }
+  }
 
-      // Load match data with team seeds (for All Favorites / All Upsets insight)
-      function buildAndSend(roundMatches) {
-        function sendIt(emailList) {
-          var mail = {
-            subject:
-              (testEmail ? "[TEST] " : "") +
-              populatedGroup.groupName + " — End of Round " + completedRound + " Summary",
-            to: emailList,
-            body: {
-              content: buildGroupScoreTableHtml(populatedGroup, completedRound, roundMatches, nextRoundStartTime),
-              contentType: "html",
-            },
-          };
-          sendEmail(mail.to, mail.subject, mail.body, "roundSummary", populatedGroup.groupName);
-        }
-
-        if (testEmail) {
-          console.log("[EMAIL TEST] Sending round summary to " + testEmail + " only (skipping full mailing list)");
-          sendIt([testEmail]);
-        } else {
-          async.waterfall(
-            [
-              async.apply(createMailingList, populatedGroup),
-              async function (emailList) {
-                sendIt(emailList);
-              },
-            ],
-            function (err) {
-              if (err) console.log(err);
-            },
-          );
-        }
-      }
-
-      if (roundId && completedRound <= 4) {
-        Round.findById(roundId)
-          .populate({ path: "matches", populate: ["topTeam", "bottomTeam"] })
-          .exec(function (err, foundRound) {
-            if (err || !foundRound) {
-              console.log("[EMAIL] Could not load round matches for insights:", err);
-              buildAndSend(null);
-            } else {
-              buildAndSend(foundRound.matches);
-            }
-          });
-      } else {
-        buildAndSend(null);
-      }
-    });
-};
-
-emailObj.sendPickReminderEmail = function () {
-  TournamentGroup.find({ year: new Date().getFullYear() })
-    .populate({ path: "tournamentReference.id", populate: "rounds" })
-    .exec(function (err, foundTournamentGroups) {
-      if (err) {
-        console.log(err);
-      } else {
-        foundTournamentGroups.forEach(sendEmailReminderToEachMemberInGroup);
-      }
-    });
-};
-
-function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
-  async.waterfall(
-    [
-      async.apply(
-        createMailingListForThoseWhoStillNeedToMakePicksThisRound,
-        tournamentGroup,
-      ),
-      async function (emailList) {
-        if (emailList.length > 0) {
-          const mail = {
-            subject:
-              "Make Your Round " +
-              tournamentGroup.currentRound +
-              " Picks Now! Tipoff In 2 Hours.",
-            to: emailList,
-            body: {
-              content: buildPickReminderContent(tournamentGroup),
-              contentType: "html",
-            },
-          };
-          sendEmail(mail.to, mail.subject, mail.body, "pickReminder", tournamentGroup.groupName);
-        } else {
-          console.log(
-            `All users from ${tournamentGroup.groupName} have submitted picks.`,
-          );
-        }
-      },
-    ],
-    function (err) {
-      if (err) console.log(err);
+  var mail = {
+    subject:
+      (testEmail ? "[TEST] " : "") +
+      populatedGroup.groupName + " — End of Round " + completedRound + " Summary",
+    body: {
+      content: buildGroupScoreTableHtml(populatedGroup, completedRound, roundMatches, nextRoundStartTime),
+      contentType: "html",
     },
-  );
+  };
+
+  if (testEmail) {
+    console.log("[EMAIL TEST] Sending round summary to " + testEmail + " only (skipping full mailing list)");
+    sendEmail([testEmail], mail.subject, mail.body, "roundSummary", populatedGroup.groupName);
+  } else {
+    var emailList = await createMailingList(populatedGroup);
+    sendEmail(emailList, mail.subject, mail.body, "roundSummary", populatedGroup.groupName);
+  }
+};
+
+emailObj.sendPickReminderEmail = async function () {
+  var foundTournamentGroups = await TournamentGroup.find({ year: new Date().getFullYear() })
+    .populate({ path: "tournamentReference.id", populate: "rounds" });
+
+  for (var i = 0; i < foundTournamentGroups.length; i++) {
+    await sendEmailReminderToEachMemberInGroup(foundTournamentGroups[i]);
+  }
+};
+
+async function sendEmailReminderToEachMemberInGroup(tournamentGroup) {
+  var emailList = await createMailingListForThoseWhoStillNeedToMakePicksThisRound(tournamentGroup);
+  if (emailList.length > 0) {
+    var mail = {
+      subject:
+        "Make Your Round " +
+        tournamentGroup.currentRound +
+        " Picks Now! Tipoff In 2 Hours.",
+      to: emailList,
+      body: {
+        content: buildPickReminderContent(tournamentGroup),
+        contentType: "html",
+      },
+    };
+    sendEmail(mail.to, mail.subject, mail.body, "pickReminder", tournamentGroup.groupName);
+  } else {
+    console.log(
+      `All users from ${tournamentGroup.groupName} have submitted picks.`,
+    );
+  }
 }
 
 function buildGroupScoreTableHtml(tournamentGroup, completedRound, roundMatches, nextRoundStartTime) {
@@ -759,67 +723,42 @@ async function sendEmail(mailingList, subject, mailBody, emailType, groupName) {
   }
 }
 
-function createMailingList(tournamentGroup, done) {
-  UserTournament.find({ "tournamentGroup.id": tournamentGroup._id })
-    .populate({ path: "user.id" })
-    .exec(function (err, foundUsers) {
-      if (err) console.log(err);
-      else {
-        var emailAddressSet = new Set();
-        for (var i = 0; i < foundUsers.length; i++) {
-          emailAddressSet.add(foundUsers[i].user.id.email);
-        }
-        var emailAddressList = Array.from(emailAddressSet);
-        done(null, emailAddressList);
-      }
-    });
+async function createMailingList(tournamentGroup) {
+  var foundUsers = await UserTournament.find({ "tournamentGroup.id": tournamentGroup._id })
+    .populate({ path: "user.id" });
+  var emailAddressSet = new Set();
+  for (var i = 0; i < foundUsers.length; i++) {
+    emailAddressSet.add(foundUsers[i].user.id.email);
+  }
+  var emailAddressList = Array.from(emailAddressSet);
+  return emailAddressList;
 }
 
-function createMailingListForThoseWhoStillNeedToMakePicksThisRound(
-  tournamentGroup,
-  done,
-) {
-  UserTournament.find({
+async function createMailingListForThoseWhoStillNeedToMakePicksThisRound(tournamentGroup) {
+  var foundUserTournaments = await UserTournament.find({
     "tournamentGroup.id": tournamentGroup._id,
   })
     .populate({ path: "user.id" })
-    .populate({ path: "userRounds", populate: "round" })
-    .exec(function (err, foundUserTournaments) {
-      if (err) console.log(err);
-      else {
-        // Keep tournaments which do not have picks for this round - they need a reminder!
-        foundUserTournaments = foundUserTournaments.filter(
-          (tournament) =>
-            tournament.userRounds.filter(
-              (userRound) =>
-                userRound.round.numRound === tournamentGroup.currentRound,
-            ).length === 0,
-        );
+    .populate({ path: "userRounds", populate: "round" });
 
-        var foundUserEmails = foundUserTournaments.map(
-          (tournament) => tournament.user.id.email,
-        );
-        var emailAddressSet = new Set();
-        for (var i = 0; i < foundUserEmails.length; i++) {
-          emailAddressSet.add(foundUserEmails[i]);
-        }
-        var emailAddressList = Array.from(emailAddressSet);
-        done(null, emailAddressList);
-      }
-    });
-}
+  // Keep tournaments which do not have picks for this round - they need a reminder!
+  foundUserTournaments = foundUserTournaments.filter(
+    (tournament) =>
+      tournament.userRounds.filter(
+        (userRound) =>
+          userRound.round.numRound === tournamentGroup.currentRound,
+      ).length === 0,
+  );
 
-function formatMailingListForGraph(emailAddressList, done) {
-  var formattedMailingList = [];
-  for (var i = 0; i < emailAddressList.length; i++) {
-    var address = {
-      emailAddress: {
-        address: emailAddressList[i],
-      },
-    };
-    formattedMailingList.push(address);
+  var foundUserEmails = foundUserTournaments.map(
+    (tournament) => tournament.user.id.email,
+  );
+  var emailAddressSet = new Set();
+  for (var i = 0; i < foundUserEmails.length; i++) {
+    emailAddressSet.add(foundUserEmails[i]);
   }
-  done(null, formattedMailingList);
+  var emailAddressList = Array.from(emailAddressSet);
+  return emailAddressList;
 }
 
 function compareUserTournaments(a, b) {
