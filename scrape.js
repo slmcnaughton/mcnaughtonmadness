@@ -1,68 +1,69 @@
-var request = require("request");
 var cheerio = require("cheerio");
 var middleware = require("./middleware");
 
 // Inspiration from https://www.digitalocean.com/community/tutorials/how-to-use-node-js-request-and-cheerio-to-set-up-simple-web-scraping
-function scrape(dateStr) {
+async function scrape(dateStr) {
   logTimeToConsole();
   var url = dateStr
     ? "https://www.cbssports.com/college-basketball/scoreboard/FBS/" + dateStr + "/"
     : "https://www.cbssports.com/college-basketball/scoreboard/";
-  request(
-    url,
-    function (error, response, html) {
-      if (!error && response.statusCode == 200) {
-        var $ = cheerio.load(html);
-        var parsedResults = [];
 
-        $("div.live-update").each(function (i, element) {
-          var a = $(this);
-          var final = a.find(".top-bar").text().trim();
-          var team1 = a
-            .find(".in-progress-table")
-            .find("td.team")
-            .first()
-            .find("a")
-            .text();
-          var score1 = a
-            .find(".in-progress-table")
-            .find("td.team")
-            .first()
-            .parent()
-            .children()
-            .last()
-            .text();
+  try {
+    var response = await fetch(url);
+    if (!response.ok) return;
 
-          var team2 = a
-            .find(".in-progress-table")
-            .find("td.team")
-            .last()
-            .find("a")
-            .text();
-          var score2 = a
-            .find(".in-progress-table")
-            .find("td.team")
-            .last()
-            .parent()
-            .children()
-            .last()
-            .text();
+    var html = await response.text();
+    var $ = cheerio.load(html);
+    var parsedResults = [];
 
-          var winner = Number(score1) > Number(score2) ? team1 : team2;
+    $("div.live-update").each(function (i, element) {
+      var a = $(this);
+      var final = a.find(".top-bar").text().trim();
+      var team1 = a
+        .find(".in-progress-table")
+        .find("td.team")
+        .first()
+        .find("a")
+        .text();
+      var score1 = a
+        .find(".in-progress-table")
+        .find("td.team")
+        .first()
+        .parent()
+        .children()
+        .last()
+        .text();
 
-          var metadata = {
-            team1: team1,
-            team2: team2,
-            winner: winner,
-          };
-          if (final.toLowerCase().includes("final"))
-            parsedResults.push(metadata);
-        });
+      var team2 = a
+        .find(".in-progress-table")
+        .find("td.team")
+        .last()
+        .find("a")
+        .text();
+      var score2 = a
+        .find(".in-progress-table")
+        .find("td.team")
+        .last()
+        .parent()
+        .children()
+        .last()
+        .text();
 
-        middleware.scrapeUpdateResults(parsedResults);
-      }
-    },
-  );
+      var winner = Number(score1) > Number(score2) ? team1 : team2;
+
+      var metadata = {
+        team1: team1,
+        team2: team2,
+        winner: winner,
+      };
+      if (final.toLowerCase().includes("final"))
+        parsedResults.push(metadata);
+    });
+
+    middleware.scrapeUpdateResults(parsedResults);
+  } catch (err) {
+    console.log("[SCRAPE] Error fetching:", err.message);
+  }
 }
 
 function logTimeToConsole() {
