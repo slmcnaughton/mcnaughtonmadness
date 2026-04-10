@@ -18,7 +18,7 @@
     "cloudinary": "^1.41.0",
     "connect-flash": "^0.1.1",
     "connect-mongo": "^6.0.0",
-    "dotenv": "^6.2.0",
+    "dotenv": "^16.4.0",
     "ejs": "^3.1.10",
     "express": "^4.16.4",
     "express-session": "^1.15.6",
