@@ -10,6 +10,7 @@ var emailLogSchema = new mongoose.Schema({
       "usernameRecovery",
       "passwordConfirmation",
       "nameChangeNotification",
+      "finalStandings",
       "lateBonusPicks",
       "bonusPicksApproved",
       "bonusPicksRejected",

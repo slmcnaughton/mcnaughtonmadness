@@ -9,6 +9,7 @@ var UserTournament = require("../models/userTournament");
 var UserRound = require("../models/userRound");
 var UserMatchPrediction = require("../models/userMatchPrediction");
 var UserMatchAggregate = require("../models/userMatchAggregate");
+var BonusAggregate = require("../models/bonusAggregate");
 var Comment = require("../models/comment");
 var Trophy = require("../models/trophy");
 var TournamentStanding = require("../models/tournamentStanding");
@@ -557,6 +558,21 @@ router.post("/teams/:teamId", async function (req, res) {
       req.params.teamId,
       { $set: update },
     );
+
+    // Cascade name/image changes to embedded BonusAggregate team snapshots
+    var bonusUpdate = {};
+    if (update.name) bonusUpdate["team.name"] = update.name;
+    if (update.image) bonusUpdate["team.image"] = update.image;
+    if (Object.keys(bonusUpdate).length > 0) {
+      var cascadeResult = await BonusAggregate.updateMany(
+        { "team.id": req.params.teamId },
+        { $set: bonusUpdate }
+      );
+      if (cascadeResult.modifiedCount > 0) {
+        console.log("[ADMIN] Cascaded team update to " + cascadeResult.modifiedCount + " BonusAggregate(s) for teamId " + req.params.teamId);
+      }
+    }
+
     req.flash("success", "Updated " + (update.name || "team") + ".");
     res.redirect("/admin/teams");
   } catch (err) {
@@ -623,62 +639,24 @@ router.post("/finalize-tournament", async function (req, res) {
   try {
     var year = new Date().getFullYear();
 
-    // 1. Build TournamentStanding from official groups (for Previous Standings page)
-    var officialGroups = await TournamentGroup.find({ year: year, isOfficial: true })
-      .populate({ path: "userTournaments", populate: "userRounds" });
-
-    // Collect standings from official groups, deduplicate by name (for Previous Standings)
-    var standingsMap = {};
-    (officialGroups || []).forEach(function (group) {
-      if (!group.userTournaments) return;
-      group.userTournaments.forEach(function (ut) {
-        var key = ut.user.firstName + "|" + ut.user.lastName;
-        var score = Math.round(ut.score * 1000) / 1000;
-        var roundCount = ut.userRounds ? ut.userRounds.length : 0;
-        if (!standingsMap[key] || score > standingsMap[key].score) {
-          standingsMap[key] = {
-            firstName: ut.user.firstName,
-            lastName: ut.user.lastName,
-            score: score,
-            roundCount: Math.max(roundCount, standingsMap[key] ? standingsMap[key].roundCount : 0),
-          };
-        }
-      });
-    });
-
-    var standings = Object.keys(standingsMap).map(function (key) {
-      return standingsMap[key];
-    });
-
     console.log(
-      "[ADMIN] Finalizing " + year + " tournament — " +
-        standings.length + " official-group participants, awarding per-group trophies.",
+      "[ADMIN] Finalizing " + year + " tournament — building standings and awarding per-group trophies.",
     );
 
-    // 2. Upsert TournamentStanding (used by Previous Standings page)
-    await TournamentStanding.findOneAndUpdate(
-      { year: year },
-      { year: year, standings: standings },
-      { upsert: true, new: true },
+    // 1. Build & save TournamentStanding from official groups + email admin
+    await middleware.buildAndSaveTournamentStanding(year);
+
+    // 2. Award per-group trophies for ALL groups
+    await middleware.awardGroupTrophies(year);
+
+    req.flash(
+      "success",
+      "Tournament finalized! Per-group trophies awarded for all " + year + " groups. Final standings emailed.",
     );
-
-    // 3. Award per-group trophies using the shared helper
-    middleware.awardGroupTrophies(year, function (err) {
-      if (err) {
-        console.log("[ADMIN] Trophy error:", err);
-        req.flash("error", "Error awarding trophies: " + err.message);
-        return res.redirect("/admin");
-      }
-
-      req.flash(
-        "success",
-        "Tournament finalized! Per-group trophies awarded for all " + year + " groups.",
-      );
-      res.redirect("/admin");
-    });
+    res.redirect("/admin");
   } catch (err) {
     console.log(err);
-    req.flash("error", "Error finding official groups.");
+    req.flash("error", "Error finalizing tournament: " + (err.message || err));
     res.redirect("/admin");
   }
 });

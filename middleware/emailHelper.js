@@ -662,6 +662,44 @@ emailObj.confirmPasswordChange = async function (req, user) {
   req.flash("success", "Success! Your password has been changed.");
 };
 
+// ─── Final Standings Email (sent to admin on tournament completion) ──────────
+emailObj.sendFinalStandingsEmail = async function (year, standings) {
+  var adminEmail = "slmcnaughton@yahoo.com";
+  var subject = year + " McNaughton Madness \u2014 Final Standings";
+
+  // Sort by score descending
+  var sorted = standings.slice().sort(function (a, b) { return b.score - a.score; });
+
+  // Build ranked summary
+  var rankLines = sorted.map(function (s, i) {
+    return (i + 1) + ". " + s.firstName + " " + s.lastName + ": " + s.score;
+  }).join("\n");
+
+  // Build JS snippet in historicalStandings.js format for easy copy/paste
+  var snippetLines = [];
+  snippetLines.push("  {");
+  snippetLines.push("    year: " + year + ",");
+  snippetLines.push("    standings: [");
+  sorted.forEach(function (s) {
+    snippetLines.push("      { firstName: \"" + s.firstName + "\", lastName: \"" + s.lastName + "\", score: " + s.score + " },");
+  });
+  snippetLines.push("    ],");
+  snippetLines.push("  },");
+
+  var mailBody = {
+    content:
+      year + " McNaughton Madness is complete!\n\n" +
+      "Final standings (" + sorted.length + " participants):\n\n" +
+      rankLines +
+      "\n\n---\n\n" +
+      "Paste the following entry into historicalStandings.js to update the fallback data:\n\n" +
+      snippetLines.join("\n"),
+    contentType: "text",
+  };
+
+  sendEmail(adminEmail, subject, mailBody, "finalStandings");
+};
+
 emailObj.sendNameChangeNotification = async function (user) {
   var adminEmail = "slmcnaughton@yahoo.com";
   var subject = "Name Change Request - " + user.firstName + " " + user.lastName;

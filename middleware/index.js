@@ -18,6 +18,7 @@ var tipoff = require("../helpers/tipoff");
 var Trophy = require("../models/trophy");
 var User = require("../models/user");
 var DraftPick = require("../models/draftPick");
+var TournamentStanding = require("../models/tournamentStanding");
 
 var middlewareObj = {};
 
@@ -775,6 +776,11 @@ async function isRoundComplete(updatedMatches) {
         await awardGroupTrophies(foundTournament.year);
       } catch (err) {
         console.log("[TROPHY] Error during auto-award:", err);
+      }
+      try {
+        await buildAndSaveTournamentStanding(foundTournament.year);
+      } catch (err) {
+        console.log("[STANDING] Error during auto-save standing:", err);
       }
     }
   }
@@ -1545,7 +1551,50 @@ var awardGroupTrophies = async function (year) {
 
 middlewareObj.awardGroupTrophies = awardGroupTrophies;
 
-// ─── Lock Draft Picks for Started Games ──────────────────────────────────
+// ─── Build & Save Tournament Standing (for Previous Standings page) ───────
+// Queries official groups, deduplicates by player name, upserts TournamentStanding,
+// and emails the admin a ranked list + copy-pasteable historicalStandings.js snippet.
+var buildAndSaveTournamentStanding = async function (year) {
+  var officialGroups = await TournamentGroup.find({ year: year, isOfficial: true })
+    .populate({ path: "userTournaments", populate: "userRounds" });
+
+  var standingsMap = {};
+  (officialGroups || []).forEach(function (group) {
+    if (!group.userTournaments) return;
+    group.userTournaments.forEach(function (ut) {
+      var key = ut.user.firstName + "|" + ut.user.lastName;
+      var score = Math.round(ut.score * 1000) / 1000;
+      var roundCount = ut.userRounds ? ut.userRounds.length : 0;
+      if (!standingsMap[key] || score > standingsMap[key].score) {
+        standingsMap[key] = {
+          firstName: ut.user.firstName,
+          lastName: ut.user.lastName,
+          score: score,
+          roundCount: Math.max(roundCount, standingsMap[key] ? standingsMap[key].roundCount : 0),
+        };
+      }
+    });
+  });
+
+  var standings = Object.keys(standingsMap).map(function (key) { return standingsMap[key]; });
+  standings.sort(function (a, b) { return b.score - a.score; });
+
+  if (standings.length > 0) {
+    await TournamentStanding.findOneAndUpdate(
+      { year: year },
+      { year: year, standings: standings },
+      { upsert: true, new: true }
+    );
+    console.log("[STANDING] Saved TournamentStanding for " + year + " (" + standings.length + " participants).");
+    emailHelper.sendFinalStandingsEmail(year, standings);
+  } else {
+    console.log("[STANDING] No official group participants found for " + year + " — skipping TournamentStanding.");
+  }
+
+  return standings;
+};
+
+middlewareObj.buildAndSaveTournamentStanding = buildAndSaveTournamentStanding;
 // Called during each scrape cycle. For each draft pick where the game has
 // started, converts it to a real UserMatchPrediction (not marked late).
 // Also updates UserMatchAggregates so the pick appears on the group bracket.
