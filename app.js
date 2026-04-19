@@ -19,7 +19,8 @@ var express = require("express"),
   User = require("./models/user"),
   UserMatchPrediction = require("./models/userMatchPrediction"),
   schedule = require("node-schedule"),
-  moment = require("moment-timezone");
+  moment = require("moment-timezone"),
+  middleware = require("./middleware");
 
 require("dotenv").config();
 
@@ -59,12 +60,16 @@ app.use(function (req, res, next) {
 });
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
 app.locals.moment = require("moment-timezone");
+app.locals.isDev = process.env.NODE_ENV !== "production";
 
-// seedDB();
+if (app.locals.isDev) {
+  // seedDB();
+}
 // scrape();
 
 // scrapeTeams();
@@ -123,7 +128,9 @@ app.listen(process.env.PORT, process.env.IP, function () {
     try {
       var foundTournament = await Tournament.findOne({ year: new Date().getFullYear() })
         .populate("scrapes")
-        .populate("emailPickReminderJobs");
+        .populate("emailPickReminderJobs")
+        .populate("startTimeScrapeJobs")
+        .populate("autoSubmitJobs");
 
       if (foundTournament) {
         if (foundTournament.scrapes) {
@@ -143,6 +150,24 @@ app.listen(process.env.PORT, process.env.IP, function () {
             var date = foundTournament.emailPickReminderJobs[i].date;
             schedule.scheduleJob(date, function () {
               emailHelper.sendPickReminderEmail();
+            });
+          }
+        }
+        // Reschedule pre-tipoff start time scrapes
+        if (foundTournament.startTimeScrapeJobs) {
+          for (var s = 0; s < foundTournament.startTimeScrapeJobs.length; s++) {
+            var scrapeDate = foundTournament.startTimeScrapeJobs[s].date;
+            schedule.scheduleJob(scrapeDate, function () {
+              scrape.scrapeStartTimes();
+            });
+          }
+        }
+        // Reschedule auto-submit draft jobs
+        if (foundTournament.autoSubmitJobs) {
+          for (var a = 0; a < foundTournament.autoSubmitJobs.length; a++) {
+            var autoDate = foundTournament.autoSubmitJobs[a].date;
+            schedule.scheduleJob(autoDate, function () {
+              middleware.autoSubmitDrafts();
             });
           }
         }

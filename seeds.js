@@ -42,6 +42,10 @@ async function seedDB() {
       // deleteAllUsers(),
     ]);
     // await addTwoUsers();
+
+    // Fast-forward seed: creates tournament + group + picks for seth & daniel
+    // Uncomment the line below to auto-run on startup:
+    // await seedFastForward();
   } catch (err) {
     console.log(err);
   }
@@ -243,4 +247,300 @@ async function deleteTeamImages() {
   console.log("removed all team images");
 }
 
+// ─── Fast-Forward Seed ──────────────────────────────────────────────────────
+// Wipes tournament data, creates a tournament, group, and has Seth + Daniel
+// make all R1 + Final Four + Champion picks with random selections.
+// After running, the app is in a "ready for round 1 games" state.
+
+var moment = require("moment-timezone");
+var DraftPick = require("./models/draftPick");
+var scoring = require("./helpers/scoring");
+
+async function seedFastForward() {
+  // 1. Wipe tournament data (same as normal seedDB)
+  await Promise.all([
+    deleteAllTournamentGroups(),
+    deleteAllUserTournaments(),
+    deleteAllUserRounds(),
+    deleteAllUserMatchPredictions(),
+    deleteAllUserMatchAggregates(),
+    deleteAllBonusMatchAggregates(),
+    deleteAllTeams(),
+    deleteAllMatches(),
+    deleteAllRounds(),
+    deleteAllTournaments(),
+    deleteAllScrapes(),
+    deleteAllFeedback(),
+    DraftPick.deleteMany({}),
+  ]);
+
+  // 2. Find Seth and Daniel
+  var seth = await User.findOne({ username: "seth" });
+  var daniel = await User.findOne({ username: "daniel" });
+  if (!seth || !daniel) {
+    console.log("[SEED-FF] ERROR: Need users 'seth' and 'daniel' to exist. Run addTwoUsers first.");
+    return;
+  }
+
+  // 3. Create tournament (replicating tournaments.js POST route logic)
+  var year = new Date().getFullYear();
+  var regions = ["East", "South", "West", "Midwest"];
+  var startDay = moment.tz([year, 2, 19], "America/New_York");
+  var order = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
+
+  var teamNames = [
+    "Duke","Siena","Ohio St.","TCU","St. John's","N. Iowa","Kansas","Cal Baptist",
+    "Louisville","South Florida","Michigan St.","N. Dakota St.","UCLA","UCF","UConn","Furman",
+    "Florida","Prairie View/Lehigh","Clemson","Iowa","Vanderbilt","Troy","N. Carolina","Illinois",
+    "Saint Mary's","Houston","Villanova","Vanderbilt","Nebraska","UC Irvine","Texas A&M","Oregon",
+    "Arizona","LIU","Utah St.","Villanova","Wisconsin","High Point","Arkansas","Hawaii",
+    "BYU","Texas/NC St.","Gonzaga","Kennesaw St.","Miami","Missouri","Purdue","Queens",
+    "Michigan","UMBC/Howard","Georgia","Saint Louis","Tennessee","Virginia","Kentucky","Tennessee St.",
+    "Alabama","Akron","Texas Tech","Hofstra","McNeese","Montana","Marquette","Grand Canyon",
+  ];
+
+  var numRounds = Math.log(teamNames.length) / Math.log(2);
+  var allTeamImages = await TeamImage.find({});
+
+  var tournament = await Tournament.create({
+    year: year,
+    numTeams: teamNames.length,
+    rounds: [],
+    regions: regions,
+    currentRound: 1,
+    scrapes: [],
+    emailPickReminderJobs: [],
+  });
+
+  // Create Round 1 with teams and matches
+  var round1 = await Round.create({
+    numRound: 1,
+    matches: [],
+    startTime: moment(startDay).add({ hours: 12, minutes: 15 }).toDate(),
+  });
+
+  var teams = [];
+  for (var ti = 0; ti < teamNames.length; ti++) {
+    var matched = allTeamImages.find(function (img) { return img.name === teamNames[ti]; });
+    var team = await Team.create({
+      region: regions[Math.floor(ti / order.length)],
+      name: teamNames[ti],
+      seed: order[ti % order.length],
+      firstMatchNum: Math.floor(ti / 2) + 1,
+      lost: 0,
+      image: matched ? matched.image : "",
+    });
+    teams.push(team);
+  }
+
+  // Create R1 matches
+  for (var mi = 0; mi < teams.length; mi += 2) {
+    var matchNumber = Math.floor(mi / 2) + 1;
+    var match = await Match.create({
+      matchNumber: matchNumber,
+      topTeam: teams[mi],
+      bottomTeam: teams[mi + 1],
+      nextMatch: Math.floor(0.5 * (matchNumber + teams.length + 1)),
+    });
+    round1.matches.addToSet(match);
+  }
+  await round1.save();
+  tournament.rounds.push(round1);
+
+  // Create remaining rounds (2-6) with empty matches
+  var roundStartOffsets = [
+    { days: 2, hours: 12, minutes: 10 },
+    { days: 7, hours: 19, minutes: 9 },
+    { days: 9, hours: 18, minutes: 9 },
+    { days: 16, hours: 18, minutes: 9 },
+    { days: 18, hours: 21, minutes: 20 },
+  ];
+
+  for (var ri = 0; ri < numRounds - 1; ri++) {
+    var roundStart = moment(startDay).add(roundStartOffsets[ri]);
+    var round = await Round.create({
+      numRound: ri + 2,
+      matches: [],
+      startTime: roundStart.toDate(),
+    });
+
+    var matchNumStart = Math.pow(2, numRounds) - Math.pow(2, numRounds - (ri + 1));
+    var matchesThisRound = Math.pow(2, numRounds - (ri + 2));
+    for (var mj = 0; mj < matchesThisRound; mj++) {
+      var mn = matchNumStart + mj + 1;
+      var newMatch = await Match.create({
+        matchNumber: mn,
+        topTeam: null,
+        bottomTeam: null,
+        nextMatch: Math.floor(0.5 * (mn + teamNames.length + 1)),
+      });
+      round.matches.addToSet(newMatch);
+    }
+    await round.save();
+    tournament.rounds.push(round);
+  }
+
+  tournament.rounds.sort(function (a, b) { return a.numRound - b.numRound; });
+  await tournament.save();
+  console.log("[SEED-FF] Tournament created with " + teams.length + " teams, " + tournament.rounds.length + " rounds");
+
+  // 4. Create tournament group (Seth as commissioner)
+  var group = await TournamentGroup.create({
+    year: year,
+    groupName: "McNaughton Family Group " + year,
+    commissioner: { id: seth._id, name: seth.firstName },
+    groupMotto: "Seeded test group",
+    secretCode: "test",
+    publicGroup: false,
+    tournamentReference: { id: tournament._id, year: year },
+    userMatchAggregates: [],
+    bonusAggregates: [],
+    currentRound: 1,
+    comments: [],
+    isOfficial: true,
+  });
+  console.log("[SEED-FF] Group created: " + group.groupName);
+
+  // 5. Join both users to the group and make random picks
+  var populatedTournament = await Tournament.findById(tournament._id)
+    .populate({ path: "rounds", populate: { path: "matches", populate: [{ path: "topTeam" }, { path: "bottomTeam" }] } });
+
+  for (var user of [seth, daniel]) {
+    // Create UserTournament
+    var ut = await UserTournament.create({
+      score: 0,
+      tournamentGroup: { id: group._id, groupName: group.groupName },
+      user: { id: user._id, firstName: user.firstName, lastName: user.lastName, username: user.username },
+      tournamentReference: { id: tournament._id, year: year },
+      userRounds: [],
+    });
+    group.userTournaments.addToSet(ut);
+    user.tournamentGroups.push({ id: group._id, groupName: group.groupName, year: year, isOfficial: true });
+    await user.save();
+
+    // Make R1 picks (random)
+    var r1 = populatedTournament.rounds[0];
+    var r1Preds = [];
+    for (var match of r1.matches) {
+      var pick = Math.random() < 0.5 ? match.topTeam : match.bottomTeam;
+      r1Preds.push({
+        score: 0,
+        numRound: 1,
+        winner: pick._id,
+        match: { id: match._id, matchNumber: match.matchNumber },
+        comment: "",
+      });
+    }
+    var createdR1Preds = await UserMatchPrediction.insertMany(r1Preds);
+    var r1UserRound = await UserRound.create({
+      roundScore: 0,
+      round: { id: r1._id, numRound: 1 },
+      userMatchPredictions: createdR1Preds.map(function (p) { return p._id; }),
+    });
+    ut.userRounds.push(r1UserRound);
+
+    // Make Final Four picks (R7) — one team per region (random from R1 teams)
+    var ffPreds = [];
+    for (var reg = 0; reg < 4; reg++) {
+      var regionTeams = teams.slice(reg * 16, (reg + 1) * 16);
+      var ffPick = regionTeams[Math.floor(Math.random() * regionTeams.length)];
+      var ffMatchNum = 57 + reg; // matches 57-60 are the Elite 8 matches that feed Final Four
+      ffPreds.push({
+        score: 0,
+        numRound: 7,
+        winner: ffPick._id,
+        match: { id: r1.matches[reg * 8]._id, matchNumber: ffMatchNum },
+        comment: "",
+      });
+    }
+    var createdFFPreds = await UserMatchPrediction.insertMany(ffPreds);
+    var ffUserRound = await UserRound.create({
+      roundScore: 0,
+      round: { id: r1._id, numRound: 7 },
+      userMatchPredictions: createdFFPreds.map(function (p) { return p._id; }),
+    });
+    ut.userRounds.push(ffUserRound);
+
+    // Make Champion pick (R8) — one of the Final Four picks
+    var champPick = ffPreds[Math.floor(Math.random() * ffPreds.length)];
+    var champPred = await UserMatchPrediction.create({
+      score: 0,
+      numRound: 8,
+      winner: champPick.winner,
+      match: { id: r1.matches[0]._id, matchNumber: 63 },
+      comment: "",
+    });
+    var champUserRound = await UserRound.create({
+      roundScore: 0,
+      round: { id: r1._id, numRound: 8 },
+      userMatchPredictions: [champPred._id],
+    });
+    ut.userRounds.push(champUserRound);
+
+    await ut.save();
+
+    // Create UserMatchAggregates for R1 picks
+    for (var pi = 0; pi < createdR1Preds.length; pi++) {
+      var pred = createdR1Preds[pi];
+      var match = r1.matches[pi];
+      var aggScores = scoring.calculateAggregateScores(match.topTeam.seed, match.bottomTeam.seed, 1);
+
+      var agg = await UserMatchAggregate.findOne({ matchReference: match._id, tournamentGroup: group._id });
+      if (!agg) {
+        agg = await UserMatchAggregate.create({
+          matchNumber: match.matchNumber,
+          matchReference: match._id,
+          tournamentGroup: group._id,
+          topTeamPickers: [],
+          bottomTeamPickers: [],
+          topWinScore: aggScores.topWinScore,
+          topLossScore: aggScores.topLossScore,
+          bottomWinScore: aggScores.bottomWinScore,
+          bottomLossScore: aggScores.bottomLossScore,
+        });
+        group.userMatchAggregates.push(agg);
+      }
+
+      var pickerEntry = { id: user._id, firstName: user.firstName, comment: "" };
+      if (pred.winner.equals(match.topTeam._id)) {
+        agg.topTeamPickers.push(pickerEntry);
+      } else {
+        agg.bottomTeamPickers.push(pickerEntry);
+      }
+      await agg.save();
+    }
+
+    // Create BonusAggregates for FF + Champ picks
+    var allBonusPreds = createdFFPreds.concat([champPred]);
+    for (var bp of allBonusPreds) {
+      var pickedTeam = await Team.findById(bp.winner);
+      if (!pickedTeam) continue;
+
+      var bonusAgg = await BonusAggregate.findOne({
+        "team.id": pickedTeam._id,
+        matchReference: bp.match.id,
+        tournamentGroup: group._id,
+      });
+      if (!bonusAgg) {
+        bonusAgg = await BonusAggregate.create({
+          matchNumber: bp.match.matchNumber,
+          matchReference: bp.match.id,
+          tournamentGroup: group._id,
+          team: { id: pickedTeam._id, name: pickedTeam.name, image: pickedTeam.image },
+          teamPickers: [],
+        });
+        group.bonusAggregates.push(bonusAgg);
+      }
+      bonusAgg.teamPickers.push({ id: user._id, firstName: user.firstName, comment: "" });
+      await bonusAgg.save();
+    }
+
+    console.log("[SEED-FF] " + user.firstName + ": R1 (32 picks) + FF (4 picks) + Champ (1 pick) created");
+  }
+
+  await group.save();
+  console.log("[SEED-FF] Done! Tournament is ready for Round 1 games.");
+}
+
 module.exports = seedDB;
+module.exports.seedFastForward = seedFastForward;

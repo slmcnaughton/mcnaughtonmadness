@@ -15,6 +15,7 @@ var matchSchema = new mongoose.Schema({
     ref: "Team",
   },
   nextMatch: Number,
+  startTime: { type: Date, default: null },
 });
 
 module.exports = mongoose.model("Match", matchSchema);

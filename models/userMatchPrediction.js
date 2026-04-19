@@ -17,6 +17,7 @@ var userMatchPredictionSchema = new mongoose.Schema({
     ref: "Team",
   },
   comment: String,
+  late: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model(

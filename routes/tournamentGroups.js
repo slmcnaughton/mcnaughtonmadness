@@ -4,10 +4,16 @@ var moment = require("moment-timezone");
 var middleware = require("../middleware");
 var Tournament = require("../models/tournament");
 var TournamentGroup = require("../models/tournamentGroup");
+var Round = require("../models/round");
 var UserTournament = require("../models/userTournament");
 var Team = require("../models/team");
 var Match = require("../models/match");
 var EmailLog = require("../models/emailLog");
+var DraftPick = require("../models/draftPick");
+var UserRound = require("../models/userRound");
+var UserMatchPrediction = require("../models/userMatchPrediction");
+var User = require("../models/user");
+var BonusAggregate = require("../models/bonusAggregate");
 var emailHelper = require("../middleware/emailHelper");
 
 //SendRoundSummaryTest — always sends only to the logged-in user's email
@@ -165,9 +171,56 @@ router.get("/:groupName/manage", middleware.isCommissionerOrAdmin, async functio
       emailLogs = [];
     }
 
+    // Load pending-approval bonus picks for this group
+    var pendingPicks = [];
+    if (group.userTournaments) {
+      for (var ut of group.userTournaments) {
+        if (ut.userRounds) {
+          for (var ur of ut.userRounds) {
+            if (ur.pendingApproval) {
+              // Populate the predictions with winner details
+              var populated = await UserRound.findById(ur._id)
+                .populate({ path: "userMatchPredictions", populate: { path: "winner" } });
+              if (populated) {
+                pendingPicks.push({
+                  userRound: populated,
+                  userName: ut.user.firstName + " " + ut.user.lastName,
+                  username: ut.user.username,
+                  userId: ut.user.id,
+                  roundLabel: ur.round.numRound === 7 ? "Final Four" : ur.round.numRound === 8 ? "Championship" : "Round " + ur.round.numRound,
+                  submittedAt: ur.pendingApprovalAt,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Load all drafts for users in this group (keyed by "userId_numRound")
+    var allDrafts = await DraftPick.find({ tournamentGroup: group._id });
+    var draftMap = {};
+    for (var d of allDrafts) {
+      draftMap[d.user.toString() + "_" + d.numRound] = true;
+    }
+
+    // Load round match counts to detect partial submissions
+    var roundMatchCounts = {};
+    var populatedGroup = await TournamentGroup.findById(group._id)
+      .populate({ path: "tournamentReference.id", populate: { path: "rounds", populate: "matches" } });
+    if (populatedGroup && populatedGroup.tournamentReference && populatedGroup.tournamentReference.id) {
+      var rounds = populatedGroup.tournamentReference.id.rounds;
+      for (var r of rounds) {
+        roundMatchCounts[r.numRound] = r.matches ? r.matches.length : 0;
+      }
+    }
+
     res.render("tournamentGroups/manage", {
       group: group,
       emailLogs: emailLogs,
+      pendingPicks: pendingPicks,
+      draftMap: draftMap,
+      roundMatchCounts: roundMatchCounts,
       moment: moment,
       page: "tournamentGroups",
     });
@@ -175,6 +228,167 @@ router.get("/:groupName/manage", middleware.isCommissionerOrAdmin, async functio
     console.log(err);
     req.flash("error", "Tournament Group not found");
     res.redirect("/tournamentGroups");
+  }
+});
+
+// APPROVE late bonus picks (R7 + R8 together) for a user
+router.post("/:groupName/approveBonusPicks/:userId", middleware.isCommissionerOrAdmin, async function (req, res) {
+  try {
+    var groupName = req.params.groupName;
+    var foundGroup = await TournamentGroup.findOne({ groupName: groupName });
+    if (!foundGroup) {
+      req.flash("error", "Group not found");
+      return res.redirect("/tournamentGroups/" + groupName + "/manage");
+    }
+
+    var userTournament = await UserTournament.findOne({
+      "user.id": req.params.userId,
+      "tournamentGroup.id": foundGroup._id,
+    }).populate({ path: "userRounds", populate: { path: "userMatchPredictions", populate: "winner" } });
+
+    if (!userTournament) {
+      req.flash("error", "User tournament not found");
+      return res.redirect("/tournamentGroups/" + groupName + "/manage");
+    }
+
+    var approvedCount = 0;
+    for (var ur of userTournament.userRounds) {
+      if (ur.pendingApproval && (ur.round.numRound === 7 || ur.round.numRound === 8)) {
+        ur.pendingApproval = false;
+        ur.pendingApprovalAt = null;
+        await ur.save();
+
+        // Create bonus aggregates for the approved picks
+        for (var pred of ur.userMatchPredictions) {
+          if (!pred.winner) continue;
+          var foundTeam = await Team.findById(pred.winner._id || pred.winner);
+          if (!foundTeam) continue;
+
+          var matchDoc = await Match.findById(pred.match.id);
+          if (!matchDoc) continue;
+
+          var foundBonusAgg = await BonusAggregate.findOne({
+            "team.id": foundTeam.id,
+            matchReference: pred.match.id,
+            tournamentGroup: foundGroup.id,
+          });
+
+          if (!foundBonusAgg) {
+            foundBonusAgg = await BonusAggregate.create({
+              matchNumber: matchDoc.matchNumber,
+              matchReference: matchDoc.id,
+              tournamentGroup: foundGroup.id,
+              team: { id: foundTeam.id, name: foundTeam.name, image: foundTeam.image },
+              teamPickers: [],
+            });
+            foundGroup.bonusAggregates.push(foundBonusAgg);
+          }
+
+          foundBonusAgg.teamPickers.push({
+            id: userTournament.user.id,
+            firstName: userTournament.user.firstName,
+            comment: pred.comment || "",
+          });
+          await foundBonusAgg.save();
+        }
+        approvedCount++;
+      }
+    }
+    await foundGroup.save();
+
+    // Send approval email
+    var approvedUser = await User.findById(userTournament.user.id);
+    if (approvedUser && approvedUser.email) {
+      emailHelper.sendEmail(
+        approvedUser.email,
+        "[" + groupName + "] Your bonus picks have been approved!",
+        {
+          content: "<h3>Bonus Picks Approved</h3>" +
+            "<p>Good news! The commissioner has approved your late Final Four and Championship picks for <strong>" + groupName + "</strong>.</p>" +
+            "<p>Your picks will now be scored normally.</p>",
+          contentType: "html",
+        },
+        "bonusPicksApproved",
+        groupName,
+      );
+    }
+
+    req.flash("success", "Approved " + approvedCount + " bonus pick round(s) for " + (userTournament.user.firstName || "user") + ".");
+    res.redirect("/tournamentGroups/" + groupName + "/manage");
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Error approving picks");
+    res.redirect("/tournamentGroups/" + req.params.groupName + "/manage");
+  }
+});
+
+// REJECT late bonus picks (R7 + R8 together) — marks as rejected, keeps picks visible but scored as 0
+router.post("/:groupName/rejectBonusPicks/:userId", middleware.isCommissionerOrAdmin, async function (req, res) {
+  try {
+    var groupName = req.params.groupName;
+    var foundGroup = await TournamentGroup.findOne({ groupName: groupName });
+    if (!foundGroup) {
+      req.flash("error", "Group not found");
+      return res.redirect("/tournamentGroups/" + groupName + "/manage");
+    }
+
+    var userTournament = await UserTournament.findOne({
+      "user.id": req.params.userId,
+      "tournamentGroup.id": foundGroup._id,
+    }).populate({ path: "userRounds", populate: "userMatchPredictions" });
+
+    if (!userTournament) {
+      req.flash("error", "User tournament not found");
+      return res.redirect("/tournamentGroups/" + groupName + "/manage");
+    }
+
+    var rejectedCount = 0;
+    for (var ur of userTournament.userRounds) {
+      if (ur.pendingApproval && (ur.round.numRound === 7 || ur.round.numRound === 8)) {
+        ur.pendingApproval = false;
+        ur.rejected = true;
+        ur.roundScore = 0;
+        // Zero out all prediction scores
+        for (var pred of ur.userMatchPredictions) {
+          pred.score = 0;
+          await pred.save();
+        }
+        await ur.save();
+        rejectedCount++;
+      }
+    }
+
+    // Recalculate total score after zeroing out rejected rounds
+    var refreshed = await UserTournament.findById(userTournament._id).populate("userRounds");
+    if (refreshed) {
+      refreshed.score = 0;
+      refreshed.userRounds.forEach(function (ur) { refreshed.score += ur.roundScore; });
+      await refreshed.save();
+    }
+
+    // Send rejection email
+    var rejectedUser = await User.findById(userTournament.user.id);
+    if (rejectedUser && rejectedUser.email) {
+      emailHelper.sendEmail(
+        rejectedUser.email,
+        "[" + groupName + "] Your bonus picks were not accepted",
+        {
+          content: "<h3>Bonus Picks Not Accepted</h3>" +
+            "<p>The commissioner has decided not to accept your late Final Four and Championship picks for <strong>" + groupName + "</strong>.</p>" +
+            "<p>Your picks are still visible but will be scored as 0 points.</p>",
+          contentType: "html",
+        },
+        "bonusPicksRejected",
+        groupName,
+      );
+    }
+
+    req.flash("success", "Rejected " + rejectedCount + " bonus pick round(s) for " + (userTournament.user.firstName || "user") + ".");
+    res.redirect("/tournamentGroups/" + groupName + "/manage");
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Error rejecting picks");
+    res.redirect("/tournamentGroups/" + req.params.groupName + "/manage");
   }
 });
 
@@ -222,6 +436,28 @@ router.get("/:groupName", async function (req, res) {
                 userRound.round.numRound ===
                 foundTournamentGroup.currentRound
               ) {
+                // Check if picks are complete — count predictions vs known matchups
+                var tournament = foundTournamentGroup.tournamentReference.id;
+                var roundIndex = foundTournamentGroup.currentRound - 1;
+                if (tournament && tournament.rounds && tournament.rounds[roundIndex]) {
+                  var currentRoundDoc = await Round.findById(tournament.rounds[roundIndex])
+                    .populate({ path: "matches", populate: [{ path: "topTeam" }, { path: "bottomTeam" }] });
+                  if (currentRoundDoc) {
+                    var knownMatchups = 0;
+                    for (var mk = 0; mk < currentRoundDoc.matches.length; mk++) {
+                      if (currentRoundDoc.matches[mk].topTeam && currentRoundDoc.matches[mk].bottomTeam) {
+                        knownMatchups++;
+                      }
+                    }
+                    // If user has fewer predictions than known matchups, picks are incomplete
+                    var predCount = userRound.userMatchPredictions ? userRound.userMatchPredictions.length : 0;
+                    if (predCount < knownMatchups) {
+                      // Partial submission — still need to complete picks
+                      break;
+                    }
+                  }
+                }
+
                 picksNeeded = false;
                 if (
                   foundTournamentGroup.currentRound == 1 &&
@@ -243,6 +479,107 @@ router.get("/:groupName", async function (req, res) {
       }
     }
 
+    // Check for saved drafts or partial locked picks for the current round
+    var hasDraft = false;
+    var draftUpdatedAt = null;
+    var hasLockedPicks = false;
+    var lockedPickCount = 0;
+    if (res.locals.currentUser && isInGroup) {
+      var draft = await DraftPick.findOne({
+        user: res.locals.currentUser._id,
+        tournamentGroup: foundTournamentGroup._id,
+        numRound: foundTournamentGroup.currentRound,
+      });
+      if (draft && draft.picks.length > 0) {
+        hasDraft = true;
+        draftUpdatedAt = draft.updatedAt;
+      }
+
+      // Check for partial UserRound (from draft auto-lock) even if draft is gone
+      if (!hasDraft && picksNeeded) {
+        var userTournForLock = await UserTournament.findOne({
+          "user.id": res.locals.currentUser._id,
+          "tournamentGroup.groupName": foundTournamentGroup.groupName,
+        }).populate("userRounds");
+        if (userTournForLock) {
+          for (var ur of userTournForLock.userRounds) {
+            if (ur.round.numRound === foundTournamentGroup.currentRound) {
+              var pCount = ur.userMatchPredictions ? ur.userMatchPredictions.length : 0;
+              if (pCount > 0) {
+                hasLockedPicks = true;
+                lockedPickCount = pCount;
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Check if next round has any known matchups (for early drafting)
+    var nextRoundAvailable = false;
+    var nextRoundKnownMatchups = 0;
+    var nextRoundTotalMatchups = 0;
+    var nextRoundNum = 0;
+    var hasNextRoundDraft = false;
+    var nextRoundDraftUpdatedAt = null;
+
+    if (res.locals.currentUser && isInGroup && !picksNeeded && !finalFourPicksNeeded && !championshipPicksNeeded) {
+      var tournament = foundTournamentGroup.tournamentReference.id;
+      var currentRound = foundTournamentGroup.currentRound;
+      // Next round index (0-based): currentRound gives us the next round since rounds are 1-indexed
+      if (tournament && tournament.rounds && currentRound < tournament.rounds.length) {
+        var nextRound = await Round.findById(tournament.rounds[currentRound])
+          .populate({ path: "matches", populate: [{ path: "topTeam" }, { path: "bottomTeam" }] });
+
+        if (nextRound) {
+          nextRoundNum = currentRound + 1;
+          nextRoundTotalMatchups = nextRound.matches.length;
+          for (var m = 0; m < nextRound.matches.length; m++) {
+            if (nextRound.matches[m].topTeam && nextRound.matches[m].bottomTeam) {
+              nextRoundKnownMatchups++;
+            }
+          }
+          if (nextRoundKnownMatchups > 0) {
+            nextRoundAvailable = true;
+
+            // Check for existing draft for next round
+            var nextDraft = await DraftPick.findOne({
+              user: res.locals.currentUser._id,
+              tournamentGroup: foundTournamentGroup._id,
+              numRound: nextRoundNum,
+            });
+            if (nextDraft && nextDraft.picks.length > 0) {
+              hasNextRoundDraft = true;
+              nextRoundDraftUpdatedAt = nextDraft.updatedAt;
+            }
+          }
+        }
+      }
+    }
+
+    // Check for pending and rejected bonus picks
+    var hasPendingBonusPicks = false;
+    var hasRejectedBonusPicks = false;
+    var pendingBonusRounds = [];
+    if (res.locals.currentUser && isInGroup) {
+      var userTournForPending = await UserTournament.findOne({
+        "user.id": res.locals.currentUser._id,
+        "tournamentGroup.groupName": foundTournamentGroup.groupName,
+      }).populate("userRounds");
+      if (userTournForPending) {
+        for (var ur of userTournForPending.userRounds) {
+          if (ur.pendingApproval) {
+            hasPendingBonusPicks = true;
+            pendingBonusRounds.push(ur.round.numRound === 7 ? "Final Four" : ur.round.numRound === 8 ? "Championship" : "Round " + ur.round.numRound);
+          }
+          if (ur.rejected) {
+            hasRejectedBonusPicks = true;
+          }
+        }
+      }
+    }
+
     foundTournamentGroup.userTournaments.sort(compareUserTournaments);
     res.render("tournamentGroups/show", {
       tournamentGroup: foundTournamentGroup,
@@ -250,6 +587,19 @@ router.get("/:groupName", async function (req, res) {
       picksNeeded: picksNeeded,
       finalFourPicksNeeded: finalFourPicksNeeded,
       championshipPicksNeeded: championshipPicksNeeded,
+      hasDraft: hasDraft,
+      draftUpdatedAt: draftUpdatedAt,
+      hasLockedPicks: hasLockedPicks,
+      lockedPickCount: lockedPickCount,
+      nextRoundAvailable: nextRoundAvailable,
+      nextRoundKnownMatchups: nextRoundKnownMatchups,
+      nextRoundTotalMatchups: nextRoundTotalMatchups,
+      nextRoundNum: nextRoundNum,
+      hasNextRoundDraft: hasNextRoundDraft,
+      nextRoundDraftUpdatedAt: nextRoundDraftUpdatedAt,
+      hasPendingBonusPicks: hasPendingBonusPicks,
+      hasRejectedBonusPicks: hasRejectedBonusPicks,
+      pendingBonusRounds: pendingBonusRounds,
       page: "tournamentGroups",
     });
   } catch (err) {
@@ -384,22 +734,20 @@ router.get("/:groupName/bracket", async function (req, res) {
         page: "tournamentGroups",
       });
     } else {
-      middleware.checkUserPickStatus(
-        currentUser._id,
-        groupName,
-        function (err, result) {
-          res.render("tournamentGroups/showBracket", {
-            tournamentGroup: foundTournamentGroup,
-            bonAgg: bonusAggregates,
-            teamLostMap: teamLostMap,
-            rankMap: rankMap,
-            rankByName: rankByName,
-            matchWinnerMap: matchWinnerMap,
-            hidePickerNames: result ? result.shouldHide : false,
-            page: "tournamentGroups",
-          });
-        },
-      );
+      var pickStatus = await middleware.checkUserPickStatus(currentUser._id, groupName);
+      var visibleThroughRound = (pickStatus && typeof pickStatus.visibleThroughRound === "number")
+        ? pickStatus.visibleThroughRound : 99;
+      res.render("tournamentGroups/showBracket", {
+        tournamentGroup: foundTournamentGroup,
+        bonAgg: bonusAggregates,
+        teamLostMap: teamLostMap,
+        rankMap: rankMap,
+        rankByName: rankByName,
+        matchWinnerMap: matchWinnerMap,
+        hidePickerNames: pickStatus ? pickStatus.shouldHide : false,
+        visibleThroughRound: visibleThroughRound,
+        page: "tournamentGroups",
+      });
     }
   } catch (err) {
     console.log(err);

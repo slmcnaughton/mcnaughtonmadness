@@ -316,6 +316,49 @@ router.post("/", middleware.isLoggedIn, async function (req, res) {
     }
 
     createdTournament.rounds.sort(compare);
+
+    // ==========================================================
+    // 5) Schedule pre-tipoff start time scrapes and auto-submit jobs for each round
+    // ==========================================================
+    for (var round of createdTournament.rounds) {
+      var roundStart = moment(round.startTime);
+
+      // Pre-tipoff scrape: Day 1 (2-3 hours before round starts)
+      var day1ScrapeTime = moment(roundStart).subtract(3, "hours");
+      var day1DateStr = roundStart.format("YYYYMMDD");
+      var day2DateStr = moment(roundStart).add(1, "days").format("YYYYMMDD");
+
+      // Schedule Day 1 pre-tipoff scrape
+      schedule.scheduleJob(day1ScrapeTime.toDate(), function () {
+        var d1 = day1DateStr;
+        var d2 = day2DateStr;
+        scrape.scrapeStartTimes(d1);
+        scrape.scrapeStartTimes(d2); // Attempt Day 2 (may not be available yet)
+      });
+      var day1Job = await Scrape.create({ date: day1ScrapeTime.toDate() });
+      createdTournament.startTimeScrapeJobs.push(day1Job);
+
+      // Pre-tipoff scrape: Day 2 (8 AM ET on Day 2)
+      // Only for multi-day rounds (rounds 1-4)
+      if (round.numRound <= 4) {
+        var day2ScrapeTime = moment(roundStart).add(1, "days").startOf("day").add(8, "hours");
+        schedule.scheduleJob(day2ScrapeTime.toDate(), function () {
+          var d2 = day2DateStr;
+          scrape.scrapeStartTimes(d2);
+        });
+        var day2Job = await Scrape.create({ date: day2ScrapeTime.toDate() });
+        createdTournament.startTimeScrapeJobs.push(day2Job);
+      }
+
+      // Auto-submit drafts: runs 5 minutes after each round's startTime
+      var autoSubmitTime = moment(roundStart).add(5, "minutes");
+      schedule.scheduleJob(autoSubmitTime.toDate(), function () {
+        middleware.autoSubmitDrafts();
+      });
+      var autoSubmitJob = await Scrape.create({ date: autoSubmitTime.toDate() });
+      createdTournament.autoSubmitJobs.push(autoSubmitJob);
+    }
+
     await createdTournament.save();
     res.redirect("/tournaments");
   } catch (err) {

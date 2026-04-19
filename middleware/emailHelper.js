@@ -767,4 +767,6 @@ function compareUserTournaments(a, b) {
   else return 0;
 }
 
+emailObj.sendEmail = sendEmail;
+
 module.exports = emailObj;

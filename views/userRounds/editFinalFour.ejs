@@ -30,6 +30,18 @@
 
 <p class="scoring-note"><i class="fas fa-info-circle"></i> 5 points for each correct Final Four pick, 0 for incorrect</p>
 
+<% if (typeof bonusPicksAreLate !== 'undefined' && bonusPicksAreLate) { %>
+<div class="alert alert-warning" style="margin-bottom: 16px;">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Late submission:</strong> Round 1 has already tipped off. Your Final Four picks will be submitted for commissioner review. The commissioner will decide whether to accept them.
+</div>
+<% } %>
+
+<% if (isDev) { %>
+<div class="text-center" style="margin-bottom: 12px;">
+    <button type="button" id="randomFillBtn" class="btn btn-warning"><i class="fas fa-random"></i> Choose Random</button>
+</div>
+<% } %>
+
 <form class="teamPicker" action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
     <% for(var i = 0; i < 4; i++) { %>
         <div class="regionPicker col-xs-12 col-sm-6 col-md-3">
@@ -76,6 +88,23 @@
         <button class="btn btn-primary btn-lg btn-default btn-block">Submit & Pick Champion <i class="fas fa-arrow-right"></i></button>
     </div>
 </form>
+
+<script>
+var randomBtn = document.getElementById('randomFillBtn');
+if (randomBtn) {
+  randomBtn.addEventListener('click', function() {
+    var names = [];
+    document.querySelectorAll('.teamPicker input[type="radio"]').forEach(function(r) {
+      if (names.indexOf(r.name) === -1) names.push(r.name);
+    });
+    names.forEach(function(name) {
+      var radios = document.querySelectorAll('input[name="' + name + '"]');
+      var pick = radios[Math.floor(Math.random() * radios.length)];
+      if (pick) pick.checked = true;
+    });
+  });
+}
+</script>
 
 </div>
 <%- include("../partials/footer") %>

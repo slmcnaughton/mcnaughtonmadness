@@ -1,6 +1,49 @@
 <%- include("../partials/header") %>
 
 <% var tournament = userTournament.tournamentReference.id %>
+<% var maxVisibleRound = typeof visibleThroughRound !== 'undefined' ? visibleThroughRound : 99 %>
+<%
+    var bonusWinnerByMatch = {};
+    if (tournament && tournament.rounds) {
+        for (var r = 0; r < tournament.rounds.length; r++) {
+            var rd = tournament.rounds[r];
+            if (!rd || !rd.matches) continue;
+            for (var m = 0; m < rd.matches.length; m++) {
+                var mt = rd.matches[m];
+                if (mt && mt.winner) {
+                    var winnerId = mt.winner._id ? mt.winner._id : mt.winner;
+                    bonusWinnerByMatch[mt.matchNumber] = String(winnerId);
+                }
+            }
+        }
+    }
+
+    function teamId(team) {
+        if (!team) return '';
+        if (team._id) return String(team._id);
+        if (team.id) return String(team.id);
+        return String(team);
+    }
+
+    function teamIsEliminated(team) {
+        return !!(team && team.lost > 0);
+    }
+
+    function isRegionPickLost(team, regionIndex) {
+        var regionWinnerMatchNumber = 57 + regionIndex;
+        var winnerId = bonusWinnerByMatch[regionWinnerMatchNumber];
+        var tId = teamId(team);
+        if (winnerId) return winnerId !== tId;
+        return teamIsEliminated(team);
+    }
+
+    function isChampPickLost(team) {
+        var winnerId = bonusWinnerByMatch[63];
+        var tId = teamId(team);
+        if (winnerId) return winnerId !== tId;
+        return teamIsEliminated(team);
+    }
+%>
 <main id="tournament">
     <div class="navbar navbar-inverse navbar-center nav-justified">
         <ul class="nav navbar-nav">
@@ -51,26 +94,32 @@
                                                             <div class="match">
                                                                 <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
                                                                     
-                                                                    <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
+                                                                    <% if(i <= maxVisibleRound && userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
                                                                         <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[Math.floor((quadNum * quarterNumMatches + j)) * 2] %>
                                                                         <div class="team">
-                                                                            <% if (userMatch.score > 0) { %>   
+                                                                            <% if (userMatch && userMatch._placeholder && userMatch.missed) { %>
+                                                                                <div class="teamTitle loss"><span class="missed-pick"><i class="fas fa-times"></i> Missed</span></div>
+                                                                            <% } else if (!userMatch) { %>
+                                                                                <div class="teamTitle noWin">&nbsp;</div>
+                                                                            <% } else if (userMatch.score > 0) { %>
                                                                                 <div class="teamTitle win">
                                                                             <% } else if (userMatch.score < 0) { %>
                                                                                 <div class = "teamTitle loss">
                                                                             <% } else { %>
                                                                                 <div class = "teamTitle noWin">
                                                                             <% } %>
-                                                                                
-                                                                            
+                                                                            <% if (userMatch && !userMatch._placeholder) { %>
                                                                                     <% if(userMatch.winner) { %>
                                                                                         <img src="<%= userMatch.winner.image %>">
                                                                                         <span class="seed"><%=userMatch.winner.seed%></span>
                                                                                         <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
+                                                                                     <% } else if (userMatch.late) { %>
+                                                                                        <span class="missed-pick"><i class="fas fa-times"></i> Missed</span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                                                      <% } else { %>
                                                                                         &nbsp
                                                                                     <% } %>
                                                                                 </div>
+                                                                            <% } %>
                                                                                 <!--end team title-->
                                                                             </div>
                                                                     <% } else { %>
@@ -86,27 +135,34 @@
                                                                 <!--end top team-->
                                                                 
                                                                 <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 1) { %>
-                                                                    <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
+                                                                    <% if(i <= maxVisibleRound && userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
                                                                                 
                                                                         <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[Math.floor(quadNum * quarterNumMatches + j)*2 + 1] %>
-                                                                            
+
                                                                         <div class="team">
-                                                                            <% if (userMatch.score > 0) { %>   
+                                                                            <% if (userMatch && userMatch._placeholder && userMatch.missed) { %>
+                                                                                <div class="teamTitle loss"><span class="missed-pick"><i class="fas fa-times"></i> Missed</span></div>
+                                                                            <% } else if (!userMatch) { %>
+                                                                                <div class="teamTitle noWin">&nbsp;</div>
+                                                                            <% } else if (userMatch.score > 0) { %>
                                                                                 <div class="teamTitle win">
                                                                             <% } else if (userMatch.score < 0) { %>
                                                                                 <div class = "teamTitle loss">
                                                                             <% } else { %>
                                                                                 <div class = "teamTitle noWin">
                                                                             <% } %>
-                                                                            
+                                                                            <% if (userMatch && !userMatch._placeholder) { %>
                                                                                     <% if(userMatch.winner) { %>
                                                                                         <img src="<%= userMatch.winner.image %>">
                                                                                         <span class="seed"><%=userMatch.winner.seed%></span>
                                                                                         <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
+                                                                                     <% } else if (userMatch.late) { %>
+                                                                                        <span class="missed-pick"><i class="fas fa-times"></i> Missed</span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                                                      <% } else { %>
                                                                                         &nbsp
                                                                                     <% } %>
                                                                             </div>
+                                                                            <% } %>
                                                                             <!--end team title-->
                                                                         </div>
                                                                         <!--end team-->
@@ -200,17 +256,19 @@
                                         <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
                                             <div class="match">
                                                 <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
-                                                    <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
+                                                    <% if(i <= maxVisibleRound && userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
                                                        <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[j*2] %>
                                                         <div class="team">
-                                                            <% if (userMatch.score > 0) { %>   
+                                                            <% if (!userMatch) { %>
+                                                                <div class="teamTitle noWin">&nbsp;</div>
+                                                            <% } else if (userMatch.score > 0) { %>
                                                                 <div class="teamTitle win">
                                                             <% } else if (userMatch.score < 0) { %>
                                                                 <div class = "teamTitle loss">
                                                             <% } else { %>
                                                                 <div class = "teamTitle noWin">
                                                             <% } %>
-                                                        
+                                                            <% if (userMatch && !userMatch._placeholder) { %>
                                                                     <% if(userMatch.winner) { %>
                                                                         <img src="<%= userMatch.winner.image %>">
                                                                         <span class="seed"><%=userMatch.winner.seed%></span>
@@ -218,8 +276,8 @@
                                                                      <% } else { %>
                                                                         &nbsp
                                                                     <% } %>
-                                                                
                                                                 </div>
+                                                            <% } %>
                                                                 <!--end team title-->
                                                         </div>
                                                         <!--end top team-->
@@ -233,28 +291,29 @@
                                                     <% } %>
                                                         
                                                 <% } %>
-                                                <% if(userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
-                                                                
+                                                <% if(i <= maxVisibleRound && userTournament.userRounds[i-1] && userTournament.userRounds[i-1].round.numRound === i && userTournament.userRounds[i-1].userMatchPredictions.length > 0) { %>
+
                                                     <% var userMatch = userTournament.userRounds[i-1].userMatchPredictions[j*2 + 1] %>
                                                     <div class="team">
-                                                        <% if (userMatch.score > 0) { %>   
+                                                        <% if (!userMatch) { %>
+                                                            <div class="teamTitle noWin">&nbsp;</div>
+                                                        <% } else if (userMatch.score > 0) { %>
                                                             <div class="teamTitle win">
                                                         <% } else if (userMatch.score < 0) { %>
                                                             <div class = "teamTitle loss">
                                                         <% } else { %>
                                                             <div class = "teamTitle noWin">
                                                         <% } %>
-                                                    
+                                                        <% if (userMatch && !userMatch._placeholder) { %>
                                                                 <% if(userMatch.winner) { %>
-                                                               
                                                                     <img src="<%= userMatch.winner.image %>">
                                                                     <span class="seed"><%=userMatch.winner.seed%></span>
                                                                     <span class="teamName"><%=userMatch.winner.name.replace("State","St.")%></span><% if(userMatch.score !== 0) { %><span class="pick-score-value">(<%= userMatch.score > 0 ? '+' : '' %><%= Math.round(userMatch.score * 1000) / 1000 %>)</span><% } %>
                                                                  <% } else { %>
                                                                     &nbsp
                                                                 <% } %>
-                                                                
                                                             </div>
+                                                        <% } %>
                                                             <!--end team title-->
                                                     </div>
                                                     <!--end bottom team-->
@@ -282,7 +341,7 @@
                                 <div class="oneRound">
                                     <div class="match">
                                         
-                                        <% if(userTournament.userRounds[5] && userTournament.userRounds[5].round.numRound === 6 && userTournament.userRounds[5].userMatchPredictions.length > 0) { %>
+                                        <% if(6 <= maxVisibleRound && userTournament.userRounds[5] && userTournament.userRounds[5].round.numRound === 6 && userTournament.userRounds[5].userMatchPredictions.length > 0) { %>
                                             <% var userMatch = userTournament.userRounds[5].userMatchPredictions[0] %>
                                             <div class="team">
                                                 <% if (userMatch.score > 0) { %>   
@@ -335,73 +394,81 @@
     <!--BONUS PICKS-->
     <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
         <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 8) { %>
+            <% var isRejected8 = userTournament.userRounds[i].rejected; %>
+            <% var isPending8 = userTournament.userRounds[i].pendingApproval; %>
             <div class="championPicks" style="margin-top: -200px">
                 <div class="champAggregate">
                     <h3 class="bonusRegion">Champion Pick</h3>
                     <div class="gridIndividual">
                         <% var team = userTournament.userRounds[i].userMatchPredictions[0].winner %>
-                        <% if (team.lost > 0) { %>
-                            <div class="grid-item lost">
-                                <img src="<%= team.image %>">
-                            </div>
-                        <% } else { %>
-                            <div class="grid-item">
-                                <img src="<%= team.image %>">
-                            </div>
-                        <% } %>  
+                        <div class="grid-item<%= isChampPickLost(team) ? ' lost' : '' %><%= isRejected8 ? ' bonus-rejected' : '' %><%= isPending8 ? ' bonus-pending' : '' %>"
+                            <% if (isRejected8) { %>title="This pick was made after tipoff and was not accepted by the commissioner. It will not be scored."<% } %>
+                            <% if (isPending8) { %>title="This pick was made after tipoff and is pending commissioner approval."<% } %>>
+                            <img src="<%= team.image %>">
+                            <% if (isRejected8) { %><span class="bonus-status-icon rejected-icon" title="Late pick — not accepted"><i class="fas fa-clock"></i></span><% } %>
+                            <% if (isPending8) { %><span class="bonus-status-icon pending-icon" title="Pending commissioner approval"><i class="fas fa-hourglass-half"></i></span><% } %>
+                        </div>
                     </div>
                 </div>
             </div>
         <% } %>
     <% } %>
-    
+
     <!--FINAL FOUR PICKS-->
     <div class="bonusPicks">
         <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
             <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 7) { %>
+                <% var isRejected7 = userTournament.userRounds[i].rejected; %>
+                <% var isPending7 = userTournament.userRounds[i].pendingApproval; %>
                 <% for (var j = 0; j < tournament.regions.length; j++) { %>
                     <div class="bonusAggregate">
                         <h3 class="bonusRegion"><%=tournament.regions[j]%> Pick</h3>
                         <div class="gridIndividual">
                             <% var team = userTournament.userRounds[i].userMatchPredictions[j].winner %>
-                            <% if (team.lost > 0) { %>
-                                <div class="grid-item lost">
-                                    <img src="<%= team.image %>">
-                                </div>
-                            <% } else { %>
-                                <div class="grid-item">
-                                    <img src="<%= team.image %>">
-                                </div>
-                            <% } %>
+                            <div class="grid-item<%= isRegionPickLost(team, j) ? ' lost' : '' %><%= isRejected7 ? ' bonus-rejected' : '' %><%= isPending7 ? ' bonus-pending' : '' %>"
+                                <% if (isRejected7) { %>title="This pick was made after tipoff and was not accepted by the commissioner. It will not be scored."<% } %>
+                                <% if (isPending7) { %>title="Pending commissioner approval."<% } %>>
+                                <img src="<%= team.image %>">
+                                <% if (isRejected7) { %><span class="bonus-status-icon rejected-icon" title="Late pick — not accepted"><i class="fas fa-clock"></i></span><% } %>
+                                <% if (isPending7) { %><span class="bonus-status-icon pending-icon" title="Pending commissioner approval"><i class="fas fa-hourglass-half"></i></span><% } %>
+                            </div>
                          </div>
                      </div>
                 <% } %>
-                 
+
             <% } %>
-        <% } %>    
+        <% } %>
     </div>
 
     <!-- ── Mobile Bonus Picks (visible < 992px only) ── -->
     <div class="mobile-bonus-picks">
         <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
             <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 8) { %>
+                <% var mIsRejected8 = userTournament.userRounds[i].rejected; %>
+                <% var mIsPending8 = userTournament.userRounds[i].pendingApproval; %>
                 <h3><i class="fas fa-crown" style="color: #D4AF37;"></i> Champion Pick</h3>
                 <% var team = userTournament.userRounds[i].userMatchPredictions[0].winner %>
-                <div class="mobile-bonus-pick <%= team.lost > 0 ? 'lost' : '' %>">
+                <div class="mobile-bonus-pick <%= isChampPickLost(team) ? 'lost' : '' %><%= mIsRejected8 ? ' bonus-rejected' : '' %><%= mIsPending8 ? ' bonus-pending' : '' %>">
                     <img src="<%= team.image %>">
                     <span class="mobile-bonus-pick-team"><%= team.seed %>) <%= team.name %></span>
+                    <% if (mIsRejected8) { %><span class="bonus-late-label"><i class="fas fa-clock"></i> Late — not accepted</span><% } %>
+                    <% if (mIsPending8) { %><span class="bonus-pending-label"><i class="fas fa-hourglass-half"></i> Pending approval</span><% } %>
                 </div>
             <% } %>
         <% } %>
 
         <% for (var i = 0; i < userTournament.userRounds.length; i++) { %>
             <% if (userTournament.userRounds[i] && userTournament.userRounds[i].round.numRound === 7) { %>
+                <% var mIsRejected7 = userTournament.userRounds[i].rejected; %>
+                <% var mIsPending7 = userTournament.userRounds[i].pendingApproval; %>
                 <% for (var j = 0; j < tournament.regions.length; j++) { %>
                     <h3><i class="fas fa-basketball-ball"></i> <%= tournament.regions[j] %> Pick</h3>
                     <% var team = userTournament.userRounds[i].userMatchPredictions[j].winner %>
-                    <div class="mobile-bonus-pick <%= team.lost > 0 ? 'lost' : '' %>">
+                    <div class="mobile-bonus-pick <%= isRegionPickLost(team, j) ? 'lost' : '' %><%= mIsRejected7 ? ' bonus-rejected' : '' %><%= mIsPending7 ? ' bonus-pending' : '' %>">
                         <img src="<%= team.image %>">
                         <span class="mobile-bonus-pick-team"><%= team.seed %>) <%= team.name %></span>
+                        <% if (mIsRejected7) { %><span class="bonus-late-label"><i class="fas fa-clock"></i> Late — not accepted</span><% } %>
+                        <% if (mIsPending7) { %><span class="bonus-pending-label"><i class="fas fa-hourglass-half"></i> Pending approval</span><% } %>
                     </div>
                 <% } %>
             <% } %>

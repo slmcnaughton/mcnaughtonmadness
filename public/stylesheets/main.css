@@ -1581,8 +1581,11 @@ body {
         margin: 0 auto;
     }
     
-    .grid-item img{
+    .grid-item {
         position: relative;
+        display: inline-block;
+    }
+    .grid-item img{
         width: 60px;
         height: 60px;
         -webkit-filter: saturate(120%);
@@ -2567,5 +2570,279 @@ footer {
         height: 36px;
         font-size: 0.75em;
     }
+}
+
+/* ─── Per-Game Tipoff & Draft Styles ──────────────────────────────────────── */
+
+.match-started {
+    opacity: 0.55;
+    border-left: 3px solid #d9534f;
+    padding-left: 8px;
+    pointer-events: none;
+}
+
+.match-locked {
+    opacity: 0.7;
+    border-left: 3px solid #5cb85c;
+    padding-left: 8px;
+    pointer-events: none;
+}
+
+.match-locked-label {
+    color: #5cb85c;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.match-tbd {
+    opacity: 0.45;
+    border-left: 3px solid #999;
+    padding-left: 8px;
+}
+
+.match-tbd-label {
+    color: #999;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.tbd-team {
+    padding: 6px 0;
+    font-size: 0.95em;
+    color: #666;
+}
+
+.tbd-team .pickerImage {
+    height: 30px;
+    width: 30px;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.tbd-vs {
+    text-align: center;
+    color: #999;
+    font-size: 0.85em;
+    font-style: italic;
+    padding: 2px 0;
+}
+
+.tbd-placeholder {
+    font-style: italic;
+    color: #aaa;
+    font-size: 0.95em;
+}
+
+.match-started-label {
+    color: #d9534f;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.match-time-label {
+    color: #5bc0de;
+    font-size: 0.8em;
+    margin-bottom: 4px;
+}
+
+.draft-pick-notice {
+    color: #5cb85c;
+    font-size: 0.8em;
+    margin-bottom: 4px;
+}
+
+.late-pick-notice {
+    color: #d9534f;
+    font-size: 0.8em;
+    margin-bottom: 4px;
+}
+
+.draft-save-btn {
+    margin-top: 8px;
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+}
+.draft-save-btn:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    color: #fff;
+}
+
+.draft-status {
+    text-align: center;
+    padding: 8px 12px;
+    margin-top: 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+.draft-status-success {
+    background-color: #dff0d8;
+    color: #3c763d;
+    border: 1px solid #d6e9c6;
+}
+.draft-status-error {
+    background-color: #f2dede;
+    color: #a94442;
+    border: 1px solid #ebccd1;
+}
+
+.pick-actions {
+    margin-top: 16px;
+}
+
+/* ─── Countdown Timer ─────────────────────────────────────────────────────── */
+
+.countdown-timer {
+    position: sticky;
+    top: 52px;
+    z-index: 1000;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #fff;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    transition: background-color 0.5s ease;
+}
+.countdown-normal {
+    background-color: #337ab7;
+}
+.countdown-warning {
+    background-color: #f0ad4e;
+}
+.countdown-urgent {
+    background-color: #d9534f;
+    animation: pulse 1s ease-in-out infinite;
+}
+.countdown-expired {
+    background-color: #d9534f;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ─── Late Pick Badge (bracket views) ─────────────────────────────────────── */
+
+.late-pick-badge {
+    display: inline-block;
+    background-color: #d9534f;
+    color: #fff;
+    font-size: 0.65em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.missed-pick {
+    color: #fff;
+    font-size: 0.85em;
+    font-weight: bold;
+    font-style: italic;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+}
+
+.aggregate-missed {
+    background-color: rgba(155, 30, 30, 0.90);
+    color: #fff;
+    padding: 6px 8px 4px;
+}
+
+.aggregate-missed .teamHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 3px;
+}
+
+.aggregate-missed .teamHeader h5,
+.aggregate-missed .teamHeader h6 {
+    margin: 0;
+    color: #fff;
+    float: none;
+    display: block;
+}
+
+.aggregate-missed p {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.aggregate-missed .picker-name {
+    color: #fff;
+}
+
+.aggregate-missed .picker-rank {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* ─── Bonus Pick Status Indicators (rejected/pending) ─────────────────────── */
+
+.bonus-rejected {
+    position: relative;
+    opacity: 0.5;
+}
+
+.bonus-pending {
+    position: relative;
+    opacity: 0.7;
+}
+
+.bonus-status-icon {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: help;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.rejected-icon {
+    background-color: #d9534f;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.pending-icon {
+    background-color: #f0ad4e;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.bonus-late-label {
+    display: block;
+    color: #d9534f;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.bonus-pending-label {
+    display: block;
+    color: #f0ad4e;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+/* Ensure grid-item is positioned for the overlay icon */
+.grid-item.bonus-rejected,
+.grid-item.bonus-pending {
+    position: relative;
 }
 

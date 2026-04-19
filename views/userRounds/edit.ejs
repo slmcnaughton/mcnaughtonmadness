@@ -2,11 +2,35 @@
 <div class="container">
 
 <%
+  var isAdmin = typeof isAdminOverride !== 'undefined'
+    ? !!isAdminOverride
+    : (typeof currentUser !== 'undefined' && currentUser && currentUser.isAdmin);
   var numRound = round.numRound;
   // Format a score: trim trailing zeros, prefix + for positives
   function fmtPts(n) {
     var v = parseFloat(n.toFixed(2));
     return (v >= 0 ? '+' : '') + v;
+  }
+  // Format a Date as "h:mm A ET" using moment-timezone (handles EST/EDT correctly)
+  function fmtTime(d) {
+    if (!d) return '';
+    var m = moment(d);
+    if (!m.isValid()) return '';
+    return m.tz('America/New_York').format('h:mm A') + ' ET';
+  }
+  var hasDraft = typeof draftPicks !== 'undefined' && draftPicks && Object.keys(draftPicks).length > 0;
+  var locked = typeof lockedPicks !== 'undefined' ? lockedPicks : {};
+  var tipoffStatus = typeof matchTipoffStatus !== 'undefined' ? matchTipoffStatus : {};
+  // Check if all matchups in this round have both teams populated
+  var allMatchupsKnown = true;
+  var knownMatchupCount = 0;
+  var totalMatchupCount = round.matches.length;
+  for (var mi = 0; mi < round.matches.length; mi++) {
+    if (round.matches[mi].topTeam && round.matches[mi].bottomTeam) {
+      knownMatchupCount++;
+    } else {
+      allMatchupsKnown = false;
+    }
   }
 %>
 <h1 style="text-align: left;">
@@ -40,6 +64,40 @@
 
 <p class="scoring-note"><i class="fas fa-info-circle"></i> Points shown as +win / -loss for picking each team. <a href="/rules">How scoring works</a></p>
 
+<% if (isDev) { %>
+<div class="text-center" style="margin-bottom: 12px;">
+    <button type="button" id="randomFillBtn" class="btn btn-warning"><i class="fas fa-random"></i> Choose Random</button>
+</div>
+<% } %>
+
+<!-- Match start times for client-side staleness check -->
+<div id="matchStartTimes" style="display:none;"
+  data-times="<%= JSON.stringify(
+    round.matches
+      .filter(function(m) { return m.topTeam && m.bottomTeam; })
+      .map(function(m) {
+        var status = tipoffStatus[m.matchNumber] || {};
+        var draftEntry = hasDraft ? (draftPicks[m.matchNumber] || null) : null;
+        var lockedEntry = locked[m.matchNumber] || null;
+        return {
+          mn: m.matchNumber,
+          st: m.startTime ? new Date(m.startTime).toISOString() : null,
+          startedAtLoad: !!status.started,
+          hasSavedPick: !!((draftEntry && draftEntry.winner) || (lockedEntry && lockedEntry.winner)),
+        };
+      })
+  ) %>">
+</div>
+
+<% if (hasDraft) { %>
+<div class="alert alert-info" style="margin-bottom: 12px;">
+    <i class="fas fa-save"></i> <strong>Draft loaded.</strong> Your previously saved picks have been pre-filled. Review and submit when ready.
+</div>
+<% } %>
+
+<!-- Countdown Timer -->
+<div id="countdownBanner" class="countdown-timer" style="display:none;"></div>
+
 <!--=======================================================-->
 <!--UPDATE FORM ACTION AND LOCATION-->
 <!--=======================================================-->
@@ -70,15 +128,54 @@
                             }
                         %>
 
-                        <div class="form-group matchPicker<% if (isFinished) { %> match-finished<% } %>">
+                        <%
+                            var matchNum = match.matchNumber;
+                            var gameStatus = tipoffStatus[matchNum] || {};
+                            var gameStarted = gameStatus.started && !isFinished;
+                            var lockedEntry = locked[matchNum] || null;
+                            var isLocked = !!lockedEntry;
+                            var draftEntry = hasDraft ? (draftPicks[matchNum] || null) : null;
+                            var draftWinner = draftEntry ? draftEntry.winner.toString() : null;
+                            var draftComment = draftEntry ? (draftEntry.comment || '') : '';
+                            // If locked, use locked winner; override draft/started logic
+                            if (isLocked) {
+                              draftWinner = lockedEntry.winner ? lockedEntry.winner.toString() : null;
+                              draftComment = lockedEntry.comment || '';
+                            }
+                        %>
+                        <div class="form-group matchPicker<% if (isFinished) { %> match-finished<% } else if (isLocked) { %> match-locked<% } else if (gameStarted) { %> match-started<% } %>">
                             <% if (isFinished) { %><div class="match-complete-label"><i class="fas fa-check-circle"></i> Game Complete</div><% } %>
-                            <% var matchNum = match.matchNumber %>
+                            <% if (isLocked && !isFinished) { %>
+                                <div class="match-locked-label"><i class="fas fa-lock"></i> Pick locked at tipoff</div>
+                            <% } else if (gameStarted) { %>
+                                <div class="match-started-label"><i class="fas fa-clock"></i> Game Started<% if (gameStatus.startTime) { %> — <%- fmtTime(gameStatus.startTime) %><% } %></div>
+                                <% if (draftWinner) { %>
+                                    <div class="draft-pick-notice"><i class="fas fa-save"></i> Your saved draft pick will be used</div>
+                                <% } else { %>
+                                    <div class="late-pick-notice"><i class="fas fa-exclamation-triangle"></i> No draft saved — this pick will be scored as a loss</div>
+                                <% } %>
+                            <% } else if (gameStatus.startTime && !isFinished) { %>
+                                <div class="match-time-label"><i class="far fa-clock"></i> <%- fmtTime(gameStatus.startTime) %></div>
+                            <% } %>
                             <% var idMaker = tournament.year + "m" + match.matchNumber %>
 
                             <label for="<%=idMaker%>top" style="display: block">
                                 <div class="team" >
-                                    <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam._id %>" required
-                                        <% if (isFinished && losingTeamId === match.topTeam._id.toString()) { %>checked<% } %>>
+                                    <%
+                                      // Determine which team to pre-select for this radio
+                                      var topChecked = false;
+                                      if (isLocked || gameStarted || isFinished) {
+                                        // For locked/started/finished games: show the user's pick (from draft/lock), not the match result
+                                        topChecked = (draftWinner === match.topTeam._id.toString());
+                                      } else {
+                                        // For open games: show draft pre-fill if available
+                                        topChecked = (draftWinner === match.topTeam._id.toString());
+                                      }
+                                    %>
+                                    <input class="radio" type="radio" id="<%=idMaker%>top" name="<%=matchNum%>" value="<%= match.topTeam._id %>"
+                                        <% if (!gameStarted && !isFinished && !isLocked) { %>required<% } %>
+                                        <% if ((gameStarted || isLocked || isFinished) && !isAdmin) { %>disabled<% } %>
+                                        <% if (topChecked) { %>checked<% } %>>
                                     <div class="teamTitle">
                                         <img class="pickerImage" src="<%= match.topTeam.image %>">
                                         <span class="seed"><%=match.topTeam.seed%></span>
@@ -90,8 +187,17 @@
 
                             <label for="<%=idMaker%>bottom" style="display: block">
                                 <div class="team">
+                                    <%
+                                      var bottomChecked = false;
+                                      if (isLocked || gameStarted || isFinished) {
+                                        bottomChecked = (draftWinner === match.bottomTeam._id.toString());
+                                      } else {
+                                        bottomChecked = (draftWinner === match.bottomTeam._id.toString());
+                                      }
+                                    %>
                                     <input class="radio" type="radio" id="<%=idMaker%>bottom" name="<%=matchNum%>" value="<%= match.bottomTeam._id %>"
-                                        <% if (isFinished && losingTeamId === match.bottomTeam._id.toString()) { %>checked<% } %>>
+                                        <% if ((gameStarted || isLocked || isFinished) && !isAdmin) { %>disabled<% } %>
+                                        <% if (bottomChecked) { %>checked<% } %>>
                                     <div class="teamTitle">
                                         <img class="pickerImage"  src="<%= match.bottomTeam.image %>">
                                         <span class="seed"><%=match.bottomTeam.seed%></span>
@@ -102,13 +208,39 @@
                             </label>
 
                             <div class="form-group">
-                                <input class="form-control" type="text" name="<%=matchNum%>" placeholder="Optional comment">
+                                <input class="form-control" type="text" name="<%=matchNum%>" placeholder="Optional comment"
+                                    <% if ((gameStarted || isLocked || isFinished) && !isAdmin) { %>disabled<% } %>
+                                    <% if ((!gameStarted && !isLocked && !isFinished && draftComment) || isLocked) { %>value="<%=draftComment%>"<% } %>>
                             </div>
 
                         </div>
-                    <% } %>    
-                
-               
+                    <% } else { %>
+                        <!-- TBD matchup: one or both teams not yet determined -->
+                        <div class="form-group matchPicker match-tbd">
+                            <div class="match-tbd-label"><i class="fas fa-question-circle"></i> Matchup TBD</div>
+                            <div class="tbd-team">
+                                <% if (match.topTeam) { %>
+                                    <img class="pickerImage" src="<%= match.topTeam.image %>">
+                                    <span class="seed"><%=match.topTeam.seed%></span>
+                                    <span class="teamName"><%=match.topTeam.name.replace("State","St.")%></span>
+                                <% } else { %>
+                                    <span class="tbd-placeholder">TBD</span>
+                                <% } %>
+                            </div>
+                            <div class="tbd-vs">vs</div>
+                            <div class="tbd-team">
+                                <% if (match.bottomTeam) { %>
+                                    <img class="pickerImage" src="<%= match.bottomTeam.image %>">
+                                    <span class="seed"><%=match.bottomTeam.seed%></span>
+                                    <span class="teamName"><%=match.bottomTeam.name.replace("State","St.")%></span>
+                                <% } else { %>
+                                    <span class="tbd-placeholder">TBD</span>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% } %>
+
+
                <% if(numRound < 5 && j % quarterNumMatches ===  quarterNumMatches - 1) { %>
                     </div>
                 <% } else if (numRound === 5 || numRound === 6) { %>
@@ -117,16 +249,229 @@
                
                
             <% } %>
-            <div class="form-group">
-                <% if (numRound === 1) { %>
-                <button class="btn btn-primary btn-lg btn-default btn-block">Submit & Pick Final Four <i class="fas fa-arrow-right"></i></button>
+            <div class="form-group pick-actions">
+                <% if (!allMatchupsKnown) { %>
+                    <!-- Not all matchups known — disable submit, make draft the primary action -->
+                    <button type="submit" class="btn btn-default btn-lg btn-block" disabled title="All matchups must be known before submitting">
+                        Submit (<%= knownMatchupCount %>/<%= totalMatchupCount %> matchups known)
+                    </button>
+                <% } else if (numRound === 1) { %>
+                    <button type="submit" class="btn btn-primary btn-lg btn-default btn-block">Submit & Pick Final Four <i class="fas fa-arrow-right"></i></button>
                 <% } else { %>
-                <button class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
+                    <button type="submit" class="btn btn-primary btn-lg btn-default btn-block">Submit</button>
                 <% } %>
             </div>
         </form>
+        <form class="draft-save-form" action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>/draft?_method=PUT" method="POST">
+            <!-- Hidden inputs will be populated by JS from the main form -->
+            <% if (!allMatchupsKnown) { %>
+                <button type="button" id="saveDraftBtn" class="btn btn-primary btn-lg btn-block"><i class="fas fa-save"></i> Save Draft</button>
+            <% } else { %>
+                <button type="button" id="saveDraftBtn" class="btn btn-secondary btn-lg btn-block draft-save-btn"><i class="fas fa-save"></i> Save Draft</button>
+            <% } %>
+        </form>
+        <div id="draftStatus" class="draft-status" style="display:none;"></div>
     </div>
 <!--</div>-->
 
+
 </div>
+
+<script>
+(function() {
+  // ─── Draft Save ───────────────────────────────────────────────────────────
+  var saveDraftBtn = document.getElementById('saveDraftBtn');
+  var draftStatusEl = document.getElementById('draftStatus');
+  var mainForm = document.querySelector('.teamPicker');
+
+  // Block form submission when not all matchups are known
+  <% if (!allMatchupsKnown) { %>
+  if (mainForm) {
+    mainForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      return false;
+    });
+  }
+  <% } else { %>
+  // Warn at submit time if games have started since page load
+  if (mainForm) {
+    mainForm.addEventListener('submit', function(e) {
+      var isAdminUser = <%= isAdmin ? 'true' : 'false' %>;
+      var timesEl = document.getElementById('matchStartTimes');
+      if (!timesEl) return;
+      try {
+        var times = JSON.parse(timesEl.dataset.times || '[]');
+        var now = Date.now();
+        var newlyStartedCount = 0;
+        var lateLossCount = 0;
+        for (var i = 0; i < times.length; i++) {
+          var t = times[i];
+          if (t.st && new Date(t.st).getTime() <= now && !t.startedAtLoad) {
+            newlyStartedCount++;
+            if (!isAdminUser && !t.hasSavedPick) {
+              lateLossCount++;
+            }
+          }
+        }
+        if (newlyStartedCount > 0) {
+          var msg = newlyStartedCount + ' game(s) have started since you opened this page. ';
+          if (isAdminUser) {
+            msg += 'As an admin, these picks will still submit without late-loss penalties.\n\n';
+          } else if (lateLossCount > 0) {
+            msg += lateLossCount + ' of those game(s) have no saved draft pick and will be marked late and scored as a loss.\n\n';
+          } else {
+            msg += 'All of those games already had saved draft picks, so none will be scored as late losses.\n\n';
+          }
+          msg += 'Submit anyway?';
+          if (!confirm(msg)) {
+            e.preventDefault();
+          }
+        }
+      } catch (err) { /* proceed with submit */ }
+    });
+  }
+  <% } %>
+
+  if (saveDraftBtn && mainForm) {
+    saveDraftBtn.addEventListener('click', function() {
+      saveDraft();
+    });
+  }
+
+  function sendDraftRequest() {
+    var formData = new FormData(mainForm);
+    var body = {};
+    for (var pair of formData.entries()) {
+      var key = pair[0];
+      var val = pair[1];
+      if (!body[key]) body[key] = [];
+      body[key].push(val);
+    }
+
+    var draftUrl = '/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%= numRound %>/draft?_method=PUT';
+
+    return fetch(draftUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function(resp) { return resp.json(); });
+  }
+
+  // Manual save: redirects to group page after saving
+  function saveDraft() {
+    sendDraftRequest()
+    .then(function(data) {
+      if (data.success) {
+        window.location.href = '/tournamentGroups/<%= tournamentGroup.groupName %>';
+      } else {
+        draftStatusEl.style.display = 'block';
+        draftStatusEl.className = 'draft-status draft-status-error';
+        draftStatusEl.textContent = 'Failed to save draft';
+      }
+    })
+    .catch(function() {
+      draftStatusEl.style.display = 'block';
+      draftStatusEl.className = 'draft-status draft-status-error';
+      draftStatusEl.textContent = 'Error saving draft';
+    });
+  }
+
+  // Auto-save: silently saves in background every 60 seconds
+  setInterval(function() {
+    var checked = mainForm.querySelectorAll('input[type="radio"]:checked:not(:disabled)');
+    if (checked.length > 0) {
+      sendDraftRequest().catch(function() {}); // silent
+    }
+  }, 60000);
+
+  // ─── Countdown Timer ──────────────────────────────────────────────────────
+  var roundStartTime = '<%= typeof roundStartTime !== "undefined" && roundStartTime ? new Date(roundStartTime).toISOString() : "" %>';
+  var countdownBanner = document.getElementById('countdownBanner');
+
+  if (roundStartTime && countdownBanner) {
+    var targetTime = new Date(roundStartTime).getTime();
+    var pageLoadTime = Date.now();
+
+    // If the round already tipped off before the page loaded, don't show the
+    // countdown at all — the per-game greying already handles started games.
+    // This avoids the infinite-reload loop that occurred when the banner
+    // triggered location.reload() on an already-expired timer.
+    if (targetTime <= pageLoadTime) {
+      countdownBanner.style.display = 'none';
+    } else {
+      function updateCountdown() {
+        var now = Date.now();
+        var diff = targetTime - now;
+
+        if (diff <= 0) {
+          // Round just tipped off while the user was on the page
+          countdownBanner.style.display = 'block';
+          countdownBanner.className = 'countdown-timer countdown-expired';
+          countdownBanner.innerHTML = '<i class="fas fa-exclamation-circle"></i> Round <%= numRound %> has tipped off! Submit your remaining picks now.';
+          clearInterval(countdownInterval);
+          return;
+        }
+
+        // Only show within 1 hour
+        if (diff > 3600000) {
+          countdownBanner.style.display = 'none';
+          return;
+        }
+
+        countdownBanner.style.display = 'block';
+        var hours = Math.floor(diff / 3600000);
+        var mins = Math.floor((diff % 3600000) / 60000);
+        var secs = Math.floor((diff % 60000) / 1000);
+        var timeStr = (hours > 0 ? hours + ':' : '') +
+          (mins < 10 ? '0' : '') + mins + ':' +
+          (secs < 10 ? '0' : '') + secs;
+
+        // Color transitions: blue > yellow (15 min) > red (5 min)
+        if (diff <= 300000) {
+          countdownBanner.className = 'countdown-timer countdown-urgent';
+        } else if (diff <= 900000) {
+          countdownBanner.className = 'countdown-timer countdown-warning';
+        } else {
+          countdownBanner.className = 'countdown-timer countdown-normal';
+        }
+
+        countdownBanner.innerHTML = '<i class="fas fa-clock"></i> Round <%= numRound %> tips off in ' + timeStr;
+      }
+
+      updateCountdown();
+      var countdownInterval = setInterval(updateCountdown, 1000);
+    }
+  }
+})();
+
+// DEV: Choose Random — randomly select one radio per match group
+var randomBtn = document.getElementById('randomFillBtn');
+if (randomBtn) {
+  randomBtn.addEventListener('click', function() {
+    var names = [];
+    document.querySelectorAll('.teamPicker input[type="radio"]').forEach(function(r) {
+      var picker = r.closest('.matchPicker');
+      if (picker && (picker.classList.contains('match-started') || picker.classList.contains('match-locked') || picker.classList.contains('match-finished'))) {
+        return;
+      }
+      if (names.indexOf(r.name) === -1) names.push(r.name);
+    });
+    names.forEach(function(name) {
+      var radios = document.querySelectorAll('input[type="radio"][name="' + name + '"]');
+      var enabled = [];
+      radios.forEach(function(r) {
+        var picker = r.closest('.matchPicker');
+        if (picker && (picker.classList.contains('match-started') || picker.classList.contains('match-locked') || picker.classList.contains('match-finished'))) {
+          return;
+        }
+        if (!r.disabled) enabled.push(r);
+      });
+      if (enabled.length > 0) {
+        var pick = enabled[Math.floor(Math.random() * enabled.length)];
+        pick.checked = true;
+      }
+    });
+  });
+}
+</script>
 <%- include("../partials/footer") %>

@@ -28,6 +28,8 @@ var userMatchAggregateSchema = new mongoose.Schema({
   bottomTeamPickers: [pickerSchema],
   bottomWinScore: Number,
   bottomLossScore: Number,
+
+  missedPickers: [pickerSchema],
 });
 
 module.exports = mongoose.model("UserMatchAggregate", userMatchAggregateSchema);

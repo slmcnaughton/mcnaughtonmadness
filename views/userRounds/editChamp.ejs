@@ -30,6 +30,18 @@
 
 <p class="scoring-note"><i class="fas fa-info-circle"></i> 10 points for correct Championship pick, 0 for incorrect</p>
 
+<% if (typeof bonusPicksAreLate !== 'undefined' && bonusPicksAreLate) { %>
+<div class="alert alert-warning" style="margin-bottom: 16px;">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Late submission:</strong> Round 1 has already tipped off. Your Championship pick will be submitted for commissioner review. The commissioner will decide whether to accept it.
+</div>
+<% } %>
+
+<% if (isDev) { %>
+<div class="text-center" style="margin-bottom: 12px;">
+    <button type="button" id="randomFillBtn" class="btn btn-warning"><i class="fas fa-random"></i> Choose Random</button>
+</div>
+<% } %>
+
 <form class="teamPicker" action="/tournamentGroups/<%= tournamentGroup.groupName %>/userTournaments/<%= username %>/<%=numRound%>?_method=PUT" method="POST">
 
     <% if (finalFourTeams && finalFourTeams.length > 0) { %>
@@ -73,6 +85,18 @@
         <button class="btn btn-primary btn-lg btn-default btn-block">Submit Picks <i class="fas fa-check"></i></button>
     </div>
 </form>
+
+<script>
+var randomBtn = document.getElementById('randomFillBtn');
+if (randomBtn) {
+  randomBtn.addEventListener('click', function() {
+    var radios = document.querySelectorAll('.teamPicker input[type="radio"]');
+    if (radios.length > 0) {
+      radios[Math.floor(Math.random() * radios.length)].checked = true;
+    }
+  });
+}
+</script>
 
 </div>
 <%- include("../partials/footer") %>

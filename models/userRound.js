@@ -31,6 +31,9 @@ var userRoundSchema = new mongoose.Schema({
       ref: "UserMatchPrediction",
     },
   ],
+  pendingApproval: { type: Boolean, default: false },
+  pendingApprovalAt: { type: Date, default: null },
+  rejected: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("UserRound", userRoundSchema);

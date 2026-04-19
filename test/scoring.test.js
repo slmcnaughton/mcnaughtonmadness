@@ -183,6 +183,45 @@ test("R8 aggregate returns 10/0 for both sides", function () {
   assert.strictEqual(s.bottomLossScore, 0);
 });
 
+// ─── Late Pick Scoring ──────────────────────────────────────────────────────
+// Late picks should always receive the loser score, regardless of correctness.
+// This is enforced at the middleware level (not in scoring.js itself), but we
+// verify the loser scores here to ensure the penalty values are correct.
+
+console.log("\nLate pick scoring (loser score verification)");
+
+test("late pick that 'correctly' picked the winner still gets loser score (R1 5v12, 12 wins)", function () {
+  // User picked 12 seed (correct), but was late
+  // They should get the loser score, not the winning 2.4 points
+  var s = calculateMatchScores(5, 12, false, 1);
+  // Winning score would be 12/5 = 2.4 (they don't get this)
+  // Loser score for picking the favorite (#5) when underdog (#12) wins = -(5/12) * 1
+  approxEqual(s.losingScore, -(5 / 12));
+  // The late pick enforcement means they'd receive s.losingScore instead of s.winningScore
+});
+
+test("late pick that was wrong gets same loser score as non-late wrong pick (R1 1v16, 1 wins)", function () {
+  var s = calculateMatchScores(1, 16, true, 1);
+  // Loser score when favorite wins and you picked underdog = -1 * round
+  approxEqual(s.losingScore, -1);
+});
+
+test("late pick in bonus round R7 (Final Four) gets 0", function () {
+  var s = calculateMatchScores(1, 4, true, 7);
+  assert.strictEqual(s.losingScore, 0);
+});
+
+test("late pick in bonus round R8 (Championship) gets 0", function () {
+  var s = calculateMatchScores(2, 3, false, 8);
+  assert.strictEqual(s.losingScore, 0);
+});
+
+test("late pick penalty scales with round multiplier (R3)", function () {
+  var s = calculateMatchScores(5, 12, true, 3);
+  // Favorite wins in R3: loser score = -1 * 3 = -3
+  approxEqual(s.losingScore, -3);
+});
+
 // ─── Summary ────────────────────────────────────────────────────────────────
 
 harness.summary();

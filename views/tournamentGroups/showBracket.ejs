@@ -19,6 +19,76 @@
 <%- include("../partials/navBar") %>
 
 <% var tournament = tournamentGroup.tournamentReference.id %>
+<% var maxVisibleRound = typeof visibleThroughRound !== 'undefined' ? visibleThroughRound : 99 %>
+<%
+  // Build aggregate lookup by matchNumber (replaces fragile index-based access)
+  var aggByMatch = {};
+  if (tournamentGroup.userMatchAggregates) {
+    for (var ai = 0; ai < tournamentGroup.userMatchAggregates.length; ai++) {
+      var a = tournamentGroup.userMatchAggregates[ai];
+      if (a && a.matchNumber) {
+        aggByMatch[a.matchNumber] = a;
+      }
+    }
+  }
+
+  // Build match→round map inline (same logic as tipoff.buildMatchRoundMap)
+  var matchRoundMap = {};
+  if (tournament && tournament.rounds) {
+    for (var ri = 0; ri < tournament.rounds.length; ri++) {
+      var rd = tournament.rounds[ri];
+      var roundNum = rd.numRound || (ri + 1);
+      if (rd.matches) {
+        for (var mi = 0; mi < rd.matches.length; mi++) {
+          matchRoundMap[rd.matches[mi].matchNumber] = roundNum;
+        }
+      }
+    }
+  }
+
+  function shouldHideForMatch(matchNumber) {
+    if (hidePickerNames) return true;
+    var rn = matchRoundMap[matchNumber];
+    if (!rn) return true;
+    return rn > maxVisibleRound;
+  }
+
+    function bonusTeamId(aggEntry) {
+        if (!aggEntry || !aggEntry.team) return "";
+        var id = aggEntry.team.id;
+        if (!id) return "";
+        if (typeof id === "object" && id._id) return String(id._id);
+        return String(id);
+    }
+%>
+<%
+  // Build regional winner map from actual Elite Eight matches (tournament.rounds[3])
+  // and championship winner from tournament.rounds[5].
+  // matchNumbers 57-60 = Elite Eight (region index = matchNumber - 57)
+  // matchNumber 63 = Championship
+  var regionWinnerIdByIndex = [null, null, null, null];
+  var champWinnerId = null;
+  if (tournament && tournament.rounds) {
+    var eeRound = tournament.rounds[3];
+    if (eeRound && eeRound.matches) {
+      for (var eem = 0; eem < eeRound.matches.length; eem++) {
+        var eeMatch = eeRound.matches[eem];
+        if (eeMatch && eeMatch.winner) {
+          var eeRegIdx = eeMatch.matchNumber - 57;
+          if (eeRegIdx >= 0 && eeRegIdx < 4) {
+            var eeWId = eeMatch.winner._id ? eeMatch.winner._id : eeMatch.winner;
+            regionWinnerIdByIndex[eeRegIdx] = String(eeWId);
+          }
+        }
+      }
+    }
+    var cRound = tournament.rounds[5];
+    if (cRound && cRound.matches && cRound.matches[0] && cRound.matches[0].winner) {
+      var cw = cRound.matches[0].winner;
+      champWinnerId = String(cw._id ? cw._id : cw);
+    }
+  }
+%>
 <%
   // Helper to get the rank for a picker, trying ID first then falling back to name
   function pickerRank(picker) {
@@ -70,7 +140,7 @@
                                                     <% var quarterNumMatches = tournament.rounds[i].matches.length / 4 %>
                                                     <% for(var j = 0; j < quarterNumMatches; j++) { %>
                                                         <% var match = tournament.rounds[i].matches[Math.floor(quadNum * quarterNumMatches) + j] %>
-                                                        <div class="match" id="match<%= match.matchNumber%>" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
+                                                        <div class="match" id="match<%= match.matchNumber%>"<% if (aggByMatch[match.matchNumber]) { %> onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());"<% } %>>
                                                             <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
                                                                 <div class="team">
                                                                     <div class="teamTitle">
@@ -112,8 +182,8 @@
                                                         
                                                         <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style="display: none;">
                                                             <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
-                                                            <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
-                                                                <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
+                                                            <% if(aggByMatch[match.matchNumber] && match.topTeam && match.bottomTeam){ %>
+                                                                <% var agg = aggByMatch[match.matchNumber] %>
                                                             
                                                                
                                                                 <% if (!match.winner) { %> 
@@ -126,7 +196,7 @@
                                                                         <div class="teamHeader">
                                                                             <%var winScore = Math.round(agg.topWinScore * 100)/100 %>
                                                                             <%var lossScore = Math.round(agg.topLossScore * 100)/100 %>
-                                                                            <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong> (<%= agg.topTeamPickers.length %>)</h5>
+                                                                            <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong><% if (!shouldHideForMatch(match.matchNumber)) { %> (<%= agg.topTeamPickers.length %>)<% } %></h5>
                                                                             <h6 style="display: inline-block; float: right;">(
                                                                                 <% if (!match.winner) { %>
                                                                                     +<%=winScore%> or <%=lossScore%>
@@ -137,7 +207,7 @@
                                                                                 <% } %>
                                                                             )</h6>
                                                                         </div>
-                                                                        <% if (!hidePickerNames) { %>
+                                                                        <% if (!shouldHideForMatch(typeof match !== 'undefined' ? match.matchNumber : 0)) { %>
                                                                         <% agg.topTeamPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }); %>
                                                                         <div class="picker-names">
                                                                             <% for (var k = 0; k < agg.topTeamPickers.length; k++) { %>
@@ -161,7 +231,7 @@
                                                                         <div class="teamHeader">
                                                                             <%var winScore = Math.round(agg.bottomWinScore * 100)/100 %>
                                                                             <%var lossScore = Math.round(agg.bottomLossScore * 100)/100 %>
-                                                                            <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong> (<%= agg.bottomTeamPickers.length %>)</h5>
+                                                                            <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong><% if (!shouldHideForMatch(match.matchNumber)) { %> (<%= agg.bottomTeamPickers.length %>)<% } %></h5>
                                                                             <h6 style="display: inline-block; float: right;">(
                                                                                 <% if (!match.winner) { %>
                                                                                     +<%=winScore%> or <%=lossScore%>
@@ -172,7 +242,7 @@
                                                                                 <% } %>
                                                                             )</h6>
                                                                         </div>
-                                                                        <% if (!hidePickerNames) { %>
+                                                                        <% if (!shouldHideForMatch(typeof match !== 'undefined' ? match.matchNumber : 0)) { %>
                                                                         <% agg.bottomTeamPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }); %>
                                                                         <div class="picker-names">
                                                                             <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
@@ -185,11 +255,42 @@
                                                                         <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                                                         <% } %>
                                                                 </div>
-                                                                
+
+                                                                <% if (agg.missedPickers && agg.missedPickers.length > 0 && (!!match.winner || (match.startTime && new Date(match.startTime) < new Date()))) { %>
+                                                                    <div class="aggregate aggregate-missed">
+                                                                        <div class="teamHeader">
+                                                                            <%
+                                                                              var missedLossTop = Math.round(agg.topLossScore * 100) / 100;
+                                                                              var missedLossBottom = Math.round(agg.bottomLossScore * 100) / 100;
+                                                                            %>
+                                                                            <h5 style="display: inline-block;"><strong><i class="fas fa-times-circle"></i> Missed</strong> (<%= agg.missedPickers.length %>)</h5>
+                                                                            <h6 style="display: inline-block; float: right;">(
+                                                                                <% if (match.winner) { %>
+                                                                                    <%= (String(match.winner) === String(match.topTeam._id)) ? missedLossBottom : missedLossTop %>
+                                                                                <% } else { %>
+                                                                                    <%=missedLossTop%> or <%=missedLossBottom%>
+                                                                                <% } %>
+                                                                            )</h6>
+                                                                        </div>
+                                                                        <% if (!shouldHideForMatch(match.matchNumber)) { %>
+                                                                        <% agg.missedPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }); %>
+                                                                        <div class="picker-names">
+                                                                            <% for (var k = 0; k < agg.missedPickers.length; k++) { %>
+                                                                                <span class="picker-name">
+                                                                                    <span class="picker-rank"><%= pickerRank(agg.missedPickers[k]) || '' %>.</span> <%= agg.missedPickers[k].firstName %>
+                                                                                </span>
+                                                                            <% } %>
+                                                                        </div>
+                                                                        <% } else { %>
+                                                                        <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who missed!</em></p>
+                                                                        <% } %>
+                                                                    </div>
+                                                                <% } %>
+
                                                             <% } %>
-                                                            
+
                                                         </div>
-                                                    <% } %> 
+                                                    <% } %>
                                                     <!--end looping through quarterNumMatches-->
                                                 </div>
                                                 <!--end oneRound-->
@@ -225,7 +326,7 @@
                                     <div class="oneRound">
                                         <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
                                             <% var match = tournament.rounds[i].matches[j] %>
-                                            <div class="match" id="match<%= match.matchNumber%>" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
+                                            <div class="match" id="match<%= match.matchNumber%>"<% if (aggByMatch[match.matchNumber]) { %> onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());"<% } %>>
                                                 <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
                                                     <div class="team">
                                                         <div class="teamTitle">
@@ -262,8 +363,8 @@
                                             
                                             <div class="aggregateBox" id="matchAggregate<%= match.matchNumber %>" style= "display: none;">
                                                 <!--things get screwy here if all participants go a round without picking...but I guess if an entire group forgets to pick, no one cares enough-->
-                                                <% if(tournamentGroup.userMatchAggregates[match.matchNumber-1] && match.topTeam && match.bottomTeam){ %>
-                                                    <% var agg = tournamentGroup.userMatchAggregates[match.matchNumber-1] %>
+                                                <% if(aggByMatch[match.matchNumber] && match.topTeam && match.bottomTeam){ %>
+                                                    <% var agg = aggByMatch[match.matchNumber] %>
                                                 
                                                    
                                                     <% if (!match.winner) { %> 
@@ -276,7 +377,7 @@
                                                             <div class="teamHeader">
                                                                 <%var winScore = Math.round(agg.topWinScore * 10000)/10000 %>
                                                                 <%var lossScore = Math.round(agg.topLossScore * 10000)/10000 %>
-                                                                <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong> (<%= agg.topTeamPickers.length %>)</h5>
+                                                                <h5 style="display: inline-block; "><strong><%=match.topTeam.name%></strong><% if (!shouldHideForMatch(match.matchNumber)) { %> (<%= agg.topTeamPickers.length %>)<% } %></h5>
                                                                 <h6 style="display: inline-block; float: right;">(
                                                                     <% if (!match.winner) { %>
                                                                         +<%=winScore%> or <%=lossScore%>
@@ -307,7 +408,7 @@
                                                             <div class="teamHeader">
                                                                 <%var winScore = Math.round(agg.bottomWinScore * 10000)/10000 %>
                                                                 <%var lossScore = Math.round(agg.bottomLossScore * 10000)/10000 %>
-                                                                <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong> (<%= agg.bottomTeamPickers.length %>)</h5>
+                                                                <h5 style="display: inline-block; "><strong><%=match.bottomTeam.name%></strong><% if (!shouldHideForMatch(match.matchNumber)) { %> (<%= agg.bottomTeamPickers.length %>)<% } %></h5>
                                                                 <h6 style="display: inline-block; float: right;">(
                                                                     <% if (!match.winner) { %>
                                                                         +<%=winScore%> or <%=lossScore%>
@@ -318,7 +419,7 @@
                                                                     <% } %>
                                                                 )</h6>
                                                             </div>
-                                                            <% if (!hidePickerNames) { %>
+                                                            <% if (!shouldHideForMatch(typeof match !== 'undefined' ? match.matchNumber : 0)) { %>
                                                             <% agg.bottomTeamPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }); %>
                                                             <div class="picker-names">
                                                                 <% for (var k = 0; k < agg.bottomTeamPickers.length; k++) { %>
@@ -331,12 +432,43 @@
                                                             <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who picked what!</em></p>
                                                             <% } %>
                                                     </div>
-                                                    
+
+                                                    <% if (agg.missedPickers && agg.missedPickers.length > 0 && (!!match.winner || (match.startTime && new Date(match.startTime) < new Date()))) { %>
+                                                        <div class="aggregate aggregate-missed">
+                                                            <div class="teamHeader">
+                                                                <%
+                                                                  var missedLossTop = Math.round(agg.topLossScore * 10000) / 10000;
+                                                                  var missedLossBottom = Math.round(agg.bottomLossScore * 10000) / 10000;
+                                                                %>
+                                                                <h5 style="display: inline-block;"><strong><i class="fas fa-times-circle"></i> Missed</strong> (<%= agg.missedPickers.length %>)</h5>
+                                                                <h6 style="display: inline-block; float: right;">(
+                                                                    <% if (match.winner) { %>
+                                                                        <%= (String(match.winner) === String(match.topTeam._id)) ? missedLossBottom : missedLossTop %>
+                                                                    <% } else { %>
+                                                                        <%=missedLossTop%> or <%=missedLossBottom%>
+                                                                    <% } %>
+                                                                )</h6>
+                                                            </div>
+                                                            <% if (!shouldHideForMatch(match.matchNumber)) { %>
+                                                            <% agg.missedPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }); %>
+                                                            <div class="picker-names">
+                                                                <% for (var k = 0; k < agg.missedPickers.length; k++) { %>
+                                                                    <span class="picker-name">
+                                                                        <span class="picker-rank"><%= pickerRank(agg.missedPickers[k]) || '' %>.</span> <%= agg.missedPickers[k].firstName %>
+                                                                    </span>
+                                                                <% } %>
+                                                            </div>
+                                                            <% } else { %>
+                                                            <p style="font-size: 12px; color: #888; margin: 4px 0;"><em>Make your picks to see who missed!</em></p>
+                                                            <% } %>
+                                                        </div>
+                                                    <% } %>
+
                                                 <% } %>
-                                                
+
                                             </div>
                                             <!--end aggregateBox-->
-                                        <% } %> 
+                                        <% } %>
                                         <!--end looping through quarterNumMatches-->
                                     </div>
                                     <!--end oneRound-->
@@ -394,22 +526,19 @@
                     <% } %>
                             <% for (var j = 0; j < bonAgg[4].length; j++) { %>
                                 <%
-                                    var champMatchWinner = matchWinnerMap[String(bonAgg[4][j].matchReference)];
-                                    var champTeamId = String(bonAgg[4][j].team.id._id);
-                                    // Fade if: match decided and team lost, OR team eliminated from tournament
-                                    var champLost = (champMatchWinner && champMatchWinner !== champTeamId) || teamLostMap[String(bonAgg[4][j].team.id)] > 0;
+                                    var champTeamId = bonusTeamId(bonAgg[4][j]);
+                                    // Fade if: champ match decided and team didn't win, OR team eliminated
+                                    var champLost = champWinnerId ? champWinnerId !== champTeamId : teamLostMap[champTeamId] > 0;
                                 %>
                                 <div class="grid-item<%= champLost ? ' lost' : '' %>">
-                                    <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>').html());">
+                                    <img src="<%= bonAgg[4][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[4][j].matchNumber + champTeamId)%>').html());">
                                 </div>  
                                 
                                 <!--bonus aggregate popup-->
-                                <% var bonusMatchWinner = matchWinnerMap[String(bonAgg[4][j].matchReference)] %>
-                                <% var teamEliminated = teamLostMap[String(bonAgg[4][j].team.id._id)] > 0 %>
-                                <div class="aggregateBox" id="bonAgg<%= (bonAgg[4][j].matchNumber + bonAgg[4][j].team.id._id)%>" style= "display: none;">
-                                    <% if (bonusMatchWinner && bonusMatchWinner === String(bonAgg[4][j].team.id._id)) { %>
+                                <div class="aggregateBox" id="bonAgg<%= (bonAgg[4][j].matchNumber + champTeamId)%>" style= "display: none;">
+                                    <% if (champWinnerId && champWinnerId === champTeamId) { %>
                                        <div class="bonAggregate win" >
-                                    <% } else if (bonusMatchWinner || teamEliminated) { %>
+                                    <% } else if (champWinnerId || teamLostMap[champTeamId] > 0) { %>
                                         <div class="bonAggregate loss" >
                                     <% } else { %>
                                         <div class="bonAggregate noWin" >
@@ -417,7 +546,7 @@
                                             <div class="teamHeader">
                                                 <h5 style="display: inline-block; "><strong><%=bonAgg[4][j].team.name%></strong> (<%= bonAgg[4][j].teamPickers.length %>)</h5>
                                             </div>
-                                            <% if (!hidePickerNames) { %>
+                                            <% if (maxVisibleRound >= 1) { %>
                                             <% bonAgg[4][j].teamPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }); %>
                                             <div class="picker-names">
                                                 <% for (var k = 0; k < bonAgg[4][j].teamPickers.length; k++) { %>
@@ -447,21 +576,20 @@
     
                         <% for (var j = 0; j < bonAgg[i].length; j++) { %>
                             <%
-                                var regMatchWinner = matchWinnerMap[String(bonAgg[i][j].matchReference)];
-                                var regTeamId = String(bonAgg[i][j].team.id._id);
-                                // Fade if: match decided and this team didn't win
-                                var regLost = regMatchWinner ? regMatchWinner !== regTeamId : teamLostMap[String(bonAgg[i][j].team.id)] > 0;
+                                var regTeamId = bonusTeamId(bonAgg[i][j]);
+                                // Fade if: Elite Eight winner exists and team didn't win, OR no winner yet but team eliminated
+                                var eeWinnerForRegion = regionWinnerIdByIndex[i];
+                                var regLost = eeWinnerForRegion ? eeWinnerForRegion !== regTeamId : teamLostMap[regTeamId] > 0;
                             %>
                             <div class="grid-item<%= regLost ? ' lost' : '' %>">
-                                <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>').html());">
+                                <img src="<%= bonAgg[i][j].team.image %>" onmouseover="nhpup.popup($('#bonAgg<%= (bonAgg[i][j].matchNumber + regTeamId)%>').html());">
                             </div>   
     
                             <!--bonus aggregate popup - make sure onmouseover is set to the div/image you want to cause this popup-->
-                            <% var bonusMatchWinner = matchWinnerMap[String(bonAgg[i][j].matchReference)] %>
-                            <div class="aggregateBox" id="bonAgg<%= (bonAgg[i][j].matchNumber + bonAgg[i][j].team.id._id)%>" style= "display: none;">
-                                <% if (!bonusMatchWinner) { %>
+                            <div class="aggregateBox" id="bonAgg<%= (bonAgg[i][j].matchNumber + regTeamId)%>" style= "display: none;">
+                                <% if (!eeWinnerForRegion && !teamLostMap[regTeamId]) { %>
                                     <div class="bonAggregate noWin" >
-                                <% } else if (bonusMatchWinner === String(bonAgg[i][j].team.id._id)) { %>
+                                <% } else if (eeWinnerForRegion === regTeamId) { %>
                                    <div class="bonAggregate win" >
                                 <% } else { %>
                                     <div class="bonAggregate loss" >
@@ -469,7 +597,7 @@
                                         <div class="teamHeader">
                                             <h5 style="display: inline-block; "><strong><%=bonAgg[i][j].team.name%></strong> (<%= bonAgg[i][j].teamPickers.length %>)</h5>
                                         </div>
-                                        <% if (!hidePickerNames) { %>
+                                        <% if (maxVisibleRound >= 1) { %>
                                         <% bonAgg[i][j].teamPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }); %>
                                         <div class="picker-names">
                                             <% for (var k = 0; k < bonAgg[i][j].teamPickers.length; k++) { %>
@@ -504,10 +632,14 @@
     <div class="mobile-bonus-picks">
         <h3><i class="fas fa-crown" style="color: #D4AF37;"></i> Champion Picks</h3>
         <% for (var j = 0; j < bonAgg[4].length; j++) { %>
-            <div class="mobile-bonus-pick <%= teamLostMap[String(bonAgg[4][j].team.id)] > 0 ? 'lost' : '' %>">
+            <%
+                var mobileChampTeamId = bonusTeamId(bonAgg[4][j]);
+                var mobileChampLost = champWinnerId ? champWinnerId !== mobileChampTeamId : teamLostMap[mobileChampTeamId] > 0;
+            %>
+            <div class="mobile-bonus-pick <%= mobileChampLost ? 'lost' : '' %>">
                 <img src="<%= bonAgg[4][j].team.image %>">
                 <span class="mobile-bonus-pick-team"><%= bonAgg[4][j].team.name %></span>
-                <% if (!hidePickerNames) { %>
+                <% if (maxVisibleRound >= 1) { %>
                     <span class="mobile-bonus-pick-pickers">
                         <%= bonAgg[4][j].teamPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }).map(function(p) { return (pickerRank(p) || '') + '. ' + p.firstName; }).join(', ') %>
                     </span>
@@ -518,10 +650,15 @@
         <% for (var i = 0; i < bonAgg.length - 1; i++) { %>
             <h3><i class="fas fa-basketball-ball"></i> <%= tournament.regions[i] %> Picks</h3>
             <% for (var j = 0; j < bonAgg[i].length; j++) { %>
-                <div class="mobile-bonus-pick <%= teamLostMap[String(bonAgg[i][j].team.id)] > 0 ? 'lost' : '' %>">
+                <%
+                    var mobileRegTeamId = bonusTeamId(bonAgg[i][j]);
+                    var mobileEeWinner = regionWinnerIdByIndex[i];
+                    var mobileRegLost = mobileEeWinner ? mobileEeWinner !== mobileRegTeamId : teamLostMap[mobileRegTeamId] > 0;
+                %>
+                <div class="mobile-bonus-pick <%= mobileRegLost ? 'lost' : '' %>">
                     <img src="<%= bonAgg[i][j].team.image %>">
                     <span class="mobile-bonus-pick-team"><%= bonAgg[i][j].team.name %></span>
-                    <% if (!hidePickerNames) { %>
+                    <% if (maxVisibleRound >= 1) { %>
                         <span class="mobile-bonus-pick-pickers">
                             <%= bonAgg[i][j].teamPickers.sort(function(a, b) { return (pickerRank(a) || 999) - (pickerRank(b) || 999); }).map(function(p) { return (pickerRank(p) || '') + '. ' + p.firstName; }).join(', ') %>
                         </span>

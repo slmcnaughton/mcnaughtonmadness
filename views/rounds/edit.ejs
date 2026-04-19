@@ -5,6 +5,55 @@
 <h1 style="text-align: center;">Set Round <%=numRound%> Winners</h1>
 <p class="text-center text-muted">Select the winning team for each match, then submit.</p>
 
+<% if (isDev) { %>
+<div class="text-center" style="margin-bottom: 16px;">
+    <button type="button" id="randomFillBtn" class="btn btn-warning"><i class="fas fa-random"></i> Choose Random</button>
+</div>
+
+<div class="panel panel-info" style="max-width: 600px; margin: 0 auto 20px;">
+    <div class="panel-heading"><i class="fas fa-flask"></i> Dev: Tipoff Controls</div>
+    <div class="panel-body">
+        <div style="margin-bottom: 10px;">
+            <strong>Set Start Times</strong> (unfinished games only)
+            <div style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <form action="/tournaments/<%= tournament.year %>/rounds/<%= numRound %>/setStartTimes" method="POST" style="display: inline;">
+                    <input type="hidden" name="mode" value="now">
+                    <input type="hidden" name="matchNumbers" value="all">
+                    <button class="btn btn-sm btn-danger"><i class="fas fa-bolt"></i> All Tipoff Now</button>
+                </form>
+                <form action="/tournaments/<%= tournament.year %>/rounds/<%= numRound %>/setStartTimes" method="POST" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <input type="hidden" name="mode" value="minutes">
+                    <input type="hidden" name="matchNumbers" value="all">
+                    <span>All in</span>
+                    <input type="number" name="minutes" value="30" min="1" max="600" style="width: 60px;" class="form-control input-sm">
+                    <button class="btn btn-sm btn-warning"><i class="fas fa-clock"></i> min</button>
+                </form>
+            </div>
+            <div style="margin-top: 8px;">
+                <em class="text-muted" style="font-size: 0.85em;">
+                    <% var unfinishedCount = 0; %>
+                    <% round.matches.forEach(function(m) { if (!m.winner && m.topTeam && m.bottomTeam) unfinishedCount++; }); %>
+                    <%= unfinishedCount %> unfinished game(s).
+                    <% var withStartTime = 0; %>
+                    <% round.matches.forEach(function(m) { if (m.startTime && !m.winner) withStartTime++; }); %>
+                    <% if (withStartTime > 0) { %><%= withStartTime %> already have start times.<% } %>
+                </em>
+            </div>
+        </div>
+        <hr style="margin: 10px 0;">
+        <div>
+            <strong>Trigger Scrape Effects</strong>
+            <div style="margin-top: 6px;">
+                <form action="/tournaments/<%= tournament.year %>/rounds/<%= numRound %>/runScrapeEffects" method="POST" style="display: inline;">
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-sync"></i> Lock Drafts & Mark Missed</button>
+                </form>
+                <span class="text-muted" style="font-size: 0.85em; margin-left: 8px;">Runs lockDraftPicksForStartedGames + markMissedPickers</span>
+            </div>
+        </div>
+    </div>
+</div>
+<% } %>
+
 <div class="row">
     <form class="teamPicker" action="/tournaments/<%= tournament.year %>/rounds/<%= round.numRound %>?_method=PUT" method="POST">
 
@@ -25,6 +74,15 @@
                 <div class="form-group matchPicker">
                     <% var matchNum = match.matchNumber %>
                     <% var idMaker = tournament.year + "m" + match.matchNumber %>
+                    <% if (isDev && match.topTeam && match.bottomTeam) { %>
+                        <div style="font-size: 0.75em; margin-bottom: 4px;">
+                            <% if (match.startTime) { %>
+                                <span class="text-success"><i class="fas fa-check-circle"></i> Tipoff: <%= moment(match.startTime).tz('America/New_York').format('h:mm A') %> ET</span>
+                            <% } else { %>
+                                <button type="button" class="btn btn-xs btn-danger tipoff-now-btn" data-match="<%= matchNum %>" style="padding: 1px 5px; font-size: 0.9em;"><i class="fas fa-bolt"></i> Tipoff Now</button>
+                            <% } %>
+                        </div>
+                    <% } %>
 
                     <label for="<%=idMaker%>top" style="display: block">
                         <div class="team">
@@ -92,6 +150,60 @@
         </div>
     </form>
 </div>
+
+<script>
+// Allow deselecting radio buttons by clicking them again
+document.querySelectorAll('.radio').forEach(function(radio) {
+  radio.addEventListener('click', function() {
+    if (this.dataset.wasChecked === 'true') {
+      this.checked = false;
+      this.dataset.wasChecked = 'false';
+    } else {
+      document.querySelectorAll('input[name="' + this.name + '"]').forEach(function(r) {
+        r.dataset.wasChecked = 'false';
+      });
+      this.dataset.wasChecked = 'true';
+    }
+  });
+});
+
+// DEV: Choose Random — randomly select one radio per match group
+var randomBtn = document.getElementById('randomFillBtn');
+if (randomBtn) {
+  randomBtn.addEventListener('click', function() {
+    var names = [];
+    document.querySelectorAll('.teamPicker input[type="radio"]').forEach(function(r) {
+      if (names.indexOf(r.name) === -1) names.push(r.name);
+    });
+    names.forEach(function(name) {
+      var radios = document.querySelectorAll('input[type="radio"][name="' + name + '"]');
+      var enabled = [];
+      radios.forEach(function(r) { if (!r.disabled) enabled.push(r); });
+      if (enabled.length > 0) {
+        var pick = enabled[Math.floor(Math.random() * enabled.length)];
+        pick.checked = true;
+        pick.dataset.wasChecked = 'true';
+      }
+    });
+  });
+}
+
+// DEV: Per-match tipoff buttons (use fetch to avoid nested form issue)
+document.querySelectorAll('.tipoff-now-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var matchNum = this.dataset.match;
+    var form = new FormData();
+    form.append('mode', 'now');
+    form.append('matchNumbers', matchNum);
+    fetch('/tournaments/<%= tournament.year %>/rounds/<%= round.numRound %>/setStartTimes', {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    }).then(function() {
+      location.reload();
+    });
+  });
+});
+</script>
 
 </div>
 <%- include("../partials/footer") %>

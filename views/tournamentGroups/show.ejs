@@ -46,8 +46,23 @@
                                 <div class="text-center">
                                     <a class="btn btn-success btn-lg btn-default"
                                         href="/tournamentGroups/<%= tournamentGroup.groupName%>/userTournaments/<%=currentUser.username%>/<%=tournamentGroup.currentRound%>/edit">
-                                        Make Round <%=tournamentGroup.currentRound%> Picks!
+                                        <% if (typeof hasDraft !== 'undefined' && hasDraft) { %>
+                                            Edit Draft / Submit Round <%=tournamentGroup.currentRound%> Picks
+                                        <% } else if (typeof hasLockedPicks !== 'undefined' && hasLockedPicks) { %>
+                                            Complete & Submit Round <%=tournamentGroup.currentRound%> Picks
+                                        <% } else { %>
+                                            Make Round <%=tournamentGroup.currentRound%> Picks!
+                                        <% } %>
                                     </a>
+                                    <% if (typeof hasDraft !== 'undefined' && hasDraft && draftUpdatedAt) { %>
+                                        <div class="draft-status draft-status-success" style="margin-top: 8px; display: inline-block;">
+                                            <i class="fas fa-save"></i> Draft saved: <%= moment(draftUpdatedAt).tz("America/New_York").format('MMM D, h:mm A') %> ET
+                                        </div>
+                                    <% } else if (typeof hasLockedPicks !== 'undefined' && hasLockedPicks) { %>
+                                        <div style="margin-top: 6px; font-size: 0.85em; color: #8e6fbf;">
+                                            <i class="fas fa-lock"></i> <%= lockedPickCount %> pick(s) locked from your draft — complete the rest and submit
+                                        </div>
+                                    <% } %>
                                 </div>
                                 <% } else if (finalFourPicksNeeded) { %>
                                     <div class="text-center">
@@ -65,6 +80,36 @@
                                         </div>
                                         <% } else { %>
                                             <h4>Picks made. Go cheer on your teams!</h4>
+                                            <% if (typeof hasPendingBonusPicks !== 'undefined' && hasPendingBonusPicks) { %>
+                                                <div class="alert alert-warning" style="margin-top: 8px; text-align: left;">
+                                                    <i class="fas fa-clock"></i> Your <strong><%= pendingBonusRounds.join(" & ") %></strong> pick(s) are pending commissioner approval.
+                                                </div>
+                                            <% } %>
+                                            <% if (typeof hasRejectedBonusPicks !== 'undefined' && hasRejectedBonusPicks) { %>
+                                                <div class="alert alert-danger" style="margin-top: 8px; text-align: left;">
+                                                    <i class="fas fa-times-circle"></i> Your late bonus picks were not accepted by the commissioner. They are visible but scored as 0.
+                                                </div>
+                                            <% } %>
+                                            <% if (typeof nextRoundAvailable !== 'undefined' && nextRoundAvailable) { %>
+                                                <div class="text-center" style="margin-top: 12px;">
+                                                    <a class="btn btn-info btn-lg btn-default"
+                                                        href="/tournamentGroups/<%= tournamentGroup.groupName%>/userTournaments/<%=currentUser.username%>/<%=nextRoundNum%>/edit">
+                                                        <% if (typeof hasNextRoundDraft !== 'undefined' && hasNextRoundDraft) { %>
+                                                            <i class="fas fa-edit"></i> Continue Round <%=nextRoundNum%> Draft
+                                                        <% } else { %>
+                                                            <i class="fas fa-forward"></i> Start Round <%=nextRoundNum%> Draft
+                                                        <% } %>
+                                                    </a>
+                                                    <div style="margin-top: 6px; font-size: 0.85em; color: #666;">
+                                                        <%=nextRoundKnownMatchups%> of <%=nextRoundTotalMatchups%> matchups known
+                                                    </div>
+                                                    <% if (typeof hasNextRoundDraft !== 'undefined' && hasNextRoundDraft && nextRoundDraftUpdatedAt) { %>
+                                                        <div class="draft-status draft-status-success" style="margin-top: 6px; display: inline-block;">
+                                                            <i class="fas fa-save"></i> Draft saved: <%= moment(nextRoundDraftUpdatedAt).tz("America/New_York").format('MMM D, h:mm A') %> ET
+                                                        </div>
+                                                    <% } %>
+                                                </div>
+                                            <% } %>
                                             <% } %>
 
                     </div>
@@ -104,6 +149,29 @@
                                 <% } %>
                     </div>
                 </div>
+
+                <!-- Countdown Timer -->
+                <%
+                    // Find the next upcoming round startTime (computed server-side, passed via data attribute)
+                    var countdownRoundTime = null;
+                    var countdownRoundNum = 0;
+                    if (tournamentGroup.tournamentReference && tournamentGroup.tournamentReference.id && tournamentGroup.tournamentReference.id.rounds) {
+                        for (var ri = 0; ri < tournamentGroup.tournamentReference.id.rounds.length; ri++) {
+                            var rnd = tournamentGroup.tournamentReference.id.rounds[ri];
+                            if (rnd.startTime && moment(rnd.startTime).isAfter(moment())) {
+                                countdownRoundTime = rnd.startTime;
+                                countdownRoundNum = ri + 1;
+                                break;
+                            }
+                        }
+                    }
+                %>
+                <div id="groupCountdownBanner" class="countdown-timer" style="display:none;"
+                    <% if (countdownRoundTime) { %>
+                        data-target-time="<%= new Date(countdownRoundTime).toISOString() %>"
+                        data-round-num="<%= countdownRoundNum %>"
+                    <% } %>
+                ></div>
 
             </div>
 
@@ -205,6 +273,39 @@
                         "pageLength": 50
                     });
                 });
+
+                // Countdown Timer for next round
+                (function() {
+                    var banner = document.getElementById('groupCountdownBanner');
+                    if (!banner || !banner.dataset.targetTime) return;
+
+                    var targetTime = new Date(banner.dataset.targetTime).getTime();
+                    var roundNum = parseInt(banner.dataset.roundNum, 10);
+
+                    function updateGroupCountdown() {
+                        var now = Date.now();
+                        var diff = targetTime - now;
+                        if (diff <= 0 || diff > 3600000) {
+                            banner.style.display = 'none';
+                            if (diff <= 0) clearInterval(groupCountdownInterval);
+                            return;
+                        }
+                        banner.style.display = 'block';
+                        var mins = Math.floor((diff % 3600000) / 60000);
+                        var secs = Math.floor((diff % 60000) / 1000);
+                        var timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                        if (diff <= 300000) {
+                            banner.className = 'countdown-timer countdown-urgent';
+                        } else if (diff <= 900000) {
+                            banner.className = 'countdown-timer countdown-warning';
+                        } else {
+                            banner.className = 'countdown-timer countdown-normal';
+                        }
+                        banner.innerHTML = '<i class="fas fa-clock"></i> Round ' + roundNum + ' tips off in ' + timeStr;
+                    }
+                    updateGroupCountdown();
+                    var groupCountdownInterval = setInterval(updateGroupCountdown, 1000);
+                })();
             </script>
 
 </div>

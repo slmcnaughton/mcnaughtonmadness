@@ -27,6 +27,18 @@ var tournamentSchema = new mongoose.Schema({
       ref: "Scrape",
     },
   ],
+  startTimeScrapeJobs: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Scrape",
+    },
+  ],
+  autoSubmitJobs: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Scrape",
+    },
+  ],
 });
 
 module.exports = mongoose.model("Tournament", tournamentSchema);

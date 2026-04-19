@@ -1,5 +1,4 @@
 <%- include("../partials/header") %>
-<script type="text/javascript" src="/js/nhpup_1.1.js"></script>
 
 <main id="tournament">
     <div class="jumbotron hero">
@@ -50,7 +49,7 @@
                                                     <% var quarterNumMatches = tournament.rounds[i].matches.length / 4 %>
                                                     <% for(var j = 0; j < quarterNumMatches; j++) { %>
                                                         <% var match = tournament.rounds[i].matches[Math.floor(quadNum * quarterNumMatches) + j] %>
-                                                        <div class="match" id="match<%= match.matchNumber%>" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
+                                                        <div class="match" id="match<%= match.matchNumber%>">
                                                             <% if (i < tournament.rounds.length - 2 || quadNum % 2 === 0) { %>
                                                                 <div class="team">
                                                                     <div class="teamTitle">
@@ -126,7 +125,7 @@
                                     <div class="oneRound">
                                         <% for(var j = 0; j < tournament.rounds[i].matches.length; j++) { %>
                                             <% var match = tournament.rounds[i].matches[j] %>
-                                            <div class="match" id="match<%= match.matchNumber%>" onmouseover="nhpup.popup($('#matchAggregate<%= match.matchNumber %>').html());">
+                                            <div class="match" id="match<%= match.matchNumber%>">
                                                 <% if (i < tournament.rounds.length - 1 || quadNum % 2 === 0) { %>
                                                     <div class="team">
                                                         <div class="teamTitle">

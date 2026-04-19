@@ -125,17 +125,9 @@ router.get("/:username", middleware.isLoggedIn, async function (req, res) {
     var isOwnBracket = req.user.username === req.params.username;
     var isAdmin = req.user.isAdmin;
 
+    var visibleThroughRound = 99; // default: see everything
     if (!isOwnBracket && !isAdmin) {
-      var pickStatus = await new Promise(function (resolve, reject) {
-        middleware.checkUserPickStatus(
-          req.user._id,
-          req.params.groupName,
-          function (err, result) {
-            if (err) return reject(err);
-            resolve(result);
-          },
-        );
-      });
+      var pickStatus = await middleware.checkUserPickStatus(req.user._id, req.params.groupName);
       if (pickStatus && pickStatus.shouldHide) {
         req.flash(
           "error",
@@ -144,6 +136,9 @@ router.get("/:username", middleware.isLoggedIn, async function (req, res) {
         return res.redirect(
           "/tournamentGroups/" + req.params.groupName,
         );
+      }
+      if (pickStatus && typeof pickStatus.visibleThroughRound === "number") {
+        visibleThroughRound = pickStatus.visibleThroughRound;
       }
     }
 
@@ -184,9 +179,64 @@ router.get("/:username", middleware.isLoggedIn, async function (req, res) {
       req.flash("error", "User Tournament not found");
       return res.redirect("/tournamentGroups");
     }
-    foundUserTournament.userRounds.sort(compare);
+    // Convert to plain object to allow safe array manipulation
+    // (Mongoose documents can resist property reassignment on populated arrays)
+    var utData = foundUserTournament.toObject({ virtuals: true });
+    utData.userRounds.sort(function (a, b) {
+      return (a.round.numRound || 0) - (b.round.numRound || 0);
+    });
+
+    // Build map of matchNumber → started/finished for showing "Missed" on null predictions
+    var matchStartedMap = {};
+    var now = Date.now();
+    for (var rd of utData.tournamentReference.id.rounds) {
+      if (rd.matches) {
+        for (var mt of rd.matches) {
+          if (mt.winner || (mt.startTime && now > new Date(mt.startTime).getTime())) {
+            matchStartedMap[mt.matchNumber] = true;
+          }
+        }
+      }
+    }
+
+    // Rebuild each round's prediction array in bracket order (by matchNumber).
+    // Draft auto-lock creates predictions out of order and may have gaps.
+    // The bracket template uses index-based access, so missing picks need null placeholders.
+    for (var urIdx = 0; urIdx < utData.userRounds.length; urIdx++) {
+      var ur = utData.userRounds[urIdx];
+      if (!ur.userMatchPredictions || ur.userMatchPredictions.length === 0) continue;
+
+      // Build a map of matchNumber → prediction
+      var predMap = {};
+      for (var p = 0; p < ur.userMatchPredictions.length; p++) {
+        var pred = ur.userMatchPredictions[p];
+        if (pred.match && pred.match.matchNumber) {
+          predMap[pred.match.matchNumber] = pred;
+        }
+      }
+
+      // Find the round in the tournament to get the expected match order
+      var roundNum = ur.round.numRound;
+      var actualIdx = roundNum <= 6 ? roundNum - 1 : (roundNum === 7 ? 3 : 5);
+      var tournRound = utData.tournamentReference.id.rounds[actualIdx];
+      if (tournRound && tournRound.matches) {
+        var ordered = [];
+        for (var m = 0; m < tournRound.matches.length; m++) {
+          var matchNum = tournRound.matches[m].matchNumber;
+          var pred = predMap[matchNum] || null;
+          if (!pred && matchStartedMap[matchNum]) {
+            // Create a placeholder that the template can identify as "missed"
+            pred = { _placeholder: true, missed: true, score: 0 };
+          }
+          ordered.push(pred);
+        }
+        ur.userMatchPredictions = ordered;
+      }
+    }
     res.render("userTournaments/show", {
-      userTournament: foundUserTournament,
+      userTournament: utData,
+      visibleThroughRound: visibleThroughRound,
+      matchStartedMap: matchStartedMap,
       page: "tournamentGroups",
     });
   } catch (err) {
