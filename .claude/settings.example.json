@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(node test/tipoff.test.js)",
+      "Bash(node -c app.js)"
+    ]
+  }
+}
