@@ -1,5 +1,6 @@
 var express = require("express");
 var router = express.Router();
+var mongoose = require("mongoose");
 var TournamentStanding = require("../models/tournamentStanding");
 
 //INDEX - show all tournamentStandings
@@ -42,6 +43,10 @@ router.get("/year/:year", async function (req, res) {
 //SHOW - shows more information about a particular Tournament Standing
 router.get("/:id", async function (req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      req.flash("error", "Tournament standings not found");
+      return res.redirect("/tournamentStandings");
+    }
     var foundTournamentStanding = await TournamentStanding.findById(req.params.id);
     if (!foundTournamentStanding) {
       req.flash("error", "Tournament standings not found");

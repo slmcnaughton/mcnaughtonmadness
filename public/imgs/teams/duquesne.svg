@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500px" height="500px" viewBox="0 0 500 500" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 59.1 (86144) - https://sketch.com -->
+    <title>Team Logos / NCAA / Dark / DUQ</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <polygon id="path-1" points="0.000344827586 -5.68434189e-14 229.693103 -5.68434189e-14 229.693103 499.282644 0.000344827586 499.282644"></polygon>
+    </defs>
+    <g id="Team-Logos-/-NCAA-/-Dark-/-DUQ" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-3" transform="translate(135.000000, 1.000000)">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <g id="Clip-2"></g>
+            <path d="M156.981954,423.426322 L93.1543678,359.598736 L102.115287,350.637816 C106.798046,345.955057 109.427931,339.604483 109.427931,332.981494 L109.427931,160.674598 L156.981954,208.227471 L156.981954,423.426322 Z M213.471609,176.761954 L36.7095402,-0.000114942529 L36.7095402,327.642414 L0.000344827586,364.352759 L134.93023,499.282644 L222.418736,411.413678 C227.077356,406.734368 229.693448,400.399885 229.693448,393.796437 L229.693448,215.804483 C229.661264,201.157356 223.827931,187.119425 213.471609,176.761954 L213.471609,176.761954 Z" id="Fill-1" fill="#011E41" mask="url(#mask-2)"></path>
+        </g>
+    </g>
+</svg>
